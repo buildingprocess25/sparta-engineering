@@ -1,0 +1,17 @@
+.git
+.agents
+.claude
+.codex
+.cursor
+.gemini
+.github
+.opencode
+.next
+node_modules
+generated
+.env*
+!.env.example
+docs
+coverage
+npm-debug.log*
+pnpm-debug.log*

@@ -30,6 +30,11 @@ pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# generated Prisma client
+/generated/
+/.pnpm-store/
 
 # typescript
 *.tsbuildinfo
