@@ -57,6 +57,10 @@ repository.
 
 ## Git Safety
 
-- Never run `git commit --no-verify`. It bypasses the mandatory pre-commit
-  task-note guard and is strictly prohibited.
-- Do not bypass or disable Git hooks. Fix the missing task note instead.
+- Never run `git commit --no-verify` to bypass a required documentation update.
+  Fix the missing or outdated spec in `docs/` instead.
+- `git commit --no-verify` is **permitted only for minor fixes**: typos,
+  non-behavioral CSS tweaks, or trivial bug corrections that do not change
+  feature behavior or architecture. Document this exception in the commit
+  message (e.g. `fix: typo in button label`).
+- Do not bypass or disable Git hooks for substantive changes.

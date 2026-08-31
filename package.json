@@ -10,8 +10,8 @@
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "check:agent-note": "node scripts/check-agent-task-note.mjs",
-    "test:agent-note": "node scripts/check-agent-task-note.spec.mjs",
+    "check:docs": "node scripts/check-docs-update.mjs",
+    "test:docs": "node scripts/check-docs-update.spec.mjs",
     "setup:git-hooks": "git config core.hooksPath .githooks",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate"
