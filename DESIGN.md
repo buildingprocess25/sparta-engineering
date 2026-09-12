@@ -2,20 +2,20 @@
 
 ## Visual World
 
-SPARTA uses a luxury operational interface: black glass, silver metal, white text, and orange action highlights. The UI should feel precise and premium, but it must still behave like a field tool for engineering work.
+SPARTA uses a luxury operational interface: black/silver structure, white working surfaces, and orange action highlights. The UI should feel precise and premium, but it must still behave like a field tool for engineering work.
 
 ## Palette
 
-- Black: dominant page background and primary surface depth.
+- Black: primary identity, navigation, and high-emphasis controls.
 - Silver: secondary surfaces, dividers, inactive controls, and metallic accents.
 - Orange: primary action, current step, warning/attention, and forward movement.
-- White: high-contrast text and critical readable surfaces.
+- White: dominant mobile working surface for dashboard and form screens.
 
 Use orange deliberately. It should mark action and urgency, not decorate every card.
 
 ## Materials
 
-- Glassmorphism appears as translucent dark/silver panels with subtle borders, backdrop blur, and layered highlights.
+- Glassmorphism appears as subtle white/silver surfaces with restrained borders, backdrop blur, and layered highlights.
 - Depth should come from soft offset shadows and tonal layering.
 - Avoid blur that makes text or state hard to read.
 - Avoid ornamental glow, excessive gradients, novelty badges, and decorative effects that make the app feel AI-generated. Premium should come from restraint, alignment, material quality, and useful state.
@@ -33,7 +33,7 @@ Design mobile-first. The ES dashboard should present one clear work path at a ti
 3. Next-step choices grouped by current job.
 4. Area and period signals.
 
-Desktop may center the mobile work surface inside a wider premium background instead of expanding into a dense desktop dashboard too early. The dashboard should feel like a real field tool first, not a marketing screen.
+Desktop may center the mobile work surface inside a wider premium background instead of expanding into a dense desktop dashboard too early. The dashboard should feel like a real field tool first, not a marketing screen. Mobile dashboard screens may follow a familiar app pattern: app bar, welcome panel, primary CTA, progress/recap, stats, and bottom navigation.
 
 ## Components
 

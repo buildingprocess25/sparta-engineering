@@ -4,7 +4,13 @@ import {
   Check,
   ClipboardCheck,
   FileSignature,
-  MapPin,
+  Bell,
+  Clock3,
+  FileText,
+  LayoutGrid,
+  PlusCircle,
+  Shield,
+  ShieldCheck,
   Warehouse,
   Wrench,
   type LucideIcon,
@@ -43,21 +49,36 @@ const areaChoices = [
   },
 ]
 
-const timeline = [
-  "Form Ijin Kerja",
-  "Pilih Jalur",
-  "Pilih Area",
-  "Monthly / Weekly",
-]
+const stats = [
+  {
+    value: "2",
+    title: "Jalur Kerja",
+    description: "Checklist dan temuan",
+    tone: "silver",
+    icon: FileText,
+  },
+  {
+    value: "3",
+    title: "Tahap Awal",
+    description: "Ijin, jalur, area",
+    tone: "orange",
+    icon: Clock3,
+  },
+] satisfies Array<{
+  value: string
+  title: string
+  description: string
+  tone: "silver" | "orange"
+  icon: LucideIcon
+}>
 
 export default function DashboardPage() {
   return (
     <main
       id="main-content"
-      className="min-h-svh overflow-x-hidden bg-[#0b0b0c] text-white"
+      className="min-h-svh overflow-x-hidden bg-[#f5f5f3] pb-24 text-[#111111]"
     >
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-48 bg-[linear-gradient(180deg,rgba(255,138,42,0.13),transparent)]" />
-      <div className="relative mx-auto flex min-h-svh w-full max-w-md flex-col px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] sm:max-w-lg">
+      <div className="relative mx-auto flex min-h-svh w-full max-w-md flex-col px-5 pb-8 pt-[max(1.25rem,env(safe-area-inset-top))] sm:max-w-lg">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:mb-3 focus:rounded-md focus:bg-[#ff8a2a] focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-black"
@@ -65,77 +86,92 @@ export default function DashboardPage() {
           Lewati ke konten
         </a>
 
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-md border border-white/12 bg-white/[0.06] text-sm font-semibold tracking-[0.04em] text-[#f3f3f3] shadow-lg shadow-black/20 backdrop-blur-md">
-              SP
-            </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold text-white">
-                SPARTA
-              </h1>
-              <p className="truncate text-sm text-[#b9b9b9]">
-                Engineering Support
-              </p>
-            </div>
+        <header className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-[#747474]">SPARTA</p>
+            <h1 className="text-2xl font-semibold tracking-[-0.02em]">
+              Dashboard
+            </h1>
           </div>
-          <div className="rounded-md border border-white/10 bg-white/[0.05] px-3 py-2 text-right backdrop-blur-md">
-            <p className="text-xs text-[#b9b9b9]">Hari ini</p>
-            <p className="text-sm font-medium text-white">ES</p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Notifikasi"
+              className="relative grid size-10 place-items-center rounded-full border border-[#dedede] bg-white text-[#111111] shadow-sm"
+            >
+              <Bell aria-hidden="true" />
+              <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#ff8a2a] text-[10px] font-semibold text-black">
+                1
+              </span>
+            </button>
+            <div className="grid size-10 place-items-center rounded-full bg-[#111111] text-sm font-semibold text-white shadow-sm">
+              ES
+            </div>
           </div>
         </header>
 
-        <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.055] p-4 shadow-xl shadow-black/25 backdrop-blur-md">
+        <section className="mt-6 overflow-hidden rounded-[1.35rem] bg-[#111111] p-6 text-white shadow-xl shadow-black/15">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm text-[#b9b9b9]">BANJARMASIN</p>
-              <h2 className="mt-2 text-balance text-2xl font-semibold leading-tight text-white">
-                Mulai pekerjaan engineering
+              <h2 className="text-balance text-2xl font-semibold leading-tight tracking-[-0.02em]">
+                Welcome ES User
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[#cfcfcf]">
-                Pilih langkah awal sesuai kondisi pekerjaan hari ini.
+              <p className="mt-2 max-w-48 text-sm leading-6 text-[#d9d9d9]">
+                Pilih alur kerja untuk area BANJARMASIN.
               </p>
+              <div className="mt-5 inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-[#ffb46f]">
+                ENGINEERING SUPPORT
+              </div>
             </div>
-            <MapPin className="mt-1 shrink-0 text-[#cfcfcf]" aria-hidden="true" />
+            <div className="relative mt-1 grid size-28 shrink-0 place-items-center">
+              <div className="absolute inset-0 rounded-full bg-[#2a2a2a]" />
+              <div className="absolute bottom-1 h-20 w-16 rounded-t-full bg-[#d7d7d7]" />
+              <div className="absolute top-3 size-12 rounded-full bg-[#ffb46f]" />
+              <div className="absolute right-0 top-14 rounded-xl bg-[#ff8a2a] px-3 py-2 shadow-lg shadow-black/20">
+                <FileSignature className="text-black" aria-hidden="true" />
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="mt-4 rounded-lg border border-[#ff8a2a]/25 bg-[#17110c]/80 p-4 shadow-lg shadow-black/20 backdrop-blur-md">
-          <div className="flex items-start gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-md bg-[#ff8a2a] text-black shadow-md shadow-[#ff8a2a]/10">
-              <FileSignature aria-hidden="true" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-[#ffb46f]">Langkah awal</p>
-              <h2 className="mt-1 text-lg font-semibold text-white text-pretty">
-                Form Ijin Kerja
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-[#dec6b2]">
-                Isi bila pekerjaan membutuhkan izin. Jika tidak, lanjut ke
-                pilihan laporan.
-              </p>
-            </div>
-          </div>
+        <Button className="mt-5 h-14 rounded-lg bg-[#ff8a2a] text-base font-semibold text-black shadow-lg shadow-[#ff8a2a]/20 hover:bg-[#ff9c48]">
+          <PlusCircle data-icon="inline-start" />
+          Buat Laporan Baru
+        </Button>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <Button className="h-11 bg-[#ff8a2a] text-black hover:bg-[#ff9c48]">
-              Isi Form
-              <ArrowRight data-icon="inline-end" />
-            </Button>
-            <Button
-              variant="outline"
-              className="h-11 border-white/14 bg-white/[0.06] text-white hover:bg-white/[0.09] hover:text-white"
-            >
-              Lewati
-            </Button>
+        <section className="mt-8">
+          <SectionHeading kicker="Langkah awal" title="Form Ijin Kerja" />
+          <div className="mt-3 rounded-2xl border border-[#dedede] bg-white p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f3f0ec] text-[#111111]">
+                <FileSignature aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-semibold">
+                  Apakah perlu Form Ijin Kerja?
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-[#686868]">
+                  Isi bila pekerjaan membutuhkan izin, atau lewati untuk lanjut
+                  ke pilihan laporan.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <Button className="h-11 bg-[#111111] text-white hover:bg-[#252525]">
+                Isi Form
+              </Button>
+              <Button
+                variant="outline"
+                className="h-11 border-[#dedede] bg-white text-[#111111] hover:bg-[#f2f2f2] hover:text-[#111111]"
+              >
+                Lewati
+              </Button>
+            </div>
           </div>
         </section>
 
-        <section className="mt-5">
-          <SectionHeading
-            kicker="Pilih jalur"
-            title="Jenis laporan"
-          />
+        <section className="mt-8">
+          <SectionHeading kicker="Pilih jalur" title="Jenis laporan" />
           <div className="mt-3 flex flex-col gap-3">
             {workflowChoices.map((choice) => (
               <ChoicePanel key={choice.title} {...choice} />
@@ -143,7 +179,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="mt-5">
+        <section className="mt-8">
           <SectionHeading kicker="Pilih area" title="Lokasi pekerjaan" />
           <div className="mt-3 flex flex-col gap-3">
             {areaChoices.map((area) => (
@@ -152,28 +188,36 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="mt-5 rounded-md border border-white/12 bg-black/35 p-4 backdrop-blur-xl">
-          <p className="text-sm font-medium text-white">Urutan kerja</p>
-          <div className="mt-3 flex flex-col gap-2">
-            {timeline.map((item, index) => (
-              <div
-                key={item}
-                className={cn(
-                  "flex items-center gap-3 rounded-md border px-3 py-2 text-sm",
-                  index === 0
-                    ? "border-[#ff8a2a]/35 bg-[#ff8a2a]/12 text-[#ffb46f]"
-                    : "border-white/10 bg-white/[0.04] text-[#d7d7d7]",
-                )}
-              >
-                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-current text-xs">
-                  {index + 1}
-                </span>
-                <span>{item}</span>
+        <section className="mt-8">
+          <SectionHeading kicker="Rekap" title="Progress awal" />
+          <div className="mt-3 rounded-2xl border border-[#dedede] bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-[#111111]">
+                <ShieldCheck className="text-[#ff8a2a]" aria-hidden="true" />
+                FLOW ES DASHBOARD
               </div>
+              <span className="text-sm text-[#686868]">1 / 4 tahap</span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-[#686868]">
+              Mulai dari Form Ijin Kerja, lalu pilih jalur laporan dan area.
+            </p>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#e9e9e9]">
+              <div className="h-full w-1/4 rounded-full bg-[#ff8a2a]" />
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <SectionHeading kicker="Stats Laporan" title="Ringkasan" />
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {stats.map((item) => (
+              <StatCard key={item.title} {...item} />
             ))}
           </div>
         </section>
       </div>
+
+      <BottomNavigation />
     </main>
   )
 }
@@ -187,10 +231,10 @@ function SectionHeading({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#bfbfbf]">
+      <p className="text-sm font-medium text-[#686868]">
         {kicker}
       </p>
-      <h2 className="mt-1 text-xl font-semibold text-white text-pretty">
+      <h2 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-[#111111] text-pretty">
         {title}
       </h2>
     </div>
@@ -211,23 +255,23 @@ function ChoicePanel({
   return (
     <button
       type="button"
-      className="group flex min-h-24 w-full items-start gap-3 rounded-lg border border-white/10 bg-white/[0.055] p-4 text-left shadow-lg shadow-black/20 backdrop-blur-md transition-colors hover:border-white/16 hover:bg-white/[0.075] focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/70"
+      className="group flex min-h-24 w-full items-start gap-3 rounded-2xl border border-[#dedede] bg-white p-4 text-left shadow-sm transition-colors hover:bg-[#fbfbfb] focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/70"
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-md bg-[#d0d0d0]/12 text-white">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f1f1f1] text-[#111111]">
         <Icon aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-3">
-          <span className="text-base font-semibold text-white">{title}</span>
+          <span className="text-base font-semibold text-[#111111]">{title}</span>
           <ArrowRight
-            className="shrink-0 text-[#ffb46f] transition group-hover:translate-x-0.5"
+            className="shrink-0 text-[#b2b2b2] transition group-hover:translate-x-0.5"
             aria-hidden="true"
           />
         </span>
-        <span className="mt-1 block text-sm leading-6 text-[#d7d7d7]">
+        <span className="mt-1 block text-sm leading-6 text-[#686868]">
           {description}
         </span>
-        <span className="mt-3 inline-flex rounded-md border border-white/10 bg-black/20 px-2 py-1 text-xs font-medium text-[#d7d7d7]">
+        <span className="mt-3 inline-flex rounded-md bg-[#f3f3f3] px-2 py-1 text-xs font-medium text-[#686868]">
           {meta}
         </span>
       </span>
@@ -249,24 +293,24 @@ function AreaPanel({
   return (
     <button
       type="button"
-      className="flex min-h-24 w-full items-start gap-3 rounded-lg border border-white/10 bg-white/[0.055] p-4 text-left shadow-lg shadow-black/20 backdrop-blur-md transition-colors hover:border-white/16 hover:bg-white/[0.075] focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/70"
+      className="flex min-h-24 w-full items-start gap-3 rounded-2xl border border-[#dedede] bg-white p-4 text-left shadow-sm transition-colors hover:bg-[#fbfbfb] focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/70"
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-md bg-[#d0d0d0]/12 text-white">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f1f1f1] text-[#111111]">
         <Icon aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-3">
-          <span className="text-base font-semibold text-white">{title}</span>
-          <Check className="shrink-0 text-[#cfcfcf]" aria-hidden="true" />
+          <span className="text-base font-semibold text-[#111111]">{title}</span>
+          <Check className="shrink-0 text-[#b2b2b2]" aria-hidden="true" />
         </span>
-        <span className="mt-1 block text-sm leading-6 text-[#d7d7d7]">
+        <span className="mt-1 block text-sm leading-6 text-[#686868]">
           {description}
         </span>
         <span className="mt-3 flex flex-wrap gap-2">
           {periods.map((period) => (
             <span
               key={period}
-              className="rounded-md border border-[#ff8a2a]/35 bg-[#ff8a2a]/12 px-2 py-1 text-xs font-medium text-[#ffb46f]"
+              className="rounded-md bg-[#fff0e3] px-2 py-1 text-xs font-semibold text-[#a64f00]"
             >
               {period}
             </span>
@@ -274,5 +318,79 @@ function AreaPanel({
         </span>
       </span>
     </button>
+  )
+}
+
+function StatCard({
+  value,
+  title,
+  description,
+  tone,
+  icon: Icon,
+}: {
+  value: string
+  title: string
+  description: string
+  tone: "silver" | "orange"
+  icon: LucideIcon
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "relative min-h-40 overflow-hidden rounded-2xl p-5 text-left shadow-sm",
+        tone === "orange" ? "bg-[#fff0e3]" : "bg-white",
+      )}
+    >
+      <div
+        className={cn(
+          "absolute -right-7 -top-8 size-28 rounded-full",
+          tone === "orange" ? "bg-[#ffd0a3]" : "bg-[#eeeeee]",
+        )}
+      />
+      <Icon
+        className={cn(
+          "absolute right-6 top-6",
+          tone === "orange" ? "text-[#d86b0d]" : "text-[#bdbdbd]",
+        )}
+        aria-hidden="true"
+      />
+      <p className="text-5xl font-semibold tracking-[-0.05em] text-[#111111]">
+        {value}
+      </p>
+      <p className="mt-6 text-sm font-semibold text-[#111111]">{title}</p>
+      <p className="mt-1 text-xs text-[#686868]">{description}</p>
+    </button>
+  )
+}
+
+function BottomNavigation() {
+  const items = [
+    { label: "Dashboard", icon: LayoutGrid, active: true },
+    { label: "Laporan", icon: FileText },
+    { label: "Aktivitas", icon: Clock3 },
+    { label: "Preventif", icon: Shield },
+  ]
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-[#e9e9e9] bg-white/92 px-5 pb-[max(0.9rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.05)] backdrop-blur-md">
+      <div className="mx-auto grid max-w-md grid-cols-4 gap-2">
+        {items.map(({ label, icon: Icon, active }) => (
+          <button
+            key={label}
+            type="button"
+            className={cn(
+              "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-semibold",
+              active
+                ? "bg-[#111111] text-white"
+                : "text-[#747474] hover:bg-[#f4f4f4]",
+            )}
+          >
+            <Icon aria-hidden="true" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </nav>
   )
 }

@@ -18,7 +18,7 @@
 - Preview pilihan area: Office dan WHC / WH / Depo / Bulky / Store Hub / Gudang Anak.
 - Sinyal periode form: Monthly dan Weekly sesuai area.
 - Visual direction SPARTA: black, silver, orange, white, luxury, elegant, glassmorphism.
-- Polish visual yang natural: hindari glow/dekorasi berlebihan, hero yang terasa marketing, novelty badge, dan pattern dashboard generik yang terlihat AI-generated.
+- Polish visual yang natural: gunakan pola mobile app yang familiar (app bar, welcome panel, CTA utama, rekap, stats, bottom navigation) dan hindari glow/dekorasi berlebihan, novelty badge, serta pattern dashboard generik yang terlihat AI-generated.
 
 **Luar scope Phase 1:**
 - Submit form ke database.
