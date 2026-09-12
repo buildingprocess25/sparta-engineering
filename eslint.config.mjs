@@ -20,6 +20,7 @@ const eslintConfig = defineConfig([
     ".gemini/**",
     ".opencode/**",
     ".github/skills/**",
+    "generated/**",
   ]),
 ]);
 

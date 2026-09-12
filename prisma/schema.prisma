@@ -1,8 +1,104 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// =========================================
+// ENUMS
+// =========================================
+
+enum UserRole {
+  ES
+  COORD
+  MANAGER
+  REQUESTER
+  ADMIN_HO
+  SUPER_ADMIN
+}
+
+enum AreaType {
+  OFFICE
+  WAREHOUSE
+}
+
+enum ReportStatus {
+  PENDING_COORD
+  PENDING_MANAGER
+  PENDING_REQUESTER
+  COMPLETED
+  REJECTED
+}
+
+enum ItemCondition {
+  BAIK
+  CLEAN
+  REPAIR
+  RUSAK
+  TIDAK_ADA
+}
+
+// =========================================
+// MODELS
+// =========================================
+
+model User {
+  NIK                String   @id
+  name               String
+  email              String?
+  branchName         String
+  location           String?
+  role               UserRole @default(ES)
+  passwordHash       String
+  mustChangePassword Boolean  @default(true)
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+
+  reports ChecklistReport[] @relation("ReportAuthor")
+}
+
+model Area {
+  id        String   @id @default(cuid())
+  name      String
+  type      AreaType
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  reports ChecklistReport[]
+}
+
+model ChecklistReport {
+  id        String       @id @default(cuid())
+  areaId    String
+  authorId  String
+  status    ReportStatus @default(PENDING_COORD)
+  isSafe    Boolean      @default(false)
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @db.Timestamptz(3)
+
+  area   Area          @relation(fields: [areaId], references: [id])
+  author User          @relation("ReportAuthor", fields: [authorId], references: [NIK])
+  items  ChecklistItem[]
+
+  @@index([authorId])
+  @@index([areaId])
+  @@index([status])
+}
+
+model ChecklistItem {
+  id        String        @id @default(cuid())
+  reportId  String
+  itemName  String
+  condition ItemCondition
+  notes     String?
+  photoUrls Json          @default("[]")
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime      @updatedAt @db.Timestamptz(3)
+
+  report ChecklistReport @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
 }

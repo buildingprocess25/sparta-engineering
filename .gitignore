@@ -36,6 +36,9 @@ pnpm-debug.log*
 /generated/
 /.pnpm-store/
 
+# local source data
+/data/*.xlsx
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

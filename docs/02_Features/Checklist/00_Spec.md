@@ -1,7 +1,7 @@
 # Checklist & Approval Workflow
 
-> **Status**: `Draft` (Menunggu kejelasan alur bisnis dari stakeholder)  
-> **Terakhir diperbarui**: 2026-08-20
+> **Status**: `Active`  
+> **Terakhir diperbarui**: 2026-08-31
 
 ## User Story
 
@@ -20,29 +20,26 @@
 **Luar scope:**
 - *Form Ijin Kerja* (Relasinya akan dipisahkan / belum didefinisikan).
 
-## ❓ Open Questions (Pending Business Rules)
+## Aturan Bisnis (Business Rules)
 
-Pertanyaan-pertanyaan di bawah ini **harus dijawab oleh user/stakeholder** sebelum fitur ini bisa masuk ke tahap desain database dan implementasi:
+1. **Model Pengisian Data**: ES membuat "Dokumen Laporan Baru" (record baru) di dalam sistem setiap kali jadwal checklist tiba.
+2. **Alur Approval (Tanpa Kerusakan)**: Jika laporan checklist 100% aman (tidak ada laporan kerusakan), maka proses approval cukup melalui **Coord** dan **Manager**, lalu status menjadi Selesai (Tidak perlu sampai ke Requester).
+3. **Alur Approval (Ada Kerusakan)**: Jika terdapat temuan kerusakan, alur akan mengikuti proses yang lebih panjang (ES -> Coord -> Manager -> Requester). *Catatan: Integrasi PB/PJU diabaikan untuk iterasi awal ini.*
 
-1. **Model Pengisian Data**: 
-   - Apakah ES membuat "Dokumen Laporan Baru" di sistem setiap kali jadwal checklist tiba? Ataukah mereka meng-update sebuah "Master Tabel Ruangan" yang sudah ada?
-2. **Approval untuk Laporan "Tanpa Kerusakan"**:
-   - Jika laporan checklist 100% aman (TIDAK ADA KERUSAKAN), apakah alurnya berhenti dan selesai di **COORD APPROVED**, atau tetap harus naik ke meja **Manager** dan **Requester**?
-3. **Definisi PB / PJU**:
-   - Apa kepanjangan dari PB / PJU? (Permintaan Barang / Pekerjaan Jasa Umum?)
-   - Siapa (role apa) yang bertugas menginput form PB/PJU ke dalam sistem?
-   - Kapan perbaikan fisik benar-benar dilakukan? Apakah setelah PB/PJU diinput, atau sebelum?
-
-## UI & Alur Pengguna (Draft)
+## UI & Alur Pengguna
 
 - **Route(s)**: `/dashboard/checklist`
 - **Alur Kasar**:
   1. ES masuk halaman checklist.
   2. Pilih Area dan Jenis Form.
   3. Mengisi matriks kondisi barang.
-  4. Submit.
-  5. Jika ada kerusakan -> Masuk antrean Approval.
+  4. Submit (membuat Laporan Baru).
+  5. Laporan masuk antrean Approval:
+     - Jika 100% aman: `Coord -> Manager -> Selesai`
+     - Jika ada kerusakan: `Coord -> Manager -> Requester -> Selesai`
 
-## Data & API (Pending)
+## Data & API
 
-*(Akan diisi struktur model Prisma setelah Open Questions di atas terjawab)*
+- Model utama yang dibutuhkan: `ChecklistReport`, `ChecklistItem`, `Area`, `User`.
+- Status approval: `PENDING_COORD`, `PENDING_MANAGER`, `PENDING_REQUESTER`, `COMPLETED`, `REJECTED`.
+*(Detail field akan didokumentasikan lebih lanjut di `docs/01_Architecture/10_Data_Models.md`)*
