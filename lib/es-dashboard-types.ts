@@ -1,0 +1,17 @@
+export type EsAreaOption = {
+  id: string
+  code: string
+  name: string
+  type: "OFFICE" | "WAREHOUSE"
+  periods: Array<"MONTHLY" | "WEEKLY">
+}
+
+export type EsDashboardFlowIssue = {
+  title: string
+  description: string
+}
+
+export type EsDashboardFlowOptions = {
+  areas: EsAreaOption[]
+  areaIssue?: EsDashboardFlowIssue
+}

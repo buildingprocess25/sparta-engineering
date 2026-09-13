@@ -14,7 +14,9 @@ di proyek ini.
 1. Setiap perubahan skema **wajib** didiskusikan dan diupdate di sini terlebih dahulu.
 2. Jalankan `pnpm prisma:validate` setelah setiap perubahan skema.
 3. Jalankan `pnpm prisma:generate` untuk memperbarui Prisma Client.
-4. Perintah migrasi yang dijalankan langsung ke database (`migrate dev`, `migrate deploy`, `db push`) **dilarang keras** — koordinasikan dengan DBA/lead engineer.
+4. Jangan gunakan `prisma db push`.
+5. Perubahan skema wajib direkam sebagai Prisma migration.
+6. Perintah migration yang menyentuh database wajib diawali konfirmasi target environment (development atau production).
 
 ---
 
@@ -38,10 +40,25 @@ di proyek ini.
 | Field | Tipe | Keterangan |
 |---|---|---|
 | id | String (cuid) | Primary key |
-| name | String | Contoh: "Office Lantai 1", "Gudang A" |
-| type | AreaType | Enum (OFFICE, WAREHOUSE) |
+| code | String | Unique stable code, contoh: `office`, `whc`, `store_hub` |
+| name | String | Contoh: "Office", "WHC", "Store Hub" |
+| type | AreaType | Enum (OFFICE, WAREHOUSE). Menentukan form family |
+| isActive | Boolean | Area tampil di flow ES jika `true` |
 | createdAt | DateTime | Timestamp pembuatan |
 | updatedAt | DateTime | Timestamp update terakhir |
+
+Area berlaku global untuk semua cabang. Area `OFFICE` memakai office checklist family. Area `WAREHOUSE` memakai shared warehouse checklist family untuk WHC, WH, Depo, Bulky, Store Hub, dan Gudang Anak.
+
+### AreaChecklistAvailability
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| areaId | String | Relasi ke Area |
+| period | ChecklistPeriod | Enum (MONTHLY, WEEKLY) |
+| createdAt | DateTime | Timestamp pembuatan |
+| updatedAt | DateTime | Timestamp update terakhir |
+
+Constraint: `@@unique([areaId, period])`.
 
 ### ChecklistReport
 | Field | Tipe | Keterangan |

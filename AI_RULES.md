@@ -49,11 +49,18 @@ repository.
 ## Prisma and Database Safety
 
 - Use Prisma ORM for persistence; do not introduce a second ORM.
+- Never run `prisma db push`.
+- Schema changes must be recorded as Prisma migrations.
 - Before any database-affecting Prisma command, ask whether the current
   connection is development or production and identify the target environment.
-- Never run `prisma db push`, `prisma migrate dev`, or `prisma migrate deploy`.
-- `prisma validate` and `prisma generate` are permitted because they do not
-  mutate the configured database.
+- `prisma migrate dev --create-only` is permitted only for development
+  connections after environment confirmation.
+- Applying migrations (`prisma migrate dev` without `--create-only` or
+  `prisma migrate deploy`) requires explicit environment confirmation and must
+  never target production unless the user explicitly confirms the production
+  deployment workflow.
+- `prisma validate`, `prisma format`, and `prisma generate` are permitted
+  because they do not mutate the configured database.
 
 ## Git Safety
 

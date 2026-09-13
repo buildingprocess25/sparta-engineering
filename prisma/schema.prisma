@@ -25,6 +25,11 @@ enum AreaType {
   WAREHOUSE
 }
 
+enum ChecklistPeriod {
+  MONTHLY
+  WEEKLY
+}
+
 enum ReportStatus {
   PENDING_COORD
   PENDING_MANAGER
@@ -62,12 +67,31 @@ model User {
 
 model Area {
   id        String   @id @default(cuid())
+  code      String   @unique
   name      String
   type      AreaType
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  reports ChecklistReport[]
+  reports                 ChecklistReport[]
+  checklistAvailabilities AreaChecklistAvailability[]
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model AreaChecklistAvailability {
+  id        String          @id @default(cuid())
+  areaId    String
+  period    ChecklistPeriod
+  createdAt DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime        @updatedAt @db.Timestamptz(3)
+
+  area Area @relation(fields: [areaId], references: [id])
+
+  @@unique([areaId, period])
+  @@index([period])
 }
 
 model ChecklistReport {
@@ -79,8 +103,8 @@ model ChecklistReport {
   createdAt DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt DateTime     @updatedAt @db.Timestamptz(3)
 
-  area   Area          @relation(fields: [areaId], references: [id])
-  author User          @relation("ReportAuthor", fields: [authorId], references: [NIK])
+  area   Area            @relation(fields: [areaId], references: [id])
+  author User            @relation("ReportAuthor", fields: [authorId], references: [NIK])
   items  ChecklistItem[]
 
   @@index([authorId])
