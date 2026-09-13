@@ -17,6 +17,7 @@
 - Pilihan workflow: Checklist atau Perbaikan by AHO / Temuan ES.
 - Preview pilihan area: Office dan WHC / WH / Depo / Bulky / Store Hub / Gudang Anak.
 - Sinyal periode form: Monthly dan Weekly sesuai area.
+- Area dan periode diambil dari database, bukan array hardcoded sebagai source of truth.
 - Visual direction SPARTA: black, silver, orange, white, luxury, elegant, glassmorphism.
 - Polish visual yang natural: gunakan pola mobile app yang familiar (app bar, welcome panel, CTA utama, rekap, stats, bottom navigation) dan hindari glow/dekorasi berlebihan, novelty badge, serta pattern dashboard generik yang terlihat AI-generated.
 
@@ -35,25 +36,47 @@
 3. Setelah keputusan Form Ijin Kerja, ES memilih salah satu jalur:
    - Checklist
    - Perbaikan by AHO / Temuan ES
-4. Setelah memilih jalur, ES memilih area:
+4. Setelah memilih jalur, ES memilih area spesifik:
    - Office
-   - WHC / WH / Depo / Bulky / Store Hub / Gudang Anak
+   - WHC
+   - WH
+   - Depo
+   - Bulky
+   - Store Hub
+   - Gudang Anak
 5. Office diarahkan ke form Monthly.
-6. Area warehouse group menampilkan pilihan Monthly dan Weekly.
+6. Area warehouse-family menampilkan pilihan Monthly dan Weekly.
 
 ## UI & Alur Pengguna
 
 - **Route:** `/dashboard`
 - **Alur Phase 1:**
-  1. ES melihat header SPARTA, role, dan lokasi kerja mock.
-  2. ES melihat panel "Form Ijin Kerja" dengan aksi "Isi Form" dan "Lewati".
-  3. ES melihat dua pilihan workflow besar: Checklist dan Perbaikan by AHO / Temuan ES.
-  4. ES melihat area yang tersedia dan periode form terkait.
-  5. CTA berikutnya ditampilkan sebagai preview, belum melakukan mutasi data.
+  1. ES melihat dashboard enterprise shell.
+  2. ES menekan `Buat Laporan Baru`.
+  3. Guided flow tampil.
+  4. ES memilih `Isi Form Ijin Kerja` atau `Lewati`.
+  5. ES memilih `Checklist` atau `Perbaikan by AHO / Temuan ES`.
+  6. ES memilih area spesifik dari data database.
+  7. Jika report type adalah Checklist:
+     - Office hanya menampilkan Monthly.
+     - Area warehouse-family menampilkan Monthly dan Weekly.
+  8. CTA `Lanjutkan` aktif setelah pilihan wajib lengkap.
+
+## Implementation Boundaries
+
+- `app/dashboard/page.tsx` hanya boleh menjadi route-level Server Component untuk mengambil data dan menyusun komponen halaman.
+- Komponen visual dashboard ES harus berada di `components/es-dashboard/` dan dipisah berdasarkan tanggung jawab: shell, header, welcome panel, guided flow, progress summary, stats, dan bottom navigation.
+- State interaktif flow laporan hanya boleh berada di Client Component `ReportFlow` dan komponen kecil turunannya.
+- Data area dan periode checklist harus datang dari `lib/es-dashboard-data.ts`, bukan dari array hardcoded di komponen UI.
+- Props yang dikirim dari Server Component ke Client Component harus berupa data serializable minimal.
 
 ## Data & API
 
-Phase 1 menggunakan data mock statis di komponen UI. Tidak ada query database atau Server Action.
+Phase berikutnya menggunakan data database:
+- Area diambil dari model `Area` dengan `isActive = true`.
+- Opsi period diambil dari relasi `AreaChecklistAvailability`.
+- Area berlaku global untuk semua cabang.
+- UI tidak menjadikan array hardcoded sebagai source of truth.
 
 ## Acceptance Criteria
 
@@ -62,3 +85,10 @@ Phase 1 menggunakan data mock statis di komponen UI. Tidak ada query database at
 - Tampilan menggunakan palette dan material yang tercatat di `DESIGN.md`.
 - File Excel lokal di `data/` tetap ignored dan tidak masuk commit.
 - `pnpm lint`, `pnpm typecheck`, dan `pnpm build` lolos.
+
+## Quality Gate
+
+- `app/dashboard/page.tsx` harus tetap tipis dan mudah dibaca.
+- Flow pilihan laporan harus tetap data-driven dari database.
+- Jika database belum bisa diakses, UI harus menampilkan unavailable state dan tidak crash.
+- Refactor visual tidak boleh mengubah business flow tanpa update spec.

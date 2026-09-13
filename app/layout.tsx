@@ -1,5 +1,4 @@
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
 
 export default function RootLayout({
   children,
@@ -13,7 +12,7 @@ export default function RootLayout({
       className="font-sans antialiased"
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        {children}
       </body>
     </html>
   )
