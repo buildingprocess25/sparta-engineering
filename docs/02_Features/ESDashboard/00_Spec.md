@@ -12,6 +12,9 @@
 
 **Dalam scope:**
 - Route `/dashboard` sebagai layar awal ES.
+- Route `/dashboard/reports/new` sebagai layar awal pembuatan laporan baru.
+- Route `/dashboard/reports/new/checklist/area` untuk pemilihan area checklist.
+- Route `/dashboard/reports/new/repair/area` untuk pemilihan area perbaikan / temuan.
 - Tampilan mobile-first.
 - Pilihan awal untuk mengisi atau melewati Form Ijin Kerja.
 - Pilihan workflow: Checklist atau Perbaikan by AHO / Temuan ES.
@@ -50,12 +53,16 @@
 ## UI & Alur Pengguna
 
 - **Route:** `/dashboard`
+- **Report flow routes:**
+  - `/dashboard/reports/new`
+  - `/dashboard/reports/new/checklist/area`
+  - `/dashboard/reports/new/repair/area`
 - **Alur Phase 1:**
   1. ES melihat dashboard enterprise shell.
-  2. ES menekan `Buat Laporan Baru`.
-  3. Guided flow tampil.
-  4. ES memilih `Isi Form Ijin Kerja` atau `Lewati`.
-  5. ES memilih `Checklist` atau `Perbaikan by AHO / Temuan ES`.
+  2. ES menekan `Buat Laporan Baru` dan berpindah ke `/dashboard/reports/new`.
+  3. ES memilih `Isi Form Ijin Kerja` atau `Lewati`.
+  4. ES memilih `Checklist` atau `Perbaikan by AHO / Temuan ES`.
+  5. Sistem memindahkan ES ke halaman pemilihan area sesuai jenis laporan.
   6. ES memilih area spesifik dari data database.
   7. Jika report type adalah Checklist:
      - Office hanya menampilkan Monthly.
@@ -66,7 +73,7 @@
 
 - `app/dashboard/page.tsx` hanya boleh menjadi route-level Server Component untuk mengambil data dan menyusun komponen halaman.
 - Komponen visual dashboard ES harus berada di `components/es-dashboard/` dan dipisah berdasarkan tanggung jawab: shell, header, welcome panel, guided flow, progress summary, stats, dan bottom navigation.
-- State interaktif flow laporan hanya boleh berada di Client Component `ReportFlow` dan komponen kecil turunannya.
+- State interaktif flow laporan hanya boleh berada di Client Component kecil yang memang membutuhkan event handler. Step utama flow laporan harus menggunakan route page agar URL, browser back, dan refresh tetap bermakna.
 - Data area dan periode checklist harus datang dari `lib/es-dashboard-data.ts`, bukan dari array hardcoded di komponen UI.
 - Props yang dikirim dari Server Component ke Client Component harus berupa data serializable minimal.
 

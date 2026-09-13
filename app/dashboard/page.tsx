@@ -5,19 +5,14 @@ import { ProgressSummary } from "@/components/es-dashboard/progress-summary"
 import { ReportFlow } from "@/components/es-dashboard/report-flow"
 import { StatsGrid } from "@/components/es-dashboard/stats-grid"
 import { WelcomePanel } from "@/components/es-dashboard/welcome-panel"
-import { getEsDashboardFlowOptions } from "@/lib/es-dashboard-data"
 
-export const dynamic = "force-dynamic"
-
-export default async function DashboardPage() {
-  const { areas, areaIssue } = await getEsDashboardFlowOptions()
-
+export default function DashboardPage() {
   return (
     <>
       <DashboardShell>
         <DashboardHeader />
         <WelcomePanel />
-        <ReportFlow areas={areas} areaIssue={areaIssue} />
+        <ReportFlow />
         <ProgressSummary />
         <StatsGrid />
       </DashboardShell>
