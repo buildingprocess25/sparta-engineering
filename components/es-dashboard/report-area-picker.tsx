@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Building2, Warehouse } from "lucide-react"
+import { Building2, CheckCircle2, Warehouse } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { FlowOptionButton } from "@/components/es-dashboard/flow-option-button"
@@ -40,12 +40,20 @@ export function ReportAreaPicker({
   const requiresPeriod = reportType === "checklist"
   const canContinue = Boolean(selectedArea && (!requiresPeriod || period))
 
+  const isPeriodCompleted = (area: EsAreaOption, p: Period) =>
+    reportType === "checklist" && Boolean(area.completedPeriods?.includes(p))
+
+  const isAreaFullyCompleted = (area: EsAreaOption) =>
+    reportType === "checklist" &&
+    area.periods.every((p) => isPeriodCompleted(area, p))
+
   function chooseArea(nextAreaId: string) {
     const nextArea = areas.find((area) => area.id === nextAreaId)
+    if (nextArea && isAreaFullyCompleted(nextArea)) return
 
     setAreaId(nextAreaId)
     setPeriod(
-      reportType === "checklist" && nextArea?.periods.length === 1
+      reportType === "checklist" && nextArea?.periods.length === 1 && !isPeriodCompleted(nextArea, nextArea.periods[0])
         ? nextArea.periods[0]
         : undefined,
     )
@@ -72,6 +80,7 @@ export function ReportAreaPicker({
           <div className="mt-3 grid grid-cols-2 gap-3">
             {areas.map((area) => {
               const Icon = area.type === "OFFICE" ? Building2 : Warehouse
+              const isCompleted = isAreaFullyCompleted(area)
 
               return (
                 <button
@@ -79,13 +88,22 @@ export function ReportAreaPicker({
                   type="button"
                   onClick={() => chooseArea(area.id)}
                   className={cn(
-                    "min-h-24 rounded-xl border p-3 text-left transition-colors",
-                    areaId === area.id
-                      ? "border-[#ff8a2a] bg-[#fff0e3]"
-                      : "border-[#dedede] bg-[#fbfbfb]",
+                    "relative min-h-24 rounded-xl border p-3 text-left transition-colors overflow-hidden",
+                    isCompleted
+                      ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-60"
+                      : areaId === area.id
+                        ? "border-[#ff8a2a] bg-[#fff0e3]"
+                        : "border-[#dedede] bg-[#fbfbfb]",
                   )}
                 >
-                  <Icon className="text-[#111111]" aria-hidden="true" />
+                  <div className="flex items-start justify-between">
+                    <Icon className="text-[#111111]" aria-hidden="true" />
+                    {isCompleted && (
+                      <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                        <CheckCircle2 className="size-3" /> Selesai
+                      </span>
+                    )}
+                  </div>
                   <span className="mt-3 block font-semibold text-[#111111]">
                     {area.name}
                   </span>
@@ -123,15 +141,21 @@ export function ReportAreaPicker({
             </div>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            {selectedArea.periods.map((item) => (
-              <FlowOptionButton
-                key={item}
-                title={periodLabels[item]}
-                description="Periode form"
-                active={period === item}
-                onClick={() => setPeriod(item)}
-              />
-            ))}
+            {selectedArea.periods.map((item) => {
+              const isCompleted = isPeriodCompleted(selectedArea, item)
+              return (
+                <FlowOptionButton
+                  key={item}
+                  title={periodLabels[item]}
+                  description={isCompleted ? "Sudah selesai" : "Periode form"}
+                  active={period === item}
+                  disabled={isCompleted}
+                  onClick={() => {
+                    if (!isCompleted) setPeriod(item)
+                  }}
+                />
+              )
+            })}
           </div>
         </section>
       ) : null}

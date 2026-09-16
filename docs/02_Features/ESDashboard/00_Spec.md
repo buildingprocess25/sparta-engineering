@@ -26,11 +26,16 @@
 
 **Luar scope Phase 1:**
 - Submit form ke database.
-- Auth role sungguhan.
 - Upload foto.
 - Matriks checklist detail.
 - Approval action untuk Coord, Manager, Requester.
 - Input PB/PJU aktual.
+- Auth role sungguhan (pengambilan ES NIK untuk tracking).
+
+## Fitur Baru (Phase 2)
+- **Preventive Tracker**: Dashboard menampilkan widget yang merekap persentase penyelesaian tugas preventif berdasarkan `ChecklistReport` (kategori PREVENTIVE) untuk `periodKey` minggu/bulan berjalan.
+- **Area Locking (Checklist Rutin)**: Pada flow Checklist Rutin, area yang periode preventifnya sudah lengkap di-lock (disabled dengan status ✅ Selesai).
+- **Incidental Freedom**: Flow Perbaikan/Temuan (Incidental) bebas dari locking dan dapat dipilih kapan saja.
 
 ## Aturan Bisnis
 

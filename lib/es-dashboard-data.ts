@@ -1,5 +1,6 @@
 import { getPrisma } from "@/lib/prisma"
 import type { EsDashboardFlowOptions } from "@/lib/es-dashboard-types"
+import { getCurrentPeriodKey } from "@/lib/date-utils"
 
 const areaOrder = [
   "office",
@@ -22,6 +23,23 @@ export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOption
       },
     })
 
+    const currentWeeklyKey = getCurrentPeriodKey("WEEKLY")
+    const currentMonthlyKey = getCurrentPeriodKey("MONTHLY")
+
+    const completedReports = await getPrisma().checklistReport.findMany({
+      where: {
+        category: "PREVENTIVE",
+        OR: [
+          { period: "WEEKLY", periodKey: currentWeeklyKey },
+          { period: "MONTHLY", periodKey: currentMonthlyKey },
+        ],
+      },
+      select: {
+        areaId: true,
+        period: true,
+      },
+    })
+
     const mappedAreas = areas
       .map((area) => ({
         id: area.id,
@@ -31,6 +49,9 @@ export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOption
         periods: area.checklistAvailabilities.map(
           (availability) => availability.period,
         ),
+        completedPeriods: completedReports
+          .filter((report) => report.areaId === area.id)
+          .map((report) => report.period as "MONTHLY" | "WEEKLY"),
       }))
       .sort((left, right) => {
         const leftIndex = areaOrder.indexOf(left.code)
@@ -66,4 +87,23 @@ export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOption
 
 function normalizeAreaIndex(index: number) {
   return index === -1 ? Number.MAX_SAFE_INTEGER : index
+}
+
+export async function getPreventiveProgressSummary() {
+  const options = await getEsDashboardFlowOptions()
+  let totalTasks = 0
+  let completedTasks = 0
+  
+  for (const area of options.areas) {
+    totalTasks += area.periods.length
+    if (area.completedPeriods) {
+      completedTasks += area.completedPeriods.length
+    }
+  }
+
+  return {
+    total: totalTasks,
+    completed: completedTasks,
+    percentage: totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100)
+  }
 }

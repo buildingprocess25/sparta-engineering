@@ -4,6 +4,7 @@ export type EsAreaOption = {
   name: string
   type: "OFFICE" | "WAREHOUSE"
   periods: Array<"MONTHLY" | "WEEKLY">
+  completedPeriods?: Array<"MONTHLY" | "WEEKLY">
 }
 
 export type EsDashboardFlowIssue = {
