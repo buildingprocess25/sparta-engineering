@@ -58,7 +58,7 @@ enum ReportCategory {
 model User {
   NIK                String   @id
   name               String
-  email              String?
+  email              String?  @unique
   branchName         String
   location           String?
   role               UserRole @default(ES)
@@ -100,16 +100,16 @@ model AreaChecklistAvailability {
 }
 
 model ChecklistReport {
-  id        String       @id @default(cuid())
+  id        String           @id @default(cuid())
   areaId    String
   authorId  String
-  category  ReportCategory @default(PREVENTIVE)
+  category  ReportCategory   @default(PREVENTIVE)
   period    ChecklistPeriod?
-  periodKey String?        // Format: "YYYY-Www" atau "YYYY-MM"
-  status    ReportStatus @default(PENDING_COORD)
-  isSafe    Boolean      @default(false)
-  createdAt DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime     @updatedAt @db.Timestamptz(3)
+  periodKey String? // Format: "YYYY-Www" atau "YYYY-MM"
+  status    ReportStatus     @default(PENDING_COORD)
+  isSafe    Boolean          @default(false)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @db.Timestamptz(3)
 
   area   Area            @relation(fields: [areaId], references: [id])
   author User            @relation("ReportAuthor", fields: [authorId], references: [NIK])

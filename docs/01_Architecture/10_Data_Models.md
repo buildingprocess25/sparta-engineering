@@ -27,7 +27,7 @@ di proyek ini.
 |---|---|---|
 | NIK | String | Primary key, diambil dari master data |
 | name | String | Nama user / PIC |
-| email | String? | Bisa nullable |
+| email | String? | Bisa nullable, tapi wajib unik (`@unique`) |
 | branchName | String | Nama cabang (Contoh: "BANJARMASIN") |
 | location | String? | Lokasi penempatan khusus ES |
 | role | UserRole | Enum (ES, COORD, MANAGER, REQUESTER, ADMIN_HO, SUPER_ADMIN) |
