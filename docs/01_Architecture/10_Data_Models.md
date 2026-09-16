@@ -66,10 +66,15 @@ Constraint: `@@unique([areaId, period])`.
 | id | String (cuid) | Primary key |
 | areaId | String | Relasi ke Area |
 | authorId | String | Relasi ke User pembuat laporan (ES) |
+| category | ReportCategory | Enum (PREVENTIVE, INCIDENTAL). Pembeda laporan rutin dan insidental |
+| period | ChecklistPeriod? | Enum (MONTHLY, WEEKLY). Berlaku hanya untuk PREVENTIVE |
+| periodKey | String? | Penanda periode unik (misal "2026-W37" atau "2026-09"). Berlaku hanya untuk PREVENTIVE |
 | status | ReportStatus | Enum (PENDING_COORD, PENDING_MANAGER, PENDING_REQUESTER, COMPLETED, REJECTED) |
 | isSafe | Boolean | True jika 100% aman (bypass Requester approval) |
 | createdAt | DateTime | Timestamp pembuatan laporan |
 | updatedAt | DateTime | Timestamp update terakhir |
+
+Constraint: `@@unique([areaId, period, periodKey])` untuk mencegah duplikasi laporan preventif. Laporan insidental (`period = null`) tidak dibatasi.
 
 ### ChecklistItem
 | Field | Tipe | Keterangan |

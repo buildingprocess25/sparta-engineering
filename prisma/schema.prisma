@@ -46,6 +46,11 @@ enum ItemCondition {
   TIDAK_ADA
 }
 
+enum ReportCategory {
+  PREVENTIVE
+  INCIDENTAL
+}
+
 // =========================================
 // MODELS
 // =========================================
@@ -98,6 +103,9 @@ model ChecklistReport {
   id        String       @id @default(cuid())
   areaId    String
   authorId  String
+  category  ReportCategory @default(PREVENTIVE)
+  period    ChecklistPeriod?
+  periodKey String?        // Format: "YYYY-Www" atau "YYYY-MM"
   status    ReportStatus @default(PENDING_COORD)
   isSafe    Boolean      @default(false)
   createdAt DateTime     @default(now()) @db.Timestamptz(3)
@@ -107,6 +115,7 @@ model ChecklistReport {
   author User            @relation("ReportAuthor", fields: [authorId], references: [NIK])
   items  ChecklistItem[]
 
+  @@unique([areaId, period, periodKey])
   @@index([authorId])
   @@index([areaId])
   @@index([status])
