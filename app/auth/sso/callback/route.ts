@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Create Local Session
-    await createSession(user.id, user.email, user.role)
+    await createSession(user.NIK, user.email as string, user.role)
 
     // 4. Redirect to Dashboard
     return NextResponse.redirect(new URL("/dashboard", request.url))
