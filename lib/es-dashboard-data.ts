@@ -1,5 +1,9 @@
 import { getPrisma } from "@/lib/prisma"
-import type { EsDashboardFlowOptions } from "@/lib/es-dashboard-types"
+import type {
+  EsDashboardFlowOptions,
+  EsDashboardStat,
+  EsDashboardUserContext,
+} from "@/lib/es-dashboard-types"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 
 const areaOrder = [
@@ -93,7 +97,7 @@ export async function getPreventiveProgressSummary() {
   const options = await getEsDashboardFlowOptions()
   let totalTasks = 0
   let completedTasks = 0
-  
+
   for (const area of options.areas) {
     totalTasks += area.periods.length
     if (area.completedPeriods) {
@@ -104,6 +108,50 @@ export async function getPreventiveProgressSummary() {
   return {
     total: totalTasks,
     completed: completedTasks,
-    percentage: totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100)
+    percentage:
+      totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100),
   }
+}
+
+export async function getEsDashboardUserContext(
+  userId: string,
+): Promise<EsDashboardUserContext | null> {
+  try {
+    return await getPrisma().user.findUnique({
+      where: { NIK: userId },
+      select: {
+        name: true,
+        branchName: true,
+        location: true,
+        role: true,
+      },
+    })
+  } catch (error) {
+    console.error("Failed to load ES dashboard user context", error)
+    return null
+  }
+}
+
+export async function getEsDashboardStats(): Promise<EsDashboardStat[]> {
+  const { areas } = await getEsDashboardFlowOptions()
+  const activeAreaCount = areas.length
+  const periodCount = areas.reduce(
+    (total, area) => total + area.periods.length,
+    0,
+  )
+
+  return [
+    {
+      value: String(activeAreaCount),
+      title: "Area Aktif",
+      description: "Area checklist tersedia",
+      tone: "silver",
+    },
+    {
+      value: String(periodCount),
+      title: "Periode Form",
+      description: "Monthly dan weekly aktif",
+      tone: "orange",
+    },
+  ]
 }

@@ -1,85 +1,82 @@
 import Link from "next/link"
-import Image from "next/link" // We'll just use text or simple icons for now to avoid missing assets
-import { Settings, ClipboardCheck, TrendingDown, ArrowRight, BookOpen } from "lucide-react"
+import Image from "next/image"
+import { ArrowRight, BookOpen } from "lucide-react"
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
-      {/* Navbar */}
-      <header className="w-full bg-[#0072bc] py-4 shadow-md flex justify-center items-center">
-        <div className="flex items-center space-x-4">
-          <div className="bg-white rounded-md px-2 py-1 flex items-center shadow-sm">
-            <span className="text-[#e20613] font-bold text-xl tracking-tighter">Alfamart</span>
+    <div className="min-h-screen bg-[#181715] font-sans text-white">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
+        <div className="flex items-center gap-4">
+          <div className="rounded-lg border border-white/10 bg-white p-1.5 shadow-lg shadow-black/20">
+            <Image
+              src="/assets/logoalfamart.png"
+              alt="Alfamart"
+              width={2823}
+              height={1114}
+              priority
+              className="h-8 w-auto object-contain"
+            />
           </div>
-          <div className="h-8 w-px bg-white/30" />
-          <div className="flex items-center space-x-2 text-white">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-600 flex items-center justify-center font-bold shadow-inner">
-              S
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="font-bold text-sm tracking-widest">SPARTA</span>
-              <span className="text-[10px] tracking-wider text-white/80">Engineering</span>
+          <div className="h-9 w-px bg-white/15" />
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col leading-none">
+              <span className="text-sm font-bold tracking-wide">SPARTA</span>
+              <span className="text-[10px] font-medium text-zinc-400">
+                Engineering
+              </span>
             </div>
           </div>
         </div>
+
+        <div className="h-9 w-9" aria-hidden="true" />
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center max-w-4xl mx-auto w-full">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-2">
-          Pusat Pelaporan <span className="text-[#0072bc]">Pekerjaan</span>
-        </h1>
-        <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#0072bc] mb-12">
-          Engineering <span className="text-gray-900">Toko</span>
-        </h2>
+      <main className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 py-12 sm:px-6 lg:min-h-[calc(100vh-9rem)] lg:grid-cols-[1fr_24rem]">
+        <section className="max-w-3xl">
+          <p className="mb-5 text-sm font-medium text-orange-300">
+            SPARTA Engineering
+          </p>
 
-        {/* Features Row */}
-        <div className="flex flex-wrap justify-center gap-6 md:gap-12 mb-12">
-          <div className="flex flex-col items-center">
-            <div className="mb-2 text-[#0072bc]">
-              <Settings size={32} strokeWidth={1.5} />
-            </div>
-            <span className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1 shadow-sm">
-              <span className="text-[#0072bc]">✓</span> Laporan Cepat
-            </span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="mb-2 text-[#0072bc]">
-              <ClipboardCheck size={32} strokeWidth={1.5} />
-            </div>
-            <span className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1 shadow-sm">
-              <span className="text-[#0072bc]">✓</span> Tracking Real-time
-            </span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="mb-2 text-[#0072bc]">
-              <TrendingDown size={32} strokeWidth={1.5} />
-            </div>
-            <span className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1 shadow-sm">
-              <span className="text-[#0072bc]">✓</span> Efisiensi Biaya
-            </span>
-          </div>
-        </div>
+          <h1 className="max-w-3xl text-4xl font-semibold text-balance text-white sm:text-6xl">
+            Pusat Pelaporan Engineering
+          </h1>
 
-        {/* Description */}
-        <p className="text-gray-500 max-w-2xl text-sm md:text-base leading-relaxed mb-10">
-          Dengan atau Tanpa <span className="text-[#0072bc] font-semibold">Dana Taktis</span>. Menjaga toko tetap <span className="text-[#0072bc] font-semibold">aman, nyaman, rapi,</span> dan beroperasi optimal dengan <span className="text-[#0072bc] font-semibold">biaya efisien</span> dan <span className="text-[#0072bc] font-semibold">respon cepat</span>.
-        </p>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-300 sm:text-lg">
+            Kelola checklist, temuan perbaikan, dan approval pekerjaan
+            engineering dalam satu alur kerja yang rapi dan mudah ditelusuri.
+          </p>
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center max-w-md mx-auto">
-          <Link href="/login" className="flex-1 w-full bg-[#0072bc] hover:bg-[#005a96] text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors shadow-md">
-            <ArrowRight size={18} /> Login
-          </Link>
-          <button className="flex-1 w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors shadow-sm">
-            <BookOpen size={18} /> User Manual
-          </button>
-        </div>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/login"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 text-sm font-bold text-zinc-950 shadow-lg shadow-orange-950/25 transition hover:bg-orange-400"
+            >
+              Login
+              <ArrowRight className="size-4" />
+            </Link>
+            <button className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 text-sm font-semibold text-zinc-100 transition hover:bg-white/10">
+              <BookOpen className="size-4" />
+              User Manual
+            </button>
+          </div>
+        </section>
+
+        <section className="flex justify-center lg:justify-end">
+          <div className="rounded-xl border border-white/10 bg-[#22211f] p-8 shadow-2xl shadow-black/25">
+            <Image
+              src="/assets/Building-Logo.png"
+              alt="Building Engineering"
+              width={475}
+              height={601}
+              priority
+              className="h-64 w-auto object-contain"
+            />
+          </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="py-6 text-center text-xs text-gray-400">
-        © 2026 Building & Engineering System. All rights reserved.
+      <footer className="px-4 pb-6 text-center text-xs text-zinc-500">
+        © 2026 SPARTA Engineering. Building & Engineering System.
       </footer>
     </div>
   )

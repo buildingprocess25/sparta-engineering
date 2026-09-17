@@ -1,4 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg"
+import { hash } from "bcryptjs"
 import { PrismaClient } from "../generated/prisma/index.js"
 
 const connectionString = process.env.DATABASE_URL
@@ -30,7 +31,44 @@ const areaSeeds = [
   },
 ]
 
+const demoPassword = "12345678"
+
+const headOfficeUserSeeds = [
+  {
+    NIK: "HO-ES-001",
+    name: "Demo ES Head Office",
+    email: "es@admin.com",
+    role: "ES",
+  },
+  {
+    NIK: "HO-COORD-001",
+    name: "Demo Coord Head Office",
+    email: "coord@admin.com",
+    role: "COORD",
+  },
+  {
+    NIK: "HO-MANAGER-001",
+    name: "Demo Manager Head Office",
+    email: "manager@admin.com",
+    role: "MANAGER",
+  },
+  {
+    NIK: "HO-REQUESTER-001",
+    name: "Demo Requester Head Office",
+    email: "requester@admin.com",
+    role: "REQUESTER",
+  },
+  {
+    NIK: "HO-ADMIN-001",
+    name: "Demo Admin Head Office",
+    email: "admin@admin.com",
+    role: "ADMIN_HO",
+  },
+]
+
 async function main() {
+  const demoPasswordHash = await hash(demoPassword, 10)
+
   for (const seed of areaSeeds) {
     const area = await prisma.area.upsert({
       where: { code: seed.code },
@@ -62,6 +100,31 @@ async function main() {
         },
       })
     }
+  }
+
+  for (const seed of headOfficeUserSeeds) {
+    await prisma.user.upsert({
+      where: { NIK: seed.NIK },
+      update: {
+        name: seed.name,
+        email: seed.email,
+        branchName: "HEAD OFFICE",
+        location: "HEAD OFFICE",
+        role: seed.role,
+        passwordHash: demoPasswordHash,
+        mustChangePassword: false,
+      },
+      create: {
+        NIK: seed.NIK,
+        name: seed.name,
+        email: seed.email,
+        branchName: "HEAD OFFICE",
+        location: "HEAD OFFICE",
+        role: seed.role,
+        passwordHash: demoPasswordHash,
+        mustChangePassword: false,
+      },
+    })
   }
 }
 

@@ -23,8 +23,10 @@ async function main() {
   // Tambahkan ENGINEERING ke enum SpartaModuleId jika belum ada
   try {
     await client.query(`ALTER TYPE "SpartaModuleId" ADD VALUE IF NOT EXISTS 'ENGINEERING'`);
-  } catch (e: any) {
-    console.log("Note on ALTER TYPE:", e.message);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown ALTER TYPE warning";
+    console.log("Note on ALTER TYPE:", message);
   }
 
   // Daftarkan AppModule ENGINEERING jika belum ada

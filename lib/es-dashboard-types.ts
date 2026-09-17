@@ -16,3 +16,17 @@ export type EsDashboardFlowOptions = {
   areas: EsAreaOption[]
   areaIssue?: EsDashboardFlowIssue
 }
+
+export type EsDashboardUserContext = {
+  name: string
+  branchName: string
+  location?: string | null
+  role: string
+}
+
+export type EsDashboardStat = {
+  value: string
+  title: string
+  description: string
+  tone: "silver" | "orange"
+}

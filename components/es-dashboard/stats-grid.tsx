@@ -1,15 +1,24 @@
-import type { LucideIcon } from "lucide-react"
+import { FileText, TimerReset } from "lucide-react"
 
-import { dashboardStats } from "@/components/es-dashboard/dashboard-constants"
 import { SectionHeading } from "@/components/es-dashboard/section-heading"
+import type { EsDashboardStat } from "@/lib/es-dashboard-types"
 import { cn } from "@/lib/utils"
 
-export function StatsGrid() {
+type StatsGridProps = {
+  stats: EsDashboardStat[]
+}
+
+const statIcons = {
+  silver: FileText,
+  orange: TimerReset,
+}
+
+export function StatsGrid({ stats }: StatsGridProps) {
   return (
     <section className="mt-8">
       <SectionHeading kicker="Stats Laporan" title="Ringkasan" />
       <div className="mt-3 grid grid-cols-2 gap-3">
-        {dashboardStats.map((item) => (
+        {stats.map((item) => (
           <StatCard key={item.title} {...item} />
         ))}
       </div>
@@ -17,19 +26,9 @@ export function StatsGrid() {
   )
 }
 
-function StatCard({
-  value,
-  title,
-  description,
-  tone,
-  icon: Icon,
-}: {
-  value: string
-  title: string
-  description: string
-  tone: "silver" | "orange"
-  icon: LucideIcon
-}) {
+function StatCard({ value, title, description, tone }: EsDashboardStat) {
+  const Icon = statIcons[tone]
+
   return (
     <button
       type="button"

@@ -1,6 +1,13 @@
 import { Bell } from "lucide-react"
 
-export function DashboardHeader() {
+import { ProfileMenu } from "@/components/auth/profile-menu"
+
+type DashboardHeaderProps = {
+  email?: string
+  role?: string
+}
+
+export function DashboardHeader({ email, role = "ES" }: DashboardHeaderProps) {
   return (
     <header className="flex items-center justify-between gap-4">
       <div>
@@ -18,10 +25,17 @@ export function DashboardHeader() {
             1
           </span>
         </button>
-        <div className="grid size-10 place-items-center rounded-full bg-[#111111] text-sm font-semibold text-white shadow-sm">
-          ES
-        </div>
+        <ProfileMenu initials={getInitials(role)} email={email} />
       </div>
     </header>
   )
+}
+
+function getInitials(value: string) {
+  return value
+    .split(/[\s_-]+/)
+    .map((part) => part.at(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
 }

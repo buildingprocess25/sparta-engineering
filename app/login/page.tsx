@@ -1,68 +1,93 @@
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import Image from "next/image"
+import { ArrowLeft, BadgeCheck } from "lucide-react"
+
+import { LocalLoginForm } from "@/components/auth/local-login-form"
 
 export default function LoginPage() {
-  const spartaApiUrl = process.env.SPARTA_API_URL || "http://localhost:10000"
-  // SSO launch URL for engineering module
-  const ssoLaunchUrl = `${spartaApiUrl}/v1/modules/engineering/launch`
-
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
-      {/* Navbar - Blue Header with Back button */}
-      <header className="w-full bg-[#0072bc] h-14 flex items-center justify-between px-4 sm:px-6 shadow-md">
-        <Link href="/" className="flex items-center text-white hover:text-white/80 transition-colors">
-          <ArrowLeft size={20} className="mr-2" />
-          <span className="font-semibold text-sm">Kembali</span>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,var(--muted),var(--background)_42rem)] font-sans text-white">
+      <header className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-zinc-100 transition hover:bg-white/10"
+        >
+          <ArrowLeft className="size-4" />
+          Kembali
         </Link>
 
-        {/* Logos */}
-        <div className="flex items-center space-x-3">
-          <div className="bg-white rounded px-2 py-0.5 flex items-center shadow-sm">
-            <span className="text-[#e20613] font-bold text-sm tracking-tight">Alfamart</span>
+        <div className="flex items-center gap-2">
+          <div className="rounded-lg border border-white/10 bg-white p-1.5 shadow-lg shadow-black/20">
+            <Image
+              src="/assets/logoalfamart.png"
+              alt="Alfamart"
+              width={2823}
+              height={1114}
+              priority
+              className="h-7 w-auto object-contain"
+            />
           </div>
-          <div className="flex items-center space-x-1.5 text-white">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-red-600 flex items-center justify-center font-bold text-xs shadow-inner">
-              S
+          <div className="h-8 w-px bg-white/15" />
+          <div className="flex items-center gap-2">
+            <div className="flex size-9 items-center justify-center rounded-lg border border-white/10 bg-white">
+              <Image
+                src="/assets/Building-Logo.png"
+                alt=""
+                width={475}
+                height={601}
+                className="h-7 w-auto object-contain"
+              />
             </div>
-            <div className="flex flex-col leading-[1]">
-              <span className="font-bold text-[10px] tracking-wider">SPARTA</span>
-              <span className="text-[8px] tracking-widest text-white/90">Engineering</span>
+            <div className="flex flex-col leading-none">
+              <span className="text-sm font-bold tracking-wide">SPARTA</span>
+              <span className="text-[10px] font-medium text-zinc-400">
+                Engineering
+              </span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 w-full">
-        <div className="max-w-md w-full text-center">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Login</h1>
-          <p className="text-gray-500 mb-10 text-sm">
-            Masukkan kredensial Anda untuk mengakses sistem
+      <main className="mx-auto grid min-h-[calc(100vh-8rem)] w-full max-w-5xl items-center gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_25rem]">
+        <section className="max-w-2xl">
+          <h1 className="max-w-xl text-4xl font-semibold text-balance text-white sm:text-5xl">
+            Masuk ke SPARTA Engineering
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-zinc-300">
+            Akses checklist, laporan temuan, dan proses approval dari satu
+            dashboard kerja Engineering.
           </p>
-
-          <a
-            href={ssoLaunchUrl}
-            className="block w-full bg-[#006bb3] hover:bg-[#005a96] text-white font-medium py-3 px-4 rounded-md transition-colors shadow-sm mb-8"
-          >
-            Masuk via SPARTA SSO
-          </a>
-
-          <div className="relative flex items-center justify-center w-full mb-6">
-            <div className="border-t border-gray-200 w-full"></div>
-            <div className="absolute bg-white px-4 text-[10px] font-semibold text-gray-400 tracking-wider">
-              BUTUH BANTUAN?
+          <div className="mt-8 grid gap-3 text-sm text-zinc-300 sm:grid-cols-2">
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="size-4 text-orange-400" />
+              Akses sesuai peran
+            </div>
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="size-4 text-orange-400" />
+              Status pekerjaan terlacak
             </div>
           </div>
+        </section>
 
-          <button className="w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-md transition-colors shadow-sm text-sm">
-            Lihat User Manual
-          </button>
-        </div>
+        <section className="rounded-xl border border-white/15 bg-white p-5 text-zinc-950 shadow-2xl shadow-black/30">
+          <div className="mb-6">
+            <p className="text-sm font-semibold text-orange-600">
+              AKSES MODUL
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-zinc-950">
+              Login SPARTA Engineering
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-600">
+              Gunakan email dan password akun Engineering Anda.
+            </p>
+          </div>
+
+          <LocalLoginForm />
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="py-6 text-center text-xs text-gray-400">
-        © 2026 Building & Engineering System. All rights reserved.
+      <footer className="px-4 pb-6 text-center text-xs text-zinc-500">
+        © 2026 SPARTA Engineering. Operational access only.
       </footer>
     </div>
   )
