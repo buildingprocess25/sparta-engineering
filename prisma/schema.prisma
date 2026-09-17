@@ -31,6 +31,7 @@ enum ChecklistPeriod {
 }
 
 enum ReportStatus {
+  DRAFT
   PENDING_COORD
   PENDING_MANAGER
   PENDING_REQUESTER
@@ -100,16 +101,22 @@ model AreaChecklistAvailability {
 }
 
 model ChecklistReport {
-  id        String           @id @default(cuid())
-  areaId    String
-  authorId  String
-  category  ReportCategory   @default(PREVENTIVE)
-  period    ChecklistPeriod?
-  periodKey String? // Format: "YYYY-Www" atau "YYYY-MM"
-  status    ReportStatus     @default(PENDING_COORD)
-  isSafe    Boolean          @default(false)
-  createdAt DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime         @updatedAt @db.Timestamptz(3)
+  id                String           @id @default(cuid())
+  reportCode        String?          @unique
+  areaId            String
+  authorId          String
+  category          ReportCategory   @default(PREVENTIVE)
+  formCode          String?
+  period            ChecklistPeriod?
+  periodKey         String? // Format: "YYYY-Www" atau "YYYY-MM"
+  status            ReportStatus     @default(DRAFT)
+  isSafe            Boolean          @default(false)
+  checklistPayload  Json             @default("{}")
+  drivePhotoFileIds Json             @default("[]")
+  finalPdfDriveUrl  String?
+  finalPdfFolderUrl String?
+  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
 
   area   Area            @relation(fields: [areaId], references: [id])
   author User            @relation("ReportAuthor", fields: [authorId], references: [NIK])
@@ -119,6 +126,15 @@ model ChecklistReport {
   @@index([authorId])
   @@index([areaId])
   @@index([status])
+  @@index([reportCode])
+}
+
+model GoogleDriveFolderCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  folderId  String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 }
 
 model ChecklistItem {

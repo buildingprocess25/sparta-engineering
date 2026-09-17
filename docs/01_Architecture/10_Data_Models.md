@@ -64,17 +64,32 @@ Constraint: `@@unique([areaId, period])`.
 | Field | Tipe | Keterangan |
 |---|---|---|
 | id | String (cuid) | Primary key |
+| reportCode | String? | Unique operational report code generated when the draft is reserved |
+| formCode | String? | Form code such as `FRM_TSM_003` |
 | areaId | String | Relasi ke Area |
 | authorId | String | Relasi ke User pembuat laporan (ES) |
 | category | ReportCategory | Enum (PREVENTIVE, INCIDENTAL). Pembeda laporan rutin dan insidental |
 | period | ChecklistPeriod? | Enum (MONTHLY, WEEKLY). Berlaku hanya untuk PREVENTIVE |
 | periodKey | String? | Penanda periode unik (misal "2026-W37" atau "2026-09"). Berlaku hanya untuk PREVENTIVE |
-| status | ReportStatus | Enum (PENDING_COORD, PENDING_MANAGER, PENDING_REQUESTER, COMPLETED, REJECTED) |
+| status | ReportStatus | Enum (DRAFT, PENDING_COORD, PENDING_MANAGER, PENDING_REQUESTER, COMPLETED, REJECTED). Default: `DRAFT` |
 | isSafe | Boolean | True jika 100% aman (bypass Requester approval) |
+| checklistPayload | Json | One JSON object containing submitted checklist item results |
+| drivePhotoFileIds | Json | Array of Google Drive file IDs uploaded for the report |
+| finalPdfDriveUrl | String? | Future final PDF Drive URL |
+| finalPdfFolderUrl | String? | Future final PDF folder URL |
 | createdAt | DateTime | Timestamp pembuatan laporan |
 | updatedAt | DateTime | Timestamp update terakhir |
 
 Constraint: `@@unique([areaId, period, periodKey])` untuk mencegah duplikasi laporan preventif. Laporan insidental (`period = null`) tidak dibatasi.
+
+### GoogleDriveFolderCache
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| cacheKey | String | Unique stable folder cache key |
+| folderId | String | Google Drive folder ID |
+| createdAt | DateTime | Timestamp pembuatan |
+| updatedAt | DateTime | Timestamp update terakhir |
 
 ### ChecklistItem
 | Field | Tipe | Keterangan |

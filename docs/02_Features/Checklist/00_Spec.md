@@ -48,3 +48,18 @@
 - Model utama yang dibutuhkan: `ChecklistReport`, `ChecklistItem`, `Area`, `User`.
 - Status approval: `PENDING_COORD`, `PENDING_MANAGER`, `PENDING_REQUESTER`, `COMPLETED`, `REJECTED`.
 *(Detail field akan didokumentasikan lebih lanjut di `docs/01_Architecture/10_Data_Models.md`)*
+
+## FRM_TSM_003 Checklist Ruangan
+
+`FRM_TSM_003` is the first digital checklist form. It is available for Office Monthly and warehouse-family Monthly flows.
+
+The digital condition choices are:
+- `BAIK`
+- `RUSAK`
+- `TIDAK_ADA`
+
+`BAIK` and `RUSAK` require at least one uploaded photo. `TIDAK_ADA` does not require a photo.
+
+Checklist item results are stored as one JSON payload on `ChecklistReport.checklistPayload`; this form does not create one `ChecklistItem` row per item.
+
+Photos are uploaded to Google Drive only after a draft report has been reserved. Photo URLs shown in the application use `/api/photos/[fileId]`.

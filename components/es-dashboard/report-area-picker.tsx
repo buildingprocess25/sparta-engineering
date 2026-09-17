@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Building2, CheckCircle2, Warehouse } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -39,6 +40,8 @@ export function ReportAreaPicker({
   const hasAreas = areas.length > 0
   const requiresPeriod = reportType === "checklist"
   const canContinue = Boolean(selectedArea && (!requiresPeriod || period))
+  const canOpenMonthlyChecklist =
+    reportType === "checklist" && Boolean(selectedArea && period === "MONTHLY")
 
   const isPeriodCompleted = (area: EsAreaOption, p: Period) =>
     reportType === "checklist" && Boolean(area.completedPeriods?.includes(p))
@@ -160,15 +163,33 @@ export function ReportAreaPicker({
         </section>
       ) : null}
 
-      <Button
-        disabled
-        className={cn(
-          "h-12 bg-[#d8d8d8] text-[#777777]",
-          canContinue && "bg-[#111111] text-white opacity-80",
-        )}
-      >
-        Form detail belum tersedia
-      </Button>
+      {canOpenMonthlyChecklist && selectedArea ? (
+        <Link
+          href={{
+            pathname: "/dashboard/reports/new/checklist/frm-tsm-003",
+            query: {
+              areaId: selectedArea.id,
+              period: "MONTHLY",
+              ...(workPermit ? { workPermit } : {}),
+            },
+          }}
+          className="inline-flex h-12 items-center justify-center rounded-lg bg-[#111111] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#242424]"
+        >
+          Lanjut ke FRM_TSM_003
+        </Link>
+      ) : (
+        <Button
+          disabled
+          className={cn(
+            "h-12 bg-[#d8d8d8] text-[#777777]",
+            canContinue && "bg-[#111111] text-white opacity-80",
+          )}
+        >
+          {period === "WEEKLY"
+            ? "Form weekly belum tersedia"
+            : "Form detail belum tersedia"}
+        </Button>
+      )}
     </div>
   )
 }
