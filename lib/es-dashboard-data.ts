@@ -77,13 +77,18 @@ export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOption
     const mappedAreas = areas
       .map((area) => {
         const completedPeriods: Array<"MONTHLY" | "WEEKLY"> = []
+        const completedFormsSet = new Set<string>()
         
         for (const period of area.checklistAvailabilities.map(a => a.period)) {
           const periodReports = completedReports.filter(
             r => r.areaId === area.id && r.period === period && submittedChecklistStatuses.has(r.status)
           )
           
-          const requiredForms = getChecklistForms(area.type, period)
+          periodReports.forEach(r => {
+            if (r.formCode) completedFormsSet.add(r.formCode)
+          })
+
+          const requiredForms = getChecklistForms(area.type, period).filter(f => !f.id.endsWith("-repair"))
           const requiredCount = Math.max(1, requiredForms.length)
           const completedCount = new Set(periodReports.map(r => r.formCode || "unknown")).size
           
@@ -99,6 +104,7 @@ export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOption
           type: area.type,
           periods: area.checklistAvailabilities.map(a => a.period),
           completedPeriods,
+          completedForms: Array.from(completedFormsSet),
         }
       })
       .sort((left, right) => {

@@ -73,6 +73,25 @@ export default async function FrmTsm004Page({
   }
 
   const periodKey = getCurrentPeriodKey("MONTHLY")
+  const existingReport = await getPrisma().checklistReport.findUnique({
+    where: {
+      areaId_period_periodKey_formCode: {
+        areaId: area.id,
+        period: "MONTHLY",
+        periodKey,
+        formCode: "FRM_TSM_004_REPAIR",
+      }
+    },
+    select: { status: true }
+  })
+
+  if (existingReport && existingReport.status !== "DRAFT") {
+    return unavailable(
+      "Laporan sudah dibuat",
+      "Laporan untuk area dan periode ini sudah pernah disubmit."
+    )
+  }
+
   const draft = await reserveChecklistDraft(
     createPrismaChecklistDraftRepository(),
     {

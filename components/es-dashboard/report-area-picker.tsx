@@ -216,15 +216,23 @@ export function ReportAreaPicker({
             </div>
           </div>
           <div className="mt-3 grid grid-cols-1 gap-3">
-            {availableForms.map((form) => (
-              <FlowOptionButton
-                key={form.id}
-                title={form.title}
-                description={form.description}
-                active={formId === form.id}
-                onClick={() => setFormId(form.id)}
-              />
-            ))}
+            {availableForms.map((form) => {
+              const formCode = form.id.replace(/-/g, "_").toUpperCase()
+              const isFormCompleted = selectedArea?.completedForms?.includes(formCode)
+              
+              return (
+                <FlowOptionButton
+                  key={form.id}
+                  title={form.title}
+                  description={isFormCompleted ? "Sudah disubmit" : form.description}
+                  active={formId === form.id}
+                  disabled={isFormCompleted}
+                  onClick={() => {
+                    if (!isFormCompleted) setFormId(form.id)
+                  }}
+                />
+              )
+            })}
           </div>
         </section>
       ) : null}
