@@ -23,7 +23,7 @@ export const CHECKLIST_FORMS: Record<
       {
         id: "frm-tsm-002",
         title: "SAT/FRM/TSM/002_REV_000_211022",
-        description: "Checklist Peralatan",
+        description: "Checklist Warehouse / Peralatan",
       },
       {
         id: "frm-tsm-004",
@@ -38,6 +38,11 @@ export const CHECKLIST_FORMS: Record<
         id: "frm-tsm-003",
         title: "SAT/FRM/TSM/003 REV 000 211022",
         description: "Checklist Ruangan",
+      },
+      {
+        id: "frm-tsm-002",
+        title: "SAT/FRM/TSM/002_REV_000_211022",
+        description: "Checklist Warehouse / Peralatan",
       },
     ],
     WEEKLY: [],

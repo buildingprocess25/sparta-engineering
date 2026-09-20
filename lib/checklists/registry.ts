@@ -1,3 +1,4 @@
+import { FRM_TSM_002_CONFIG } from "./frm-tsm-002"
 import { FRM_TSM_003_CONFIG } from "./frm-tsm-003"
 import { FRM_TSM_005_CONFIG } from "./frm-tsm-005"
 
@@ -7,6 +8,9 @@ export function getChecklistItem(formCode: string, itemId: string) {
 }
 
 export function getChecklistConfig(formCode: string) {
+  if (formCode === "FRM_TSM_002") {
+    return FRM_TSM_002_CONFIG
+  }
   if (formCode === "FRM_TSM_003") {
     return FRM_TSM_003_CONFIG
   }
