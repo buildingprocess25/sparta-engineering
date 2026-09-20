@@ -243,16 +243,16 @@ export function FrmTsm004Form({
         </p>
       </div>
 
-      <div className="flex justify-end pt-4">
+      <div className="sticky bottom-0 -mx-5 mt-1 bg-[#f5f5f3]/95 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
         <Button
           type="submit"
           disabled={isPending}
-          className="h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 font-semibold text-white shadow-md hover:from-blue-700 hover:to-blue-800"
+          className="h-12 w-full bg-[#111111] text-white shadow-[0_8px_18px_rgba(17,17,17,0.18)] hover:bg-[#242424]"
         >
           {isPending ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <Save className="mr-2 h-5 w-5" />
+            <Save className="mr-2 h-4 w-4" />
           )}
           Simpan Laporan
         </Button>

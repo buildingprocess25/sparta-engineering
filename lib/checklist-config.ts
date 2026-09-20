@@ -40,9 +40,19 @@ export const CHECKLIST_FORMS: Record<
         description: "Checklist Ruangan",
       },
       {
+        id: "frm-tsm-005",
+        title: "SAT/FRM/TSM/005 REV 211022",
+        description: "Checklist Maintenance",
+      },
+      {
         id: "frm-tsm-002",
         title: "SAT/FRM/TSM/002_REV_000_211022",
         description: "Checklist Warehouse / Peralatan",
+      },
+      {
+        id: "frm-tsm-004",
+        title: "SAT/FRM/TSM/004_REV_000_211022",
+        description: "Checklist Main Cable",
       },
     ],
     WEEKLY: [],
