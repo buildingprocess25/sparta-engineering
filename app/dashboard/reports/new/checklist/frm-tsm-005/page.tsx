@@ -6,7 +6,6 @@ import { reserveChecklistDraft } from "@/lib/reports/drive-draft-service"
 import { createPrismaChecklistDraftRepository } from "@/lib/reports/drive-draft-prisma-repository"
 import { getSession } from "@/lib/session"
 import { submitFrmTsm005Checklist } from "./actions"
-import { FRM_TSM_005_CONFIG } from "@/lib/checklists/frm-tsm-005"
 
 export const dynamic = "force-dynamic"
 
@@ -100,7 +99,7 @@ export default async function FrmTsm005Page({
           user ? `${user.name} (${user.NIK})` : session.userId
         }
         watermarkUserRole={user?.role ?? session.role}
-        config={FRM_TSM_005_CONFIG}
+        formCode="FRM_TSM_005"
         submitAction={submitFrmTsm005Checklist}
       />
     </ReportFlowShell>

@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation"
 import { CameraCaptureButton } from "@/components/es-dashboard/camera-capture-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { getChecklistConfig } from "@/lib/checklists/registry"
 import type {
   ChecklistCondition,
   ChecklistPayload,
@@ -52,7 +53,7 @@ export type SharedChecklistFormProps = {
   periodKey: string
   watermarkUserLabel: string
   watermarkUserRole: string
-  config: ChecklistConfig
+  formCode: string
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -86,11 +87,14 @@ export function SharedChecklistForm({
   periodKey,
   watermarkUserLabel,
   watermarkUserRole,
-  config,
+  formCode,
   submitAction,
 }: SharedChecklistFormProps) {
   const router = useRouter()
+  const config = React.useMemo(() => getChecklistConfig(formCode), [formCode])
+  
   const [items, setItems] = React.useState<Record<string, ItemState>>(() => {
+    if (!config) return {}
     return Object.fromEntries(
       config.items.map((item) => [
         item.id,
@@ -115,6 +119,14 @@ export function SharedChecklistForm({
     const timeoutId = window.setTimeout(() => setUploadNotice(undefined), 3200)
     return () => window.clearTimeout(timeoutId)
   }, [uploadNotice])
+
+  if (!config) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10">
+        <p className="text-[#686868]">Form config tidak ditemukan.</p>
+      </div>
+    )
+  }
 
   const normalizedQuery = searchQuery.trim().toLowerCase()
   const visibleItems = normalizedQuery
@@ -199,7 +211,7 @@ export function SharedChecklistForm({
       JSON.stringify({
         kind: "CHECKLIST_ITEM",
         reportCode,
-        formCode: config.formCode,
+        formCode: config!.formCode,
         itemId,
         sequence,
       })
@@ -209,12 +221,12 @@ export function SharedChecklistForm({
 
   function buildPayload(): ChecklistPayload {
     return {
-      formCode: config.formCode,
-      formName: config.formName,
+      formCode: config!.formCode,
+      formName: config!.formName,
       areaCode,
       period: "MONTHLY",
       periodKey,
-      items: config.items.map((item) => ({
+      items: config!.items.map((item) => ({
         id: item.id,
         label: item.label,
         condition: items[item.id].condition ?? "TIDAK_ADA",
