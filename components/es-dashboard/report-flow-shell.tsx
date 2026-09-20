@@ -1,6 +1,6 @@
-import Link from "next/link"
 import type { ReactNode } from "react"
-import { ArrowLeft } from "lucide-react"
+
+import { ReportBackButton } from "@/components/es-dashboard/report-back-button"
 
 type ReportFlowShellProps = {
   eyebrow: string
@@ -21,13 +21,7 @@ export function ReportFlowShell({
       className="min-h-svh overflow-x-hidden bg-[#f5f5f3] pb-24 text-[#111111]"
     >
       <div className="mx-auto flex min-h-svh w-full max-w-md flex-col px-5 pb-8 pt-[max(1.25rem,env(safe-area-inset-top))] sm:max-w-lg">
-        <Link
-          href="/dashboard"
-          className="mb-5 inline-flex w-fit items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[#4c4c4c] hover:text-[#111111]"
-        >
-          <ArrowLeft aria-hidden="true" />
-          Dashboard
-        </Link>
+        <ReportBackButton />
 
         <header className="rounded-2xl bg-[#111111] p-5 text-white shadow-xl shadow-black/15">
           <p className="text-xs font-semibold text-[#ffb46f]">{eyebrow}</p>

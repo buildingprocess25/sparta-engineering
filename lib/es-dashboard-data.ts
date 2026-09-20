@@ -5,6 +5,7 @@ import type {
   EsDashboardUserContext,
 } from "@/lib/es-dashboard-types"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
+import { getChecklistForms } from "@/lib/checklist-config"
 
 const areaOrder = [
   "office",
@@ -15,6 +16,33 @@ const areaOrder = [
   "store_hub",
   "gudang_anak",
 ]
+
+type ChecklistCompletionReport = {
+  areaId: string
+  period: "MONTHLY" | "WEEKLY" | null
+  status: string
+  formCode?: string | null
+}
+
+const submittedChecklistStatuses = new Set([
+  "PENDING_COORD",
+  "PENDING_MANAGER",
+  "PENDING_REQUESTER",
+  "COMPLETED",
+  "REJECTED",
+])
+
+export function getCompletedChecklistPeriods(
+  reports: ChecklistCompletionReport[],
+): Array<{ areaId: string; period: "MONTHLY" | "WEEKLY" }> {
+  return reports.flatMap((report) => {
+    if (!report.period || !submittedChecklistStatuses.has(report.status)) {
+      return []
+    }
+
+    return [{ areaId: report.areaId, period: report.period }]
+  })
+}
 
 export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOptions> {
   try {
@@ -41,22 +69,38 @@ export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOption
       select: {
         areaId: true,
         period: true,
+        status: true,
+        formCode: true,
       },
     })
 
     const mappedAreas = areas
-      .map((area) => ({
-        id: area.id,
-        code: area.code,
-        name: area.name,
-        type: area.type,
-        periods: area.checklistAvailabilities.map(
-          (availability) => availability.period,
-        ),
-        completedPeriods: completedReports
-          .filter((report) => report.areaId === area.id)
-          .map((report) => report.period as "MONTHLY" | "WEEKLY"),
-      }))
+      .map((area) => {
+        const completedPeriods: Array<"MONTHLY" | "WEEKLY"> = []
+        
+        for (const period of area.checklistAvailabilities.map(a => a.period)) {
+          const periodReports = completedReports.filter(
+            r => r.areaId === area.id && r.period === period && submittedChecklistStatuses.has(r.status)
+          )
+          
+          const requiredForms = getChecklistForms(area.type, period)
+          const requiredCount = Math.max(1, requiredForms.length)
+          const completedCount = new Set(periodReports.map(r => r.formCode || "unknown")).size
+          
+          if (completedCount >= requiredCount) {
+            completedPeriods.push(period)
+          }
+        }
+
+        return {
+          id: area.id,
+          code: area.code,
+          name: area.name,
+          type: area.type,
+          periods: area.checklistAvailabilities.map(a => a.period),
+          completedPeriods,
+        }
+      })
       .sort((left, right) => {
         const leftIndex = areaOrder.indexOf(left.code)
         const rightIndex = areaOrder.indexOf(right.code)

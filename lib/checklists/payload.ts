@@ -1,4 +1,12 @@
-export const CHECKLIST_CONDITIONS = ["BAIK", "RUSAK", "TIDAK_ADA"] as const
+export const CHECKLIST_CONDITIONS = [
+  "ADJUST_OR_ADD",
+  "BAIK",
+  "CLEAN",
+  "REPAIR",
+  "RUSAK",
+  "TIDAK_ADA",
+  "URGENT",
+] as const
 
 export type ChecklistCondition = (typeof CHECKLIST_CONDITIONS)[number]
 
@@ -30,7 +38,7 @@ export type ChecklistPayloadValidationResult = {
 }
 
 const CONDITION_SET = new Set<string>(CHECKLIST_CONDITIONS)
-const PHOTO_REQUIRED_CONDITIONS = new Set<ChecklistCondition>(["BAIK", "RUSAK"])
+const PHOTO_REQUIRED_CONDITIONS = new Set<ChecklistCondition>(["RUSAK"])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null

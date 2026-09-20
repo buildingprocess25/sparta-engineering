@@ -1,4 +1,3 @@
-import { BottomNavigation } from "@/components/es-dashboard/bottom-navigation"
 import { FrmTsm003Form } from "@/components/es-dashboard/frm-tsm-003-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
@@ -20,18 +19,15 @@ type FrmTsm003PageProps = {
 
 function unavailable(title: string, description: string) {
   return (
-    <>
-      <ReportFlowShell
-        eyebrow="FRM_TSM_003"
-        title={title}
-        description={description}
-      >
-        <div className="rounded-2xl border border-[#dedede] bg-white p-4 text-sm leading-6 text-[#686868] shadow-sm">
-          Kembali ke pemilihan area untuk membuka form checklist yang tersedia.
-        </div>
-      </ReportFlowShell>
-      <BottomNavigation />
-    </>
+    <ReportFlowShell
+      eyebrow="FRM_TSM_003"
+      title={title}
+      description={description}
+    >
+      <div className="rounded-2xl border border-[#dedede] bg-white p-4 text-sm leading-6 text-[#686868] shadow-sm">
+        Kembali ke pemilihan area untuk membuka form checklist yang tersedia.
+      </div>
+    </ReportFlowShell>
   )
 }
 
@@ -57,10 +53,16 @@ export default async function FrmTsm003Page({
     )
   }
 
-  const area = await getPrisma().area.findUnique({
-    where: { id: params.areaId },
-    select: { id: true, code: true, name: true },
-  })
+  const [area, user] = await Promise.all([
+    getPrisma().area.findUnique({
+      where: { id: params.areaId },
+      select: { id: true, code: true, name: true },
+    }),
+    getPrisma().user.findUnique({
+      where: { NIK: session.userId },
+      select: { NIK: true, name: true, role: true },
+    }),
+  ])
 
   if (!area) {
     return unavailable(
@@ -83,21 +85,22 @@ export default async function FrmTsm003Page({
   )
 
   return (
-    <>
-      <ReportFlowShell
-        eyebrow="FRM_TSM_003"
-        title="Checklist Ruangan"
-        description="Pilih kondisi setiap item. Baik dan rusak wajib memakai foto sebagai bukti."
-      >
-        <FrmTsm003Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
-          areaName={area.name}
-          periodKey={periodKey}
-          submitAction={submitFrmTsm003Checklist}
-        />
-      </ReportFlowShell>
-      <BottomNavigation />
-    </>
+    <ReportFlowShell
+      eyebrow="FRM_TSM_003"
+      title="Checklist Ruangan"
+      description="Pilih kondisi setiap item. Baik dan rusak wajib memakai foto sebagai bukti."
+    >
+      <FrmTsm003Form
+        reportCode={draft.reportCode}
+        areaCode={area.code}
+        areaName={area.name}
+        periodKey={periodKey}
+        watermarkUserLabel={
+          user ? `${user.name} (${user.NIK})` : session.userId
+        }
+        watermarkUserRole={user?.role ?? session.role}
+        submitAction={submitFrmTsm003Checklist}
+      />
+    </ReportFlowShell>
   )
 }

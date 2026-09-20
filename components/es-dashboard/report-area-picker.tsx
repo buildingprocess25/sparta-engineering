@@ -2,10 +2,20 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Building2, CheckCircle2, Warehouse } from "lucide-react"
+import {
+  Building2,
+  CheckCircle2,
+  Warehouse,
+  Factory,
+  Boxes,
+  Package,
+  Store,
+  Box,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { FlowOptionButton } from "@/components/es-dashboard/flow-option-button"
+import { getChecklistForms } from "@/lib/checklist-config"
 import type {
   EsAreaOption,
   EsDashboardFlowIssue,
@@ -27,6 +37,18 @@ const periodLabels: Record<Period, string> = {
   WEEKLY: "Weekly",
 }
 
+function getAreaIcon(name: string) {
+  const lower = name.toLowerCase()
+  if (lower.includes("office")) return Building2
+  if (lower.includes("whc")) return Factory
+  if (lower.includes("wh")) return Warehouse
+  if (lower.includes("depo")) return Boxes
+  if (lower.includes("bulky")) return Package
+  if (lower.includes("store hub")) return Store
+  if (lower.includes("gudang anak")) return Box
+  return Warehouse
+}
+
 export function ReportAreaPicker({
   areas,
   areaIssue,
@@ -35,13 +57,23 @@ export function ReportAreaPicker({
 }: ReportAreaPickerProps) {
   const [areaId, setAreaId] = React.useState<string>()
   const [period, setPeriod] = React.useState<Period>()
+  const [formId, setFormId] = React.useState<string>()
 
   const selectedArea = areas.find((area) => area.id === areaId)
+  const availableForms = selectedArea && period ? getChecklistForms(selectedArea.type, period) : []
+  
   const hasAreas = areas.length > 0
   const requiresPeriod = reportType === "checklist"
-  const canContinue = Boolean(selectedArea && (!requiresPeriod || period))
-  const canOpenMonthlyChecklist =
-    reportType === "checklist" && Boolean(selectedArea && period === "MONTHLY")
+  const canContinue = Boolean(
+    selectedArea && (!requiresPeriod || (period && (!availableForms.length || formId)))
+  )
+  const canOpenChecklistForm =
+    reportType === "checklist" && Boolean(selectedArea && period && (formId || !availableForms.length))
+
+  function selectPeriod(nextPeriod: Period) {
+    setPeriod(nextPeriod)
+    setFormId(undefined)
+  }
 
   const isPeriodCompleted = (area: EsAreaOption, p: Period) =>
     reportType === "checklist" && Boolean(area.completedPeriods?.includes(p))
@@ -60,6 +92,7 @@ export function ReportAreaPicker({
         ? nextArea.periods[0]
         : undefined,
     )
+    setFormId(undefined)
   }
 
   return (
@@ -82,7 +115,7 @@ export function ReportAreaPicker({
         {hasAreas ? (
           <div className="mt-3 grid grid-cols-2 gap-3">
             {areas.map((area) => {
-              const Icon = area.type === "OFFICE" ? Building2 : Warehouse
+              const Icon = getAreaIcon(area.name)
               const isCompleted = isAreaFullyCompleted(area)
 
               return (
@@ -154,7 +187,7 @@ export function ReportAreaPicker({
                   active={period === item}
                   disabled={isCompleted}
                   onClick={() => {
-                    if (!isCompleted) setPeriod(item)
+                    if (!isCompleted) selectPeriod(item)
                   }}
                 />
               )
@@ -163,19 +196,46 @@ export function ReportAreaPicker({
         </section>
       ) : null}
 
-      {canOpenMonthlyChecklist && selectedArea ? (
+      {requiresPeriod && selectedArea && period && availableForms.length > 0 ? (
+        <section>
+          <div className="flex items-start gap-3">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
+              5
+            </span>
+            <div>
+              <h2 className="font-semibold text-[#111111]">Pilih Form Checklist</h2>
+              <p className="mt-1 text-sm leading-5 text-[#686868]">
+                Pilih spesifik form checklist yang akan diisi.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-3">
+            {availableForms.map((form) => (
+              <FlowOptionButton
+                key={form.id}
+                title={form.title}
+                description={form.description}
+                active={formId === form.id}
+                onClick={() => setFormId(form.id)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {canOpenChecklistForm && selectedArea ? (
         <Link
           href={{
-            pathname: "/dashboard/reports/new/checklist/frm-tsm-003",
+            pathname: `/dashboard/reports/new/checklist/${formId || "frm-tsm-003"}`,
             query: {
               areaId: selectedArea.id,
-              period: "MONTHLY",
+              period: period,
               ...(workPermit ? { workPermit } : {}),
             },
           }}
           className="inline-flex h-12 items-center justify-center rounded-lg bg-[#111111] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#242424]"
         >
-          Lanjut ke FRM_TSM_003
+          Lanjutkan
         </Link>
       ) : (
         <Button
@@ -185,9 +245,11 @@ export function ReportAreaPicker({
             canContinue && "bg-[#111111] text-white opacity-80",
           )}
         >
-          {period === "WEEKLY"
-            ? "Form weekly belum tersedia"
-            : "Form detail belum tersedia"}
+          {requiresPeriod && !period
+            ? "Pilih periode form"
+            : requiresPeriod && period && !formId && availableForms.length > 0
+              ? "Pilih form checklist"
+              : "Form detail belum tersedia"}
         </Button>
       )}
     </div>

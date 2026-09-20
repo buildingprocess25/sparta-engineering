@@ -40,11 +40,13 @@ enum ReportStatus {
 }
 
 enum ItemCondition {
+  ADJUST_OR_ADD
   BAIK
   CLEAN
   REPAIR
   RUSAK
   TIDAK_ADA
+  URGENT
 }
 
 enum ReportCategory {
@@ -122,7 +124,7 @@ model ChecklistReport {
   author User            @relation("ReportAuthor", fields: [authorId], references: [NIK])
   items  ChecklistItem[]
 
-  @@unique([areaId, period, periodKey])
+  @@unique([areaId, period, periodKey, formCode])
   @@index([authorId])
   @@index([areaId])
   @@index([status])

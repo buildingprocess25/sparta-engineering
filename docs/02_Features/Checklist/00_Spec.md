@@ -63,3 +63,41 @@ The digital condition choices are:
 Checklist item results are stored as one JSON payload on `ChecklistReport.checklistPayload`; this form does not create one `ChecklistItem` row per item.
 
 Photos are uploaded to Google Drive only after a draft report has been reserved. Photo URLs shown in the application use `/api/photos/[fileId]`.
+
+## ES Checklist UX Refinement
+
+The ES checklist form should follow the interaction pattern of the Sparta
+Maintenance checklist reference while keeping SPARTA Engineering's black,
+silver, orange, and white visual language.
+
+Required behavior:
+- Checklist entry uses a compact mobile-first wizard surface with a header,
+  progress summary, search field, category accordion, segmented condition
+  controls, and a sticky bottom continue/save action.
+- Layout and interaction may mirror Sparta Maintenance, but checklist data,
+  area names, and SPARTA Engineering brand styling remain owned by this
+  project.
+- Condition choices remain `BAIK`, `RUSAK`, and `TIDAK_ADA`; displayed labels
+  are `Baik`, `Rusak`, and `Tidak Ada`.
+- `BAIK` and `RUSAK` require direct camera capture evidence. The upload control
+  must request browser camera permission and open a live camera preview instead
+  of starting from file storage.
+- Captured camera images continue to upload through the existing photo upload
+  endpoint and are stored as Google Drive-backed photo IDs/URLs.
+- Every captured checklist photo must be watermarked into the uploaded image.
+  The watermark uses real checklist context and contains only:
+  `SPARTA Engineering`, capture date/time, `Oleh: <user> - <role>`, and
+  `Area: <area name>`.
+- Uploaded photo previews appear inline as the image itself, without a separate
+  "foto tersimpan" status chip. Tapping the preview opens a dark fullscreen
+  image viewer with a close control.
+- Missing required photo state must be communicated through disabled submit and
+  upload status, not through an orange warning chip/card inside the item.
+- While an ES user is creating or filling a report under
+  `/dashboard/reports/new/**`, the bottom navigation must be hidden so the
+  report flow owns the screen.
+- Report flow back navigation moves one browser-history step at a time. It must
+  not hardcode "Back to Dashboard" from every checklist step.
+- Area/period completion indicators must only count submitted reports. `DRAFT`
+  reports reserved for photo upload or in-progress form filling must not mark an
+  area or period as `Selesai`.

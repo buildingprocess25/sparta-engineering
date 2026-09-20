@@ -1,10 +1,36 @@
 "use client"
 
 import * as React from "react"
-import { Camera, Check, Loader2, Send, X } from "lucide-react"
+import Image from "next/image"
+import {
+  ArrowUpToLine,
+  Bath,
+  Check,
+  ChevronDown,
+  ClipboardCheck,
+  DoorClosed,
+  Droplet,
+  Fan,
+  Grid,
+  Info,
+  Lightbulb,
+  Loader2,
+  Plug,
+  Search,
+  Send,
+  Square,
+  ToggleRight,
+  Trash2,
+  Waves,
+  Wind,
+  X,
+  Zap,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 
+import { CameraCaptureButton } from "@/components/es-dashboard/camera-capture-button"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   FRM_TSM_003_FORM_CODE,
   FRM_TSM_003_ITEMS,
@@ -14,6 +40,12 @@ import type {
   ChecklistPayload,
   ChecklistPhoto,
 } from "@/lib/checklists/payload"
+import {
+  conditionRequiresPhoto,
+  getPayloadPhotosForCondition,
+  nextChecklistPhotoState,
+} from "@/lib/checklists/photo-state"
+import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
 
 type FrmTsm003FormProps = {
@@ -21,6 +53,8 @@ type FrmTsm003FormProps = {
   areaCode: string
   areaName: string
   periodKey: string
+  watermarkUserLabel: string
+  watermarkUserRole: string
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -31,23 +65,62 @@ type FrmTsm003FormProps = {
 }
 
 type ItemState = {
-  condition: ChecklistCondition
+  condition?: ChecklistCondition
   photos: ChecklistPhoto[]
   notes: string
   uploading: boolean
 }
 
+type UploadNotice = {
+  tone: "loading" | "success" | "error"
+  message: string
+}
+
+type PreviewPhoto = {
+  itemLabel: string
+  url: string
+}
+
 const conditionLabels: Record<ChecklistCondition, string> = {
-  BAIK: "Baik",
-  RUSAK: "Rusak",
-  TIDAK_ADA: "Tidak ada",
+  ADJUST_OR_ADD: "Adjust/Add (A)",
+  CLEAN: "Clean (C)",
+  REPAIR: "Repair (R)",
+  URGENT: "Urgent (U)",
+  BAIK: "Baik (V)",
+  RUSAK: "Rusak (X)",
+  TIDAK_ADA: "Tidak Ada (T)",
+}
+
+const conditionOptions: ChecklistCondition[] = [
+  "ADJUST_OR_ADD",
+  "CLEAN",
+  "REPAIR",
+  "URGENT",
+  "BAIK",
+  "RUSAK",
+  "TIDAK_ADA",
+]
+
+const ITEM_ICONS: Record<string, React.ElementType> = {
+  Wind,
+  Fan,
+  ToggleRight,
+  Lightbulb,
+  Zap,
+  Plug,
+  Square,
+  Grid,
+  DoorClosed,
+  ArrowUpToLine,
+  Bath,
+  Droplet,
+  Waves,
 }
 
 const initialItems = Object.fromEntries(
   FRM_TSM_003_ITEMS.map((item) => [
     item.id,
     {
-      condition: "TIDAK_ADA",
       photos: [],
       notes: "",
       uploading: false,
@@ -55,29 +128,54 @@ const initialItems = Object.fromEntries(
   ])
 ) as Record<string, ItemState>
 
-function requiresPhoto(condition: ChecklistCondition) {
-  return condition === "BAIK" || condition === "RUSAK"
-}
-
 export function FrmTsm003Form({
   reportCode,
   areaCode,
   areaName,
   periodKey,
+  watermarkUserLabel,
+  watermarkUserRole,
   submitAction,
 }: FrmTsm003FormProps) {
   const router = useRouter()
-  const [items, setItems] =
-    React.useState<Record<string, ItemState>>(initialItems)
+  const [items, setItems] = React.useState<Record<string, ItemState>>(
+    () => initialItems
+  )
   const [errors, setErrors] = React.useState<string[]>([])
+  const [uploadNotice, setUploadNotice] = React.useState<UploadNotice>()
+  const [previewPhoto, setPreviewPhoto] = React.useState<PreviewPhoto>()
+  const [searchQuery, setSearchQuery] = React.useState("")
+  const [isCategoryOpen, setIsCategoryOpen] = React.useState(true)
   const [isPending, startTransition] = React.useTransition()
 
+  React.useEffect(() => {
+    if (!uploadNotice || uploadNotice.tone === "loading") return
+
+    const timeoutId = window.setTimeout(() => setUploadNotice(undefined), 3200)
+    return () => window.clearTimeout(timeoutId)
+  }, [uploadNotice])
+
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+  const visibleItems = normalizedQuery
+    ? FRM_TSM_003_ITEMS.filter((item) =>
+        item.label.toLowerCase().includes(normalizedQuery)
+      )
+    : FRM_TSM_003_ITEMS
+  const evaluatedCount = FRM_TSM_003_ITEMS.filter(
+    (item) => items[item.id].condition
+  ).length
+  const totalCount = FRM_TSM_003_ITEMS.length
+  const progressPercentage = Math.round((evaluatedCount / totalCount) * 100)
   const missingPhotoCount = FRM_TSM_003_ITEMS.filter((item) => {
     const state = items[item.id]
-    return requiresPhoto(state.condition) && state.photos.length === 0
+    return conditionRequiresPhoto(state.condition) && state.photos.length === 0
   }).length
   const isUploading = Object.values(items).some((item) => item.uploading)
-  const canSubmit = missingPhotoCount === 0 && !isUploading && !isPending
+  const canSubmit =
+    evaluatedCount === totalCount &&
+    missingPhotoCount === 0 &&
+    !isUploading &&
+    !isPending
 
   function updateItem(itemId: string, next: Partial<ItemState>) {
     setItems((current) => ({
@@ -88,6 +186,7 @@ export function FrmTsm003Form({
 
   async function uploadPhoto(itemId: string, file: File) {
     updateItem(itemId, { uploading: true })
+    setUploadNotice({ tone: "loading", message: "Foto sedang diupload." })
     setErrors([])
 
     try {
@@ -111,12 +210,24 @@ export function FrmTsm003Form({
           photos: [...current[itemId].photos, payload],
         },
       }))
+      setUploadNotice({ tone: "success", message: "Upload foto tersimpan." })
     } catch (error) {
       updateItem(itemId, { uploading: false })
+      setUploadNotice({ tone: "error", message: "Upload foto gagal." })
       setErrors([
         error instanceof Error ? error.message : "Upload foto gagal.",
       ])
     }
+  }
+
+  function deletePhoto(itemId: string, fileId: string) {
+    setItems((current) => ({
+      ...current,
+      [itemId]: {
+        ...current[itemId],
+        photos: current[itemId].photos.filter((p) => p.fileId !== fileId),
+      },
+    }))
   }
 
   function buildUploadFormData(itemId: string, file: File, sequence: number) {
@@ -145,14 +256,19 @@ export function FrmTsm003Form({
       items: FRM_TSM_003_ITEMS.map((item) => ({
         id: item.id,
         label: item.label,
-        condition: items[item.id].condition,
-        photos: items[item.id].photos,
+        condition: items[item.id].condition ?? "TIDAK_ADA",
+        photos: getPayloadPhotosForCondition(
+          items[item.id].condition ?? "TIDAK_ADA",
+          items[item.id].photos
+        ),
         notes: items[item.id].notes,
       })),
     }
   }
 
   function submit() {
+    if (!canSubmit) return
+
     setErrors([])
     startTransition(async () => {
       const result = await submitAction({
@@ -170,20 +286,69 @@ export function FrmTsm003Form({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <section className="rounded-2xl border border-[#dedede] bg-white p-4 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold text-[#ff8a2a]">
-              {reportCode}
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-[#111111]">
-              {areaName} Monthly
-            </h2>
+    <div className="flex flex-col gap-4 pb-3">
+      {uploadNotice ? (
+        <div
+          className={cn(
+            "fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-40 flex w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 items-center gap-2 rounded-2xl border bg-white px-4 py-3 text-sm font-semibold shadow-[0_12px_30px_rgba(17,17,17,0.16)]",
+            uploadNotice.tone === "loading" && "border-[#dedede] text-[#111111]",
+            uploadNotice.tone === "success" &&
+              "border-[#c9ead2] bg-[#f0fbf3] text-[#1f6b35]",
+            uploadNotice.tone === "error" &&
+              "border-[#ffc9a3] bg-[#fff4ec] text-[#8a3d00]"
+          )}
+          role="status"
+          aria-live="polite"
+        >
+          {uploadNotice.tone === "loading" ? (
+            <Loader2 className="animate-spin" data-icon="inline-start" />
+          ) : uploadNotice.tone === "success" ? (
+            <Check data-icon="inline-start" />
+          ) : (
+            <X data-icon="inline-start" />
+          )}
+          {uploadNotice.message}
+        </div>
+      ) : null}
+
+      <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_6px_18px_rgba(17,17,17,0.06)]">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#fff0e3] text-[#c75f00]">
+              <ClipboardCheck aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-semibold text-[#111111]">
+                Checklist Item
+              </h2>
+              <p className="mt-0.5 text-sm text-[#686868]">
+                {areaName} Monthly - {evaluatedCount} dari {totalCount} item
+                dievaluasi
+              </p>
+            </div>
           </div>
-          <span className="rounded-full bg-[#f1f1ef] px-3 py-1 text-xs font-semibold text-[#4c4c4c]">
-            {periodKey}
-          </span>
+          <div className="grid size-16 shrink-0 place-items-center rounded-full bg-[#f5f5f3] text-sm font-bold text-[#111111]">
+            {progressPercentage}%
+          </div>
+        </div>
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[#efefed]">
+          <div
+            className="h-full rounded-full bg-[#ff8a2a] transition-all"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </section>
+
+      <section className="flex items-start gap-3 rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_6px_18px_rgba(17,17,17,0.05)]">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#fff0e3] text-[#c75f00]">
+          <Info aria-hidden="true" />
+        </span>
+        <div>
+          <h3 className="font-semibold text-[#111111]">Mode Checklist Wajib</h3>
+          <p className="mt-1 text-sm leading-5 text-[#686868]">
+            Evaluasi semua item. Kondisi Rusak wajib memakai foto dari
+            kamera.
+          </p>
         </div>
       </section>
 
@@ -195,113 +360,215 @@ export function FrmTsm003Form({
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3">
-        {FRM_TSM_003_ITEMS.map((item, index) => {
-          const state = items[item.id]
-          const photoRequired = requiresPhoto(state.condition)
-          const missingPhoto = photoRequired && state.photos.length === 0
-
-          return (
-            <section
-              key={item.id}
-              className={cn(
-                "rounded-2xl border bg-white p-4 shadow-sm",
-                missingPhoto ? "border-[#ffb46f]" : "border-[#dedede]"
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
-                  {index + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-[#111111]">{item.label}</h3>
-                  <div className="mt-3 grid grid-cols-3 overflow-hidden rounded-xl border border-[#dedede] bg-[#f5f5f3]">
-                    {(["BAIK", "RUSAK", "TIDAK_ADA"] as const).map(
-                      (condition) => (
-                        <button
-                          key={condition}
-                          type="button"
-                          onClick={() =>
-                            updateItem(item.id, {
-                              condition,
-                              photos: requiresPhoto(condition)
-                                ? state.photos
-                                : [],
-                            })
-                          }
-                          className={cn(
-                            "min-h-10 px-2 text-xs font-semibold transition-colors",
-                            state.condition === condition
-                              ? "bg-[#111111] text-white"
-                              : "text-[#4c4c4c]"
-                          )}
-                        >
-                          {conditionLabels[condition]}
-                        </button>
-                      )
-                    )}
-                  </div>
-
-                  {photoRequired ? (
-                    <div className="mt-3 flex flex-col gap-2">
-                      <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#b8b8b8] bg-[#fbfbfb] px-3 text-sm font-semibold text-[#111111]">
-                        {state.uploading ? (
-                          <Loader2 data-icon="inline-start" />
-                        ) : (
-                          <Camera data-icon="inline-start" />
-                        )}
-                        {state.uploading ? "Mengupload..." : "Upload foto"}
-                        <input
-                          className="sr-only"
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          disabled={state.uploading}
-                          onChange={(event) => {
-                            const file = event.target.files?.[0]
-                            event.target.value = ""
-                            if (file) void uploadPhoto(item.id, file)
-                          }}
-                        />
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {state.photos.map((photo) => (
-                          <span
-                            key={photo.fileId}
-                            className="inline-flex items-center gap-1 rounded-full bg-[#e9f7ed] px-2 py-1 text-xs font-semibold text-[#1f6b35]"
-                          >
-                            <Check data-icon="inline-start" />
-                            Foto tersimpan
-                          </span>
-                        ))}
-                        {missingPhoto ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[#fff0e3] px-2 py-1 text-xs font-semibold text-[#8a3d00]">
-                            <X data-icon="inline-start" />
-                            Foto wajib
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </section>
-          )
-        })}
+      <div className="relative">
+        <Search
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#707784]"
+          aria-hidden="true"
+        />
+        <Input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Cari kategori atau item checklist"
+          className="h-14 rounded-2xl border-[#e3e3e3] bg-white pl-12 text-sm text-[#111111] shadow-[0_4px_14px_rgba(17,17,17,0.04)] placeholder:text-[#707784]"
+        />
       </div>
 
-      <Button
-        type="button"
-        disabled={!canSubmit}
-        onClick={submit}
-        className="h-12 bg-[#111111] text-white hover:bg-[#242424]"
-      >
-        {isPending ? (
-          <Loader2 data-icon="inline-start" />
-        ) : (
-          <Send data-icon="inline-start" />
-        )}
-        Simpan Checklist
-      </Button>
+      <section className="overflow-hidden rounded-2xl border border-[#e6e2de] bg-white shadow-[0_6px_18px_rgba(17,17,17,0.05)]">
+        <button
+          type="button"
+          onClick={() => setIsCategoryOpen((current) => !current)}
+          className="flex w-full items-center justify-between gap-3 p-4 text-left outline-none transition-colors hover:bg-[#fbfbfa] focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/35"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#fff0e3] text-sm font-bold text-[#c75f00]">
+              A
+            </span>
+            <div className="min-w-0">
+              <h3 className="truncate font-semibold text-[#111111]">
+                Checklist Ruangan
+              </h3>
+              <p className="mt-0.5 text-sm text-[#686868]">
+                {evaluatedCount} dari {totalCount} item dievaluasi
+              </p>
+            </div>
+          </div>
+          <ChevronDown
+            className={cn(
+              "shrink-0 text-[#707784] transition-transform",
+              isCategoryOpen && "rotate-180"
+            )}
+            aria-hidden="true"
+          />
+        </button>
+
+        {isCategoryOpen ? (
+          <div className="flex flex-col gap-3 border-t border-[#eeeeec] bg-[#fbfbfa] p-3">
+            {visibleItems.length > 0 ? (
+              visibleItems.map((item) => {
+                const state = items[item.id]
+                const photoRequired = conditionRequiresPhoto(state.condition)
+
+                return (
+                  <article
+                    key={item.id}
+                    className="rounded-2xl border border-[#e8e8e6] bg-white p-5 shadow-[0_4px_14px_rgba(17,17,17,0.04)]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f5f5f3] text-[#707784]">
+                        {(() => {
+                          const IconComponent = ITEM_ICONS[item.icon] || Info
+                          return <IconComponent className="size-5" aria-hidden="true" />
+                        })()}
+                      </span>
+                      <h4 className="text-base font-semibold text-[#111111]">
+                        {item.label}
+                      </h4>
+                    </div>
+                    
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {conditionOptions.map((condition) => {
+                        const isActive = state.condition === condition;
+                        
+                        let activeClasses = "border-[#111111] bg-[#111111] text-white shadow-sm"
+                        if (condition === "BAIK" || condition === "CLEAN") {
+                          activeClasses = "border-green-500 bg-green-50 text-green-700 shadow-sm"
+                        } else if (condition === "RUSAK" || condition === "URGENT" || condition === "REPAIR") {
+                          activeClasses = "border-red-500 bg-red-50 text-red-700 shadow-sm"
+                        }
+
+                        return (
+                          <button
+                            key={condition}
+                            type="button"
+                            onClick={() =>
+                              updateItem(item.id, {
+                                ...nextChecklistPhotoState(state, condition),
+                              })
+                            }
+                            className={cn(
+                              "flex-1 min-w-[calc(30%-0.5rem)] rounded-xl border px-3 py-2.5 text-[13px] font-semibold transition-all text-center leading-tight",
+                              isActive
+                                ? activeClasses
+                                : "border-[#e6e2de] bg-[#fbfbfa] text-[#686868] hover:border-[#d0d0d0] hover:bg-white"
+                            )}
+                          >
+                            {conditionLabels[condition]}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {photoRequired ? (
+                      <div className="mt-4 border-t border-[#eeeeec] pt-4">
+                        <p className="mb-2 text-xs font-bold text-[#707784]">
+                          Foto bukti *
+                        </p>
+                        
+                        {state.photos.length === 0 ? (
+                          <CameraCaptureButton
+                            disabled={state.uploading}
+                            uploading={state.uploading}
+                            watermarkLines={buildChecklistPhotoWatermarkLines({
+                              areaName,
+                              userLabel: watermarkUserLabel,
+                              userRole: watermarkUserRole,
+                            })}
+                            onCapture={(file) => void uploadPhoto(item.id, file)}
+                          />
+                        ) : null}
+
+                        {state.photos.length > 0 ? (
+                          <div className="mt-3 flex flex-col gap-2">
+                            {state.photos.map((photo) => (
+                              <div key={photo.fileId} className="relative">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPreviewPhoto({
+                                      itemLabel: item.label,
+                                      url: photo.url,
+                                    })
+                                  }
+                                  className="group w-full overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)] outline-none focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/40"
+                                >
+                                  <Image
+                                    src={photo.url}
+                                    alt={`Foto bukti ${item.label}`}
+                                    width={640}
+                                    height={360}
+                                    className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.01]"
+                                  />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deletePhoto(item.id, photo.fileId);
+                                  }}
+                                  className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-red-500/90 text-white backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 shadow-md"
+                                  aria-label="Hapus foto"
+                                >
+                                  <Trash2 className="size-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </article>
+                )
+              })
+            ) : (
+              <p className="rounded-2xl border border-dashed border-[#d8d8d8] bg-white p-4 text-sm text-[#686868]">
+                Item checklist tidak ditemukan.
+              </p>
+            )}
+          </div>
+        ) : null}
+      </section>
+
+      <div className="sticky bottom-0 -mx-5 mt-1 bg-[#f5f5f3]/95 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        <Button
+          type="button"
+          disabled={!canSubmit}
+          onClick={submit}
+          className="h-12 w-full bg-[#111111] text-white shadow-[0_8px_18px_rgba(17,17,17,0.18)] hover:bg-[#242424]"
+        >
+          {isPending ? (
+            <Loader2 data-icon="inline-start" />
+          ) : (
+            <Send data-icon="inline-start" />
+          )}
+          Simpan Checklist
+        </Button>
+        {!canSubmit ? (
+          <p className="mt-2 text-center text-xs text-[#686868]">
+            Lengkapi semua pilihan dan foto wajib sebelum menyimpan.
+          </p>
+        ) : null}
+      </div>
+
+      {previewPhoto ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-5">
+          <button
+            type="button"
+            onClick={() => setPreviewPhoto(undefined)}
+            className="absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-white text-[#111111] shadow-lg outline-none transition-transform active:scale-95 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/50"
+            aria-label="Tutup preview foto"
+          >
+            <X aria-hidden="true" />
+          </button>
+          <Image
+            src={previewPhoto.url}
+            alt={`Preview foto bukti ${previewPhoto.itemLabel}`}
+            width={1280}
+            height={720}
+            className="max-h-[82svh] w-auto max-w-full rounded-xl object-contain shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            priority
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
