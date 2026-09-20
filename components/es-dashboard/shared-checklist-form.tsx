@@ -44,6 +44,7 @@ export type ChecklistConfig = {
   conditionOptions: ChecklistCondition[]
   conditionLabels: Record<ChecklistCondition, string>
   conditionRequiresPhoto: (condition?: ChecklistCondition) => boolean
+  allowPartial?: boolean
 }
 
 export type SharedChecklistFormProps = {
@@ -144,8 +145,13 @@ export function SharedChecklistForm({
     return config.conditionRequiresPhoto(state.condition) && state.photos.length === 0
   }).length
   const isUploading = Object.values(items).some((item) => item.uploading)
+  
+  const hasEvaluatedItems = evaluatedCount > 0
+  const isFullyEvaluated = evaluatedCount === totalCount
+  const isEvaluationValid = config.allowPartial ? hasEvaluatedItems : isFullyEvaluated
+  
   const canSubmit =
-    evaluatedCount === totalCount &&
+    isEvaluationValid &&
     missingPhotoCount === 0 &&
     !isUploading &&
     !isPending
@@ -317,10 +323,13 @@ export function SharedChecklistForm({
           <Info aria-hidden="true" />
         </span>
         <div>
-          <h3 className="font-semibold text-[#111111]">Mode Checklist Wajib</h3>
+          <h3 className="font-semibold text-[#111111]">
+            {config.allowPartial ? "Mode Temuan / Perbaikan" : "Mode Checklist Wajib"}
+          </h3>
           <p className="mt-1 text-sm leading-5 text-[#686868]">
-            Evaluasi semua item. Kondisi tertentu wajib memakai foto dari
-            kamera.
+            {config.allowPartial
+              ? "Pilih minimal 1 item yang rusak. Kondisi rusak wajib menyertakan foto bukti."
+              : "Evaluasi semua item. Kondisi tertentu wajib memakai foto dari kamera."}
           </p>
         </div>
       </section>
@@ -514,7 +523,9 @@ export function SharedChecklistForm({
         </Button>
         {!canSubmit ? (
           <p className="mt-2 text-center text-xs text-[#686868]">
-            Lengkapi semua pilihan dan foto wajib sebelum menyimpan.
+            {config.allowPartial
+              ? "Pilih minimal 1 item temuan dan lengkapi foto wajib sebelum menyimpan."
+              : "Lengkapi semua pilihan dan foto wajib sebelum menyimpan."}
           </p>
         ) : null}
       </div>

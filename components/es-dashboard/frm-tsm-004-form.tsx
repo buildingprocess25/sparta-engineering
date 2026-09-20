@@ -5,9 +5,18 @@ import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, AlertCircle, CheckCircle2, Loader2, Save } from "lucide-react"
+import {
+  ChevronDown,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  Save,
+} from "lucide-react"
 
-import type { FrmTsm004Payload, FrmTsm004Measurements } from "@/lib/checklists/payload-004"
+import type {
+  FrmTsm004Payload,
+  FrmTsm004Measurements,
+} from "@/lib/checklists/payload-004"
 import { FRM_TSM_004_PANELS } from "@/lib/checklists/frm-tsm-004"
 
 type FrmTsm004FormProps = {
@@ -15,6 +24,7 @@ type FrmTsm004FormProps = {
   areaCode: string
   areaName: string
   periodKey: string
+  formCode?: "FRM_TSM_004" | "FRM_TSM_004_REPAIR"
   watermarkUserLabel: string
   watermarkUserRole: string
   submitAction: (input: {
@@ -28,13 +38,16 @@ export function FrmTsm004Form({
   areaCode,
   areaName,
   periodKey,
+  formCode = "FRM_TSM_004",
   submitAction,
 }: FrmTsm004FormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const [expandedPanel, setExpandedPanel] = useState<string | null>(FRM_TSM_004_PANELS[0].id)
+  const [expandedPanel, setExpandedPanel] = useState<string | null>(
+    FRM_TSM_004_PANELS[0].id
+  )
   const [keterangan, setKeterangan] = useState("")
   const [measurements, setMeasurements] = useState<
     Record<string, FrmTsm004Measurements>
@@ -65,7 +78,7 @@ export function FrmTsm004Form({
     setErrorMsg(null)
 
     const payload: FrmTsm004Payload = {
-      formCode: "FRM_TSM_004",
+      formCode,
       formName: "Form Checklist Main Cable",
       areaCode,
       period: "MONTHLY",
@@ -115,11 +128,16 @@ export function FrmTsm004Form({
         <div className="w-full border-t border-gray-100">
           {FRM_TSM_004_PANELS.map((panel) => {
             const data = measurements[panel.id]
-            const isFilled = Object.values(data).some((val) => val.trim() !== "")
+            const isFilled = Object.values(data).some(
+              (val) => val.trim() !== ""
+            )
             const isExpanded = expandedPanel === panel.id
 
             return (
-              <div key={panel.id} className="border-b border-gray-100 last:border-0">
+              <div
+                key={panel.id}
+                className="border-b border-gray-100 last:border-0"
+              >
                 <button
                   type="button"
                   onClick={() => setExpandedPanel(isExpanded ? null : panel.id)}
@@ -140,7 +158,7 @@ export function FrmTsm004Form({
                   />
                 </button>
                 {isExpanded && (
-                  <div className="px-5 pb-5 pt-2">
+                  <div className="px-5 pt-2 pb-5">
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                       <div className="space-y-2">
                         <label className="text-xs font-semibold text-gray-500">
@@ -234,16 +252,18 @@ export function FrmTsm004Form({
         <textarea
           placeholder="Tuliskan catatan tambahan (opsional)..."
           value={keterangan}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setKeterangan(e.target.value)}
-          className="min-h-[100px] w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            setKeterangan(e.target.value)
+          }
+          className="min-h-[100px] w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
         />
-        <p className="mt-3 text-xs leading-relaxed text-gray-500">
+        {/* <p className="mt-3 text-xs leading-relaxed text-gray-500">
           Catatan: Selisih hasil ukur tegangan antara LVMDP - MDP - SDP adalah
           meningkat 5% dan turun 10%.
-        </p>
+        </p> */}
       </div>
 
-      <div className="sticky bottom-0 -mx-5 mt-1 bg-[#f5f5f3]/95 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+      <div className="sticky bottom-0 -mx-5 mt-1 bg-[#f5f5f3]/95 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
         <Button
           type="submit"
           disabled={isPending}
