@@ -5,7 +5,7 @@ import { decrypt } from "./lib/session"
 const protectedRoutes = ["/dashboard"]
 const publicRoutes = ["/login", "/auth/sso/callback"]
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
   const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route))
   const isPublicRoute = publicRoutes.some((route) => path.startsWith(route))

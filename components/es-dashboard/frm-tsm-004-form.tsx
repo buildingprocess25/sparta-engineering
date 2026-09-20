@@ -22,7 +22,6 @@ import { FRM_TSM_004_PANELS } from "@/lib/checklists/frm-tsm-004"
 type FrmTsm004FormProps = {
   reportCode: string
   areaCode: string
-  areaName: string
   periodKey: string
   formCode?: "FRM_TSM_004" | "FRM_TSM_004_REPAIR"
   watermarkUserLabel: string
@@ -36,7 +35,6 @@ type FrmTsm004FormProps = {
 export function FrmTsm004Form({
   reportCode,
   areaCode,
-  areaName,
   periodKey,
   formCode = "FRM_TSM_004",
   submitAction,
@@ -99,7 +97,7 @@ export function FrmTsm004Form({
           return
         }
         router.push("/dashboard/reports")
-      } catch (err) {
+      } catch {
         setErrorMsg("Terjadi kesalahan sistem saat menyimpan laporan.")
       }
     })

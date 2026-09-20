@@ -60,13 +60,7 @@ export function ReportAreaPicker({
   const [formId, setFormId] = React.useState<string>()
 
   const selectedArea = areas.find((area) => area.id === areaId)
-  let availableForms = selectedArea && period ? getChecklistForms(selectedArea.type, period) : []
-  
-  if (reportType === "checklist") {
-    availableForms = availableForms.filter((f) => !f.id.endsWith("-repair"))
-  } else if (reportType === "repair") {
-    availableForms = availableForms.filter((f) => f.id.endsWith("-repair"))
-  }
+  const availableForms = selectedArea && period ? getChecklistForms(selectedArea.type, period) : []
 
   const hasAreas = areas.length > 0
   const requiresPeriod = true
@@ -218,7 +212,7 @@ export function ReportAreaPicker({
           <div className="mt-3 grid grid-cols-1 gap-3">
             {availableForms.map((form) => {
               const formCode = form.id.replace(/-/g, "_").toUpperCase()
-              const isFormCompleted = selectedArea?.completedForms?.includes(formCode)
+              const isFormCompleted = reportType === "checklist" && selectedArea?.completedForms?.includes(formCode)
               
               return (
                 <FlowOptionButton
@@ -240,7 +234,7 @@ export function ReportAreaPicker({
       {canOpenChecklistForm && selectedArea ? (
         <Link
           href={{
-            pathname: `/dashboard/reports/new/checklist/${formId || "frm-tsm-003"}`,
+            pathname: `/dashboard/reports/new/${reportType}/${formId || "frm-tsm-003"}`,
             query: {
               areaId: selectedArea.id,
               period: period,

@@ -43,26 +43,39 @@
      - Jika 100% aman: `Coord -> Manager -> Selesai`
      - Jika ada kerusakan: `Coord -> Manager -> Requester -> Input PB/PJU -> Selesai`
 
+
+
 ## Data & API
 
 - Model utama yang dibutuhkan: `ChecklistReport`, `ChecklistItem`, `Area`, `User`.
 - Status approval: `PENDING_COORD`, `PENDING_MANAGER`, `PENDING_REQUESTER`, `COMPLETED`, `REJECTED`.
 *(Detail field akan didokumentasikan lebih lanjut di `docs/01_Architecture/10_Data_Models.md`)*
 
-## FRM_TSM_003 Checklist Ruangan
+## Form Checklist Tersedia
 
-`FRM_TSM_003` is the first digital checklist form. It is available for Office Monthly and warehouse-family Monthly flows.
+Saat ini terdapat 4 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
+1. **FRM_TSM_002** (Genset)
+2. **FRM_TSM_003** (Checklist Ruangan)
+3. **FRM_TSM_004** (Pemakaian Daya/KWH)
+4. **FRM_TSM_005** (Pompa Air)
 
-The digital condition choices are:
-- `BAIK`
-- `RUSAK`
-- `TIDAK_ADA`
+Data form disimpan pada `ChecklistReport.checklistPayload` dalam format JSON. Pengunggahan foto menggunakan endpoint Google Drive dan hanya terkirim setelah Laporan beralih dari status `DRAFT`.
 
-`BAIK` and `RUSAK` require at least one uploaded photo. `TIDAK_ADA` does not require a photo.
+## Alur: Checklist vs Perbaikan (Repair)
 
-Checklist item results are stored as one JSON payload on `ChecklistReport.checklistPayload`; this form does not create one `ChecklistItem` row per item.
+Terdapat 2 jalur utama pengisian laporan yang dibedakan secara logika meskipun secara UI sangat mirip:
 
-Photos are uploaded to Google Drive only after a draft report has been reserved. Photo URLs shown in the application use `/api/photos/[fileId]`.
+1. **Jalur Checklist (Rutin)**:
+   - Form 002, 003, dan 005 memiliki opsi kondisi lengkap: `BAIK`, `RUSAK`, `TIDAK_ADA`.
+   - `BAIK` dan `RUSAK` wajib disertai foto (mandatory).
+   - Seluruh item dalam checklist **wajib** diisi kondisinya sebelum laporan dapat disubmit.
+   - Pengecualian: Form **004** murni penginputan angka daya (KWH) tanpa opsi kondisi dan tidak memerlukan foto.
+
+2. **Jalur Perbaikan / Temuan (Ad-hoc / Repair)**:
+   - Form 002, 003, dan 005 **hanya** menampilkan opsi kondisi `RUSAK`.
+   - Opsi `RUSAK` wajib disertai foto temuan.
+   - Berbeda dengan Checklist rutin, form Repair **tidak wajib** diisi semua itemnya. ES cukup mengisi item yang memang ditemukan rusak saja. (Minimal 1 item diisi).
+   - Form 004-repair berlaku persis seperti 004 (input daya).
 
 ## ES Checklist UX Refinement
 

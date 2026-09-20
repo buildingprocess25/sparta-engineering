@@ -1,13 +1,11 @@
 import {
   AppWindow,
-  ArrowUpToLine,
   BrickWall,
   DoorClosed,
   Droplet,
   Fence,
   Home,
   Lightbulb,
-  LayoutGrid,
   Map,
   Recycle,
   Server,
