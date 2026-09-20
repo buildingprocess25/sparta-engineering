@@ -3,63 +3,61 @@
 import * as React from "react"
 import Image from "next/image"
 import {
-  ArrowUpToLine,
-  Bath,
   Check,
   ChevronDown,
   ClipboardCheck,
-  DoorClosed,
-  Droplet,
-  Fan,
-  Grid,
   Info,
-  Lightbulb,
   Loader2,
-  Plug,
   Search,
   Send,
-  Square,
-  ToggleRight,
   Trash2,
-  Waves,
-  Wind,
   X,
-  Zap,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { CameraCaptureButton } from "@/components/es-dashboard/camera-capture-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  FRM_TSM_003_FORM_CODE,
-  FRM_TSM_003_ITEMS,
-} from "@/lib/checklists/frm-tsm-003"
 import type {
   ChecklistCondition,
   ChecklistPayload,
   ChecklistPhoto,
 } from "@/lib/checklists/payload"
 import {
-  conditionRequiresPhoto,
   getPayloadPhotosForCondition,
   nextChecklistPhotoState,
 } from "@/lib/checklists/photo-state"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
 
-type FrmTsm003FormProps = {
+export type ChecklistItemConfig = {
+  id: string
+  label: string
+  icon: React.ElementType
+}
+
+export type ChecklistConfig = {
+  formCode: string
+  formName: string
+  items: ChecklistItemConfig[]
+  conditionOptions: ChecklistCondition[]
+  conditionLabels: Record<ChecklistCondition, string>
+  conditionRequiresPhoto: (condition?: ChecklistCondition) => boolean
+}
+
+export type SharedChecklistFormProps = {
   reportCode: string
   areaCode: string
   areaName: string
   periodKey: string
   watermarkUserLabel: string
   watermarkUserRole: string
+  config: ChecklistConfig
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
   }): Promise<
-    | { ok: true; isSafe: boolean }
+    | { ok: true; isSafe?: boolean }
     | { ok: false; errors: string[] }
   >
 }
@@ -81,66 +79,29 @@ type PreviewPhoto = {
   url: string
 }
 
-const conditionLabels: Record<ChecklistCondition, string> = {
-  ADJUST_OR_ADD: "Adjust/Add (A)",
-  CLEAN: "Clean (C)",
-  REPAIR: "Repair (R)",
-  URGENT: "Urgent (U)",
-  BAIK: "Baik (V)",
-  RUSAK: "Rusak (X)",
-  TIDAK_ADA: "Tidak Ada (T)",
-}
-
-const conditionOptions: ChecklistCondition[] = [
-  "ADJUST_OR_ADD",
-  "CLEAN",
-  "REPAIR",
-  "URGENT",
-  "BAIK",
-  "RUSAK",
-  "TIDAK_ADA",
-]
-
-const ITEM_ICONS: Record<string, React.ElementType> = {
-  Wind,
-  Fan,
-  ToggleRight,
-  Lightbulb,
-  Zap,
-  Plug,
-  Square,
-  Grid,
-  DoorClosed,
-  ArrowUpToLine,
-  Bath,
-  Droplet,
-  Waves,
-}
-
-const initialItems = Object.fromEntries(
-  FRM_TSM_003_ITEMS.map((item) => [
-    item.id,
-    {
-      photos: [],
-      notes: "",
-      uploading: false,
-    } satisfies ItemState,
-  ])
-) as Record<string, ItemState>
-
-export function FrmTsm003Form({
+export function SharedChecklistForm({
   reportCode,
   areaCode,
   areaName,
   periodKey,
   watermarkUserLabel,
   watermarkUserRole,
+  config,
   submitAction,
-}: FrmTsm003FormProps) {
+}: SharedChecklistFormProps) {
   const router = useRouter()
-  const [items, setItems] = React.useState<Record<string, ItemState>>(
-    () => initialItems
-  )
+  const [items, setItems] = React.useState<Record<string, ItemState>>(() => {
+    return Object.fromEntries(
+      config.items.map((item) => [
+        item.id,
+        {
+          photos: [],
+          notes: "",
+          uploading: false,
+        } satisfies ItemState,
+      ])
+    ) as Record<string, ItemState>
+  })
   const [errors, setErrors] = React.useState<string[]>([])
   const [uploadNotice, setUploadNotice] = React.useState<UploadNotice>()
   const [previewPhoto, setPreviewPhoto] = React.useState<PreviewPhoto>()
@@ -157,18 +118,18 @@ export function FrmTsm003Form({
 
   const normalizedQuery = searchQuery.trim().toLowerCase()
   const visibleItems = normalizedQuery
-    ? FRM_TSM_003_ITEMS.filter((item) =>
+    ? config.items.filter((item) =>
         item.label.toLowerCase().includes(normalizedQuery)
       )
-    : FRM_TSM_003_ITEMS
-  const evaluatedCount = FRM_TSM_003_ITEMS.filter(
+    : config.items
+  const evaluatedCount = config.items.filter(
     (item) => items[item.id].condition
   ).length
-  const totalCount = FRM_TSM_003_ITEMS.length
+  const totalCount = config.items.length
   const progressPercentage = Math.round((evaluatedCount / totalCount) * 100)
-  const missingPhotoCount = FRM_TSM_003_ITEMS.filter((item) => {
+  const missingPhotoCount = config.items.filter((item) => {
     const state = items[item.id]
-    return conditionRequiresPhoto(state.condition) && state.photos.length === 0
+    return config.conditionRequiresPhoto(state.condition) && state.photos.length === 0
   }).length
   const isUploading = Object.values(items).some((item) => item.uploading)
   const canSubmit =
@@ -238,7 +199,7 @@ export function FrmTsm003Form({
       JSON.stringify({
         kind: "CHECKLIST_ITEM",
         reportCode,
-        formCode: FRM_TSM_003_FORM_CODE,
+        formCode: config.formCode,
         itemId,
         sequence,
       })
@@ -248,12 +209,12 @@ export function FrmTsm003Form({
 
   function buildPayload(): ChecklistPayload {
     return {
-      formCode: FRM_TSM_003_FORM_CODE,
-      formName: "Form Checklist Ruangan",
+      formCode: config.formCode,
+      formName: config.formName,
       areaCode,
       period: "MONTHLY",
       periodKey,
-      items: FRM_TSM_003_ITEMS.map((item) => ({
+      items: config.items.map((item) => ({
         id: item.id,
         label: item.label,
         condition: items[item.id].condition ?? "TIDAK_ADA",
@@ -277,7 +238,7 @@ export function FrmTsm003Form({
       })
 
       if (!result.ok) {
-        setErrors(result.errors)
+        setErrors(result.errors || ["Terjadi kesalahan saat menyimpan."])
         return
       }
 
@@ -346,7 +307,7 @@ export function FrmTsm003Form({
         <div>
           <h3 className="font-semibold text-[#111111]">Mode Checklist Wajib</h3>
           <p className="mt-1 text-sm leading-5 text-[#686868]">
-            Evaluasi semua item. Kondisi Rusak wajib memakai foto dari
+            Evaluasi semua item. Kondisi tertentu wajib memakai foto dari
             kamera.
           </p>
         </div>
@@ -385,7 +346,7 @@ export function FrmTsm003Form({
             </span>
             <div className="min-w-0">
               <h3 className="truncate font-semibold text-[#111111]">
-                Checklist Ruangan
+                {config.formName}
               </h3>
               <p className="mt-0.5 text-sm text-[#686868]">
                 {evaluatedCount} dari {totalCount} item dievaluasi
@@ -406,7 +367,7 @@ export function FrmTsm003Form({
             {visibleItems.length > 0 ? (
               visibleItems.map((item) => {
                 const state = items[item.id]
-                const photoRequired = conditionRequiresPhoto(state.condition)
+                const photoRequired = config.conditionRequiresPhoto(state.condition)
 
                 return (
                   <article
@@ -415,10 +376,7 @@ export function FrmTsm003Form({
                   >
                     <div className="flex items-center gap-3">
                       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f5f5f3] text-[#707784]">
-                        {(() => {
-                          const IconComponent = ITEM_ICONS[item.icon] || Info
-                          return <IconComponent className="size-5" aria-hidden="true" />
-                        })()}
+                        <item.icon className="size-5" aria-hidden="true" />
                       </span>
                       <h4 className="text-base font-semibold text-[#111111]">
                         {item.label}
@@ -426,7 +384,7 @@ export function FrmTsm003Form({
                     </div>
                     
                     <div className="mt-5 flex flex-wrap gap-2">
-                      {conditionOptions.map((condition) => {
+                      {config.conditionOptions.map((condition) => {
                         const isActive = state.condition === condition;
                         
                         let activeClasses = "border-[#111111] bg-[#111111] text-white shadow-sm"
@@ -452,7 +410,7 @@ export function FrmTsm003Form({
                                 : "border-[#e6e2de] bg-[#fbfbfa] text-[#686868] hover:border-[#d0d0d0] hover:bg-white"
                             )}
                           >
-                            {conditionLabels[condition]}
+                            {config.conditionLabels[condition]}
                           </button>
                         )
                       })}

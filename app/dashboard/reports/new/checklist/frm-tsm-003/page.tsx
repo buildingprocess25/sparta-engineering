@@ -1,4 +1,4 @@
-import { FrmTsm003Form } from "@/components/es-dashboard/frm-tsm-003-form"
+import { SharedChecklistForm } from "@/components/es-dashboard/shared-checklist-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
@@ -6,6 +6,7 @@ import { reserveChecklistDraft } from "@/lib/reports/drive-draft-service"
 import { createPrismaChecklistDraftRepository } from "@/lib/reports/drive-draft-prisma-repository"
 import { getSession } from "@/lib/session"
 import { submitFrmTsm003Checklist } from "./actions"
+import { FRM_TSM_003_CONFIG } from "@/lib/checklists/frm-tsm-003"
 
 export const dynamic = "force-dynamic"
 
@@ -90,7 +91,7 @@ export default async function FrmTsm003Page({
       title="Checklist Ruangan"
       description="Pilih kondisi setiap item. Baik dan rusak wajib memakai foto sebagai bukti."
     >
-      <FrmTsm003Form
+      <SharedChecklistForm
         reportCode={draft.reportCode}
         areaCode={area.code}
         areaName={area.name}
@@ -99,6 +100,7 @@ export default async function FrmTsm003Page({
           user ? `${user.name} (${user.NIK})` : session.userId
         }
         watermarkUserRole={user?.role ?? session.role}
+        config={FRM_TSM_003_CONFIG}
         submitAction={submitFrmTsm003Checklist}
       />
     </ReportFlowShell>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { getFrmTsm003Item } from "../../../../lib/checklists/frm-tsm-003"
+import { getChecklistItem } from "../../../../lib/checklists/registry"
 import { buildChecklistPhotoName } from "../../../../lib/google-drive/hierarchy-policy"
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024
@@ -146,7 +146,7 @@ export function createPhotoUploadPostHandler(deps: PhotoUploadHandlerDeps) {
       return jsonError("Report period is not set", 422)
     }
 
-    const item = getFrmTsm003Item(context.itemId)
+    const item = getChecklistItem(context.formCode, context.itemId)
     if (!item) {
       return jsonError("Checklist item not found", 404)
     }
