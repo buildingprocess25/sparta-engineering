@@ -75,15 +75,21 @@ export function validateFrmTsm004Payload(
 
   const errors: string[] = []
 
+  let hasAnyFilled = false
+
   for (const panel of payload.panels) {
     if (!isPanel(panel)) {
       errors.push("Data panel tidak valid.")
       break
     }
     
-    // Validasi opsional: kita bisa memaksa input wajib, 
-    // namun form Excel memperbolehkan field kosong (e.g. tidak ada server PTL di cabang tsb).
-    // Jadi sementara cukup pengecekan tipe data.
+    if (Object.values(panel.measurements).some((val) => val.trim() !== "")) {
+      hasAnyFilled = true
+    }
+  }
+
+  if (errors.length === 0 && !hasAnyFilled) {
+    errors.push("Minimal satu data pengukuran harus diisi.")
   }
 
   return { valid: errors.length === 0, errors }
