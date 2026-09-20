@@ -1,38 +1,38 @@
 import {
+  AppWindow,
   ArrowUpToLine,
-  Bath,
+  BrickWall,
   DoorClosed,
   Droplet,
-  Fan,
-  Grid,
+  Fence,
+  Home,
   Lightbulb,
-  Plug,
-  Square,
-  ToggleRight,
+  LayoutGrid,
+  Map,
+  Recycle,
+  Server,
   Waves,
-  Wind,
   Zap,
 } from "lucide-react"
+
 import type { ChecklistConfig } from "@/components/es-dashboard/shared-checklist-form"
 
-export const FRM_TSM_005_FORM_CODE = "FRM_TSM_005"
-
 export const FRM_TSM_005_CONFIG: ChecklistConfig = {
-  formCode: FRM_TSM_005_FORM_CODE,
+  formCode: "FRM_TSM_005",
   formName: "Form Checklist Fisik Bangunan Utama & Penunjang",
   items: [
-    { id: "atap_zincalume", label: "Atap Zincalume / dak beton", icon: ArrowUpToLine },
-    { id: "dinding_partisi", label: "Dinding / partisi / Cladding", icon: Square },
-    { id: "aspalt_paving", label: "Aspalt / Paving / Cor", icon: Grid },
-    { id: "pintu_gerbang", label: "Pintu Gerbang", icon: DoorClosed },
+    { id: "atap_zincalume", label: "Atap Zincalume / dak beton", icon: Home },
+    { id: "dinding_partisi", label: "Dinding / partisi / Cladding", icon: BrickWall },
+    { id: "aspalt_paving", label: "Aspalt / Paving / Cor", icon: Map },
+    { id: "pintu_gerbang", label: "Pintu Gerbang", icon: Fence },
     { id: "pintu", label: "Pintu", icon: DoorClosed },
-    { id: "jendela", label: "Jendela", icon: Square },
+    { id: "jendela", label: "Jendela", icon: AppWindow },
     { id: "grounding", label: "Grounding", icon: Zap },
     { id: "lampu_pju", label: "Lampu PJU", icon: Lightbulb },
-    { id: "panel_listrik", label: "Panel Listrik", icon: Zap },
+    { id: "panel_listrik", label: "Panel Listrik", icon: Server },
     { id: "water_torn", label: "Water Torn / Ground Tank", icon: Droplet },
-    { id: "water_recycle", label: "Water Recycle", icon: Droplet },
-    { id: "saluran_air_bersih", label: "Saluran air bersih", icon: Waves },
+    { id: "water_recycle", label: "Water Recycle", icon: Recycle },
+    { id: "saluran_air_bersih", label: "Saluran air bersih", icon: Droplet },
     { id: "saluran_air_kotor", label: "Saluran air kotor (Drainase)", icon: Waves },
   ],
   conditionOptions: [

@@ -357,7 +357,7 @@ export function SharedChecklistForm({
               A
             </span>
             <div className="min-w-0">
-              <h3 className="truncate font-semibold text-[#111111]">
+              <h3 className="font-semibold text-[#111111]">
                 {config.formName}
               </h3>
               <p className="mt-0.5 text-sm text-[#686868]">
