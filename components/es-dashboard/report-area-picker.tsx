@@ -60,15 +60,21 @@ export function ReportAreaPicker({
   const [formId, setFormId] = React.useState<string>()
 
   const selectedArea = areas.find((area) => area.id === areaId)
-  const availableForms = selectedArea && period ? getChecklistForms(selectedArea.type, period) : []
+  let availableForms = selectedArea && period ? getChecklistForms(selectedArea.type, period) : []
   
+  if (reportType === "checklist") {
+    availableForms = availableForms.filter((f) => !f.id.endsWith("-repair"))
+  } else if (reportType === "repair") {
+    availableForms = availableForms.filter((f) => f.id.endsWith("-repair"))
+  }
+
   const hasAreas = areas.length > 0
-  const requiresPeriod = reportType === "checklist"
+  const requiresPeriod = true
   const canContinue = Boolean(
     selectedArea && (!requiresPeriod || (period && (!availableForms.length || formId)))
   )
   const canOpenChecklistForm =
-    reportType === "checklist" && Boolean(selectedArea && period && (formId || !availableForms.length))
+    Boolean(selectedArea && period && (formId || !availableForms.length))
 
   function selectPeriod(nextPeriod: Period) {
     setPeriod(nextPeriod)
@@ -88,7 +94,7 @@ export function ReportAreaPicker({
 
     setAreaId(nextAreaId)
     setPeriod(
-      reportType === "checklist" && nextArea?.periods.length === 1 && !isPeriodCompleted(nextArea, nextArea.periods[0])
+      nextArea?.periods.length === 1 && !isPeriodCompleted(nextArea, nextArea.periods[0])
         ? nextArea.periods[0]
         : undefined,
     )
