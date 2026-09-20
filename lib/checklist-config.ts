@@ -28,7 +28,7 @@ export const CHECKLIST_FORMS: Record<
       {
         id: "frm-tsm-004",
         title: "SAT/FRM/TSM/004_REV_000_211022",
-        description: "Checklist Kendaraan",
+        description: "Checklist Main Cable",
       },
     ],
   },
