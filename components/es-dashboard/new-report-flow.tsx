@@ -92,6 +92,17 @@ export function NewReportFlow() {
             icon={Wrench}
             disabled={!canChooseType}
           />
+          <ReportChoiceCard
+            href="#"
+            title="General Checklist"
+            description={
+              workPermit
+                ? `${workPermitLabels[workPermit]} lalu isi form general.`
+                : "Pilih Form Ijin Kerja terlebih dahulu."
+            }
+            icon={ClipboardCheck}
+            disabled={!canChooseType}
+          />
         </div>
       </section>
 
