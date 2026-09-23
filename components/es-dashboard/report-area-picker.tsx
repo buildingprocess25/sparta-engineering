@@ -21,6 +21,23 @@ import type {
   EsDashboardFlowIssue,
 } from "@/lib/es-dashboard-types"
 import { cn } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectSeparator,
+} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 
 type ReportType = "checklist" | "repair"
 type Period = "MONTHLY" | "WEEKLY"
@@ -56,19 +73,30 @@ export function ReportAreaPicker({
   workPermit,
 }: ReportAreaPickerProps) {
   const [areaId, setAreaId] = React.useState<string>()
+  const [roomId, setRoomId] = React.useState<string>("")
   const [period, setPeriod] = React.useState<Period>()
   const [formId, setFormId] = React.useState<string>()
+  
+  const [rooms, setRooms] = React.useState([
+    { id: "room-1", name: "Ruangan Coklat" },
+    { id: "room-2", name: "Toilet" },
+    { id: "room-3", name: "Ruang Meeting" },
+    { id: "room-4", name: "Area Loading" },
+  ])
+  const [isAddRoomOpen, setIsAddRoomOpen] = React.useState(false)
+  const [newRoomName, setNewRoomName] = React.useState("")
 
   const selectedArea = areas.find((area) => area.id === areaId)
   const availableForms = selectedArea && period ? getChecklistForms(selectedArea.type, period) : []
 
-  const hasAreas = areas.length > 0
+  const displayAreas = areas.filter((area) => !area.name.toLowerCase().includes("whc"))
+  const hasAreas = displayAreas.length > 0
   const requiresPeriod = true
   const canContinue = Boolean(
-    selectedArea && (!requiresPeriod || (period && (!availableForms.length || formId)))
+    selectedArea && roomId && (!requiresPeriod || (period && (!availableForms.length || formId)))
   )
   const canOpenChecklistForm =
-    Boolean(selectedArea && period && (formId || !availableForms.length))
+    Boolean(selectedArea && roomId && period && (formId || !availableForms.length))
 
   function selectPeriod(nextPeriod: Period) {
     setPeriod(nextPeriod)
@@ -87,6 +115,7 @@ export function ReportAreaPicker({
     if (nextArea && isAreaFullyCompleted(nextArea)) return
 
     setAreaId(nextAreaId)
+    setRoomId("")
     setPeriod(
       nextArea?.periods.length === 1 && !isPeriodCompleted(nextArea, nextArea.periods[0])
         ? nextArea.periods[0]
@@ -114,7 +143,7 @@ export function ReportAreaPicker({
 
         {hasAreas ? (
           <div className="mt-3 grid grid-cols-2 gap-3">
-            {areas.map((area) => {
+            {displayAreas.map((area) => {
               const Icon = getAreaIcon(area.name)
               const isCompleted = isAreaFullyCompleted(area)
 
@@ -163,16 +192,64 @@ export function ReportAreaPicker({
         )}
       </section>
 
-      {requiresPeriod && selectedArea ? (
+      {selectedArea ? (
+        <section>
+          <div className="flex items-center gap-3">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
+              4
+            </span>
+            <div className="flex flex-1 items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-[#111111]">Pilih Ruangan</h2>
+                <p className="mt-0.5 text-sm leading-5 text-[#686868]">
+                  Pilih spesifik ruangan di area {selectedArea.name}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddRoomOpen(true)}
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-[#dedede] px-2.5 py-1.5 text-xs font-semibold text-[#111111] transition-colors hover:bg-[#f5f5f5]"
+              >
+                + Tambah
+              </button>
+            </div>
+          </div>
+          <div className="mt-3">
+            <Select
+              value={roomId}
+              onValueChange={(val) => {
+                setRoomId(val || "")
+                setPeriod(undefined)
+                setFormId(undefined)
+              }}
+            >
+              <SelectTrigger className="h-12 w-full rounded-xl border-[#dedede] bg-[#fbfbfb] text-[#111111] transition-colors focus:ring-[#ff8a2a] focus:ring-offset-0">
+                <SelectValue placeholder="Pilih Ruangan...">
+                  {roomId ? rooms.find((r) => r.id === roomId)?.name : "Pilih Ruangan..."}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false} className="rounded-xl border-[#dedede] bg-white">
+                {rooms.map((room) => (
+                  <SelectItem key={room.id} value={room.id} className="cursor-pointer rounded-lg text-[#111111] focus:bg-[#fff0e3] focus:text-[#a64f00]">
+                    {room.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </section>
+      ) : null}
+
+      {requiresPeriod && selectedArea && roomId ? (
         <section>
           <div className="flex items-start gap-3">
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
-              4
+              5
             </span>
             <div>
               <h2 className="font-semibold text-[#111111]">Periode Checklist</h2>
               <p className="mt-1 text-sm leading-5 text-[#686868]">
-                Pilih periode form untuk area {selectedArea.name}.
+                Pilih periode form untuk ruangan tersebut.
               </p>
             </div>
           </div>
@@ -196,11 +273,11 @@ export function ReportAreaPicker({
         </section>
       ) : null}
 
-      {requiresPeriod && selectedArea && period && availableForms.length > 0 ? (
+      {requiresPeriod && selectedArea && roomId && period && availableForms.length > 0 ? (
         <section>
           <div className="flex items-start gap-3">
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
-              5
+              6
             </span>
             <div>
               <h2 className="font-semibold text-[#111111]">Pilih Form Checklist</h2>
@@ -231,12 +308,13 @@ export function ReportAreaPicker({
         </section>
       ) : null}
 
-      {canOpenChecklistForm && selectedArea ? (
+      {canOpenChecklistForm && selectedArea && roomId ? (
         <Link
           href={{
             pathname: `/dashboard/reports/new/${reportType}/${formId || "frm-tsm-003"}`,
             query: {
               areaId: selectedArea.id,
+              roomId: roomId,
               period: period,
               ...(workPermit ? { workPermit } : {}),
             },
@@ -253,13 +331,78 @@ export function ReportAreaPicker({
             canContinue && "bg-[#111111] text-white opacity-80",
           )}
         >
-          {requiresPeriod && !period
-            ? "Pilih periode form"
-            : requiresPeriod && period && !formId && availableForms.length > 0
-              ? "Pilih form checklist"
-              : "Form detail belum tersedia"}
+          {!roomId
+            ? "Pilih ruangan"
+            : requiresPeriod && !period
+              ? "Pilih periode form"
+              : requiresPeriod && period && !formId && availableForms.length > 0
+                ? "Pilih form checklist"
+                : "Form detail belum tersedia"}
         </Button>
       )}
+
+      <Dialog open={isAddRoomOpen} onOpenChange={setIsAddRoomOpen}>
+        <DialogContent className="rounded-2xl border-[#dedede] bg-white text-[#111111] shadow-lg sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Tambah Ruangan Baru</DialogTitle>
+            <DialogDescription>
+              Masukkan nama ruangan lalu klik Simpan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <label htmlFor="room-name" className="text-sm font-medium text-[#111111]">
+              Nama Ruangan
+            </label>
+            <Input
+              id="room-name"
+              placeholder="mis. Ruang Meeting B"
+              value={newRoomName}
+              onChange={(e) => setNewRoomName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && newRoomName.trim()) {
+                  const newId = `room-custom-${Date.now()}`
+                  setRooms((prev) => [...prev, { id: newId, name: newRoomName.trim() }])
+                  setRoomId(newId)
+                  setPeriod(undefined)
+                  setFormId(undefined)
+                  setIsAddRoomOpen(false)
+                  setNewRoomName("")
+                }
+              }}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddRoomOpen(false)
+                setNewRoomName("")
+              }}
+              className="h-9 rounded-lg border border-[#dedede] bg-white px-4 text-sm text-[#686868] transition-colors hover:bg-[#f5f5f5]"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              disabled={!newRoomName.trim()}
+              onClick={() => {
+                if (newRoomName.trim()) {
+                  const newId = `room-custom-${Date.now()}`
+                  setRooms((prev) => [...prev, { id: newId, name: newRoomName.trim() }])
+                  setRoomId(newId)
+                  setPeriod(undefined)
+                  setFormId(undefined)
+                  setIsAddRoomOpen(false)
+                  setNewRoomName("")
+                }
+              }}
+              className="h-9 rounded-lg bg-[#111111] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#242424] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Simpan
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
