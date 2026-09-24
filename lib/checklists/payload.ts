@@ -21,6 +21,7 @@ export type ChecklistPayloadItem = {
   condition: ChecklistCondition
   photos: ChecklistPhoto[]
   notes?: string
+  handler?: "BES" | "EKSTERNAL"
 }
 
 export type ChecklistPayload = {
@@ -38,7 +39,13 @@ export type ChecklistPayloadValidationResult = {
 }
 
 const CONDITION_SET = new Set<string>(CHECKLIST_CONDITIONS)
-const PHOTO_REQUIRED_CONDITIONS = new Set<ChecklistCondition>(["RUSAK"])
+const ACTION_REQUIRED_CONDITIONS = new Set<ChecklistCondition>([
+  "RUSAK",
+  "REPAIR",
+  "URGENT",
+  "ADJUST_OR_ADD",
+  "CLEAN",
+])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -59,12 +66,18 @@ function isChecklistPayload(value: unknown): value is ChecklistPayload {
 function isChecklistItem(value: unknown): value is ChecklistPayloadItem {
   if (!isRecord(value)) return false
 
+  const isValidHandler =
+    value.handler === undefined ||
+    value.handler === "BES" ||
+    value.handler === "EKSTERNAL"
+
   return (
     typeof value.id === "string" &&
     typeof value.label === "string" &&
     typeof value.condition === "string" &&
     CONDITION_SET.has(value.condition) &&
-    Array.isArray(value.photos)
+    Array.isArray(value.photos) &&
+    isValidHandler
   )
 }
 
@@ -83,13 +96,22 @@ export function validateChecklistPayload(
       continue
     }
 
-    if (
-      PHOTO_REQUIRED_CONDITIONS.has(item.condition) &&
-      item.photos.length === 0
-    ) {
+    const requiresAction = ACTION_REQUIRED_CONDITIONS.has(item.condition)
+
+    // For RUSAK, photo is still required
+    if (item.condition === "RUSAK" && item.photos.length === 0) {
       errors.push(
         `${item.label} wajib memiliki foto untuk kondisi ${item.condition}.`
       )
+    }
+
+    if (requiresAction) {
+      if (!item.handler) {
+        errors.push(`${item.label} wajib memilih siapa yang akan handle.`)
+      }
+      if (!item.notes || !item.notes.trim()) {
+        errors.push(`${item.label} wajib mengisi rencana aksi.`)
+      }
     }
   }
 

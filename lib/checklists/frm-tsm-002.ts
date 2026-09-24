@@ -17,6 +17,7 @@ import {
   Waves,
 } from "lucide-react"
 
+import { conditionRequiresPhoto } from "@/lib/checklists/photo-state"
 import type { ChecklistConfig } from "@/components/es-dashboard/shared-checklist-form"
 
 export const FRM_TSM_002_CONFIG: ChecklistConfig = {
@@ -58,5 +59,5 @@ export const FRM_TSM_002_CONFIG: ChecklistConfig = {
     RUSAK: "Rusak (X)",
     TIDAK_ADA: "Tidak Ada (T)",
   },
-  conditionRequiresPhoto: (condition) => condition === "RUSAK",
+  conditionRequiresPhoto,
 }

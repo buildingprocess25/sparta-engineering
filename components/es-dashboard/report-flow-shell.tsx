@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import { ReportBackButton } from "@/components/es-dashboard/report-back-button"
 
 type ReportFlowShellProps = {
-  eyebrow: string
+  eyebrow: ReactNode
   title: string
   description: string
   children: ReactNode

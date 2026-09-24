@@ -145,6 +145,7 @@ model ChecklistItem {
   itemName  String
   condition ItemCondition
   notes     String?
+  handler   String?
   photoUrls Json          @default("[]")
   createdAt DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt DateTime      @updatedAt @db.Timestamptz(3)

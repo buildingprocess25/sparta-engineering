@@ -68,6 +68,7 @@ type ItemState = {
   condition?: ChecklistCondition
   photos: ChecklistPhoto[]
   notes: string
+  handler?: "BES" | "EKSTERNAL"
   uploading: boolean
 }
 
@@ -150,9 +151,25 @@ export function SharedChecklistForm({
   const isFullyEvaluated = evaluatedCount === totalCount
   const isEvaluationValid = config.allowPartial ? hasEvaluatedItems : isFullyEvaluated
   
+  const hasMissingActionInfo = config.items.some((item) => {
+    const state = items[item.id]
+    const requiresAction = [
+      "RUSAK",
+      "REPAIR",
+      "URGENT",
+      "ADJUST_OR_ADD",
+      "CLEAN",
+    ].includes(state.condition || "")
+    if (!requiresAction) return false
+    if (!state.handler) return true
+    if (!state.notes.trim()) return true
+    return false
+  })
+
   const canSubmit =
     isEvaluationValid &&
     missingPhotoCount === 0 &&
+    !hasMissingActionInfo &&
     !isUploading &&
     !isPending
 
@@ -241,6 +258,7 @@ export function SharedChecklistForm({
           items[item.id].photos
         ),
         notes: items[item.id].notes,
+        handler: items[item.id].handler,
       })),
     }
   }
@@ -422,6 +440,8 @@ export function SharedChecklistForm({
                             onClick={() =>
                               updateItem(item.id, {
                                 ...nextChecklistPhotoState(state, condition),
+                                // reset action fields if unselecting action conditions
+                                ...(!["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition) ? { handler: undefined, notes: "" } : {})
                               })
                             }
                             className={cn(
@@ -436,6 +456,42 @@ export function SharedChecklistForm({
                         )
                       })}
                     </div>
+
+                    {["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "") ? (
+                      <div className="mt-5 border-t border-[#eeeeec] pt-4 flex flex-col gap-4">
+                        <div>
+                          <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
+                            AKAN DIHANDLE <span className="text-red-500">*</span>
+                          </p>
+                          <div className="flex rounded-xl bg-[#f5f5f3] p-1">
+                            <button
+                              type="button"
+                              onClick={() => updateItem(item.id, { handler: "BES" })}
+                              className={cn(
+                                "flex-1 rounded-lg py-2 text-[13px] font-semibold transition-all",
+                                state.handler === "BES"
+                                  ? "bg-[#ff8a2a] text-white shadow"
+                                  : "text-[#707784] hover:text-[#111111]"
+                              )}
+                            >
+                              BES
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
+                              className={cn(
+                                "flex-1 rounded-lg py-2 text-[13px] font-semibold transition-all",
+                                state.handler === "EKSTERNAL"
+                                  ? "bg-[#ff8a2a] text-white shadow"
+                                  : "text-[#707784] hover:text-[#111111]"
+                              )}
+                            >
+                              Eksternal
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
 
                     {photoRequired ? (
                       <div className="mt-4 border-t border-[#eeeeec] pt-4">
@@ -495,6 +551,20 @@ export function SharedChecklistForm({
                         ) : null}
                       </div>
                     ) : null}
+
+                    {["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "") ? (
+                      <div className="mt-4 border-t border-[#eeeeec] pt-4">
+                        <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
+                          RENCANA AKSI <span className="text-red-500">*</span>
+                        </p>
+                        <textarea
+                          value={state.notes}
+                          onChange={(e) => updateItem(item.id, { notes: e.target.value })}
+                          placeholder="Tambahkan rencana aksi..."
+                          className="w-full min-h-[80px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
+                        />
+                      </div>
+                    ) : null}
                   </article>
                 )
               })
@@ -524,8 +594,8 @@ export function SharedChecklistForm({
         {!canSubmit ? (
           <p className="mt-2 text-center text-xs text-[#686868]">
             {config.allowPartial
-              ? "Pilih minimal 1 item temuan dan lengkapi foto wajib sebelum menyimpan."
-              : "Lengkapi semua pilihan dan foto wajib sebelum menyimpan."}
+              ? "Lengkapi kondisi wajib (foto, handler, rencana aksi) sebelum menyimpan."
+              : "Lengkapi semua pilihan, foto wajib, dan rencana aksi sebelum menyimpan."}
           </p>
         ) : null}
       </div>

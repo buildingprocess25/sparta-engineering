@@ -17,6 +17,8 @@ type DynamicFormPageProps = {
   }>
   searchParams: Promise<{
     areaId?: string
+    roomId?: string
+    roomName?: string
     period?: string
     workPermit?: string
   }>
@@ -157,8 +159,18 @@ export default async function DynamicFormPage({
 
   return (
     <ReportFlowShell
-      eyebrow={`${meta.eyebrow}${isRepair ? " - PERBAIKAN" : ""}`}
-      title={meta.title}
+      eyebrow={
+        <>
+          <span>{meta.eyebrow}</span>
+          {isRepair && (
+            <>
+              <span className="text-white font-normal"> - </span>
+              <span>PERBAIKAN</span>
+            </>
+          )}
+        </>
+      }
+      title={queryParams.roomName ? `Checklist ${queryParams.roomName}` : meta.title}
       description={isRepair && formId !== "frm-tsm-004" ? "Pilih item yang rusak dan wajib sertakan foto." : meta.description}
     >
       {formId === "frm-tsm-004" ? (

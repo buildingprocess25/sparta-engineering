@@ -13,6 +13,7 @@ import {
   Zap,
 } from "lucide-react"
 
+import { conditionRequiresPhoto } from "@/lib/checklists/photo-state"
 import type { ChecklistConfig } from "@/components/es-dashboard/shared-checklist-form"
 
 export const FRM_TSM_005_CONFIG: ChecklistConfig = {
@@ -51,5 +52,5 @@ export const FRM_TSM_005_CONFIG: ChecklistConfig = {
     RUSAK: "Rusak (X)",
     TIDAK_ADA: "Tidak Ada (T)",
   },
-  conditionRequiresPhoto: (condition) => condition === "RUSAK",
+  conditionRequiresPhoto,
 }

@@ -12,23 +12,45 @@ export const CHECKLIST_FORMS: Record<
     MONTHLY: [
       {
         id: "frm-tsm-003",
-        title: "SAT/FRM/TSM/003 REV 000 211022",
-        description: "Checklist Ruangan",
+        title: "Checklist Ruangan",
+        description: "SAT/FRM/TSM/003 REV 000 211022",
       },
       {
         id: "frm-tsm-005",
-        title: "SAT/FRM/TSM/005 REV 211022",
-        description: "Checklist Maintenance",
+        title: "Checklist Maintenance",
+        description: "SAT/FRM/TSM/005 REV 211022",
       },
       {
         id: "frm-tsm-002",
-        title: "SAT/FRM/TSM/002_REV_000_211022",
-        description: "Checklist Warehouse / Peralatan",
+        title: "Checklist Warehouse / Peralatan",
+        description: "SAT/FRM/TSM/002_REV_000_211022",
       },
       {
         id: "frm-tsm-004",
-        title: "SAT/FRM/TSM/004_REV_000_211022",
-        description: "Checklist Main Cable",
+        title: "Checklist Main Cable",
+        description: "SAT/FRM/TSM/004_REV_000_211022",
+      },
+    ],
+    WEEKLY: [
+      {
+        id: "frm-tsm-003",
+        title: "Checklist Ruangan",
+        description: "SAT/FRM/TSM/003 REV 000 211022",
+      },
+      {
+        id: "frm-tsm-005",
+        title: "Checklist Maintenance",
+        description: "SAT/FRM/TSM/005 REV 211022",
+      },
+      {
+        id: "frm-tsm-002",
+        title: "Checklist Warehouse / Peralatan",
+        description: "SAT/FRM/TSM/002_REV_000_211022",
+      },
+      {
+        id: "frm-tsm-004",
+        title: "Checklist Main Cable",
+        description: "SAT/FRM/TSM/004_REV_000_211022",
       },
     ],
   },
@@ -36,26 +58,47 @@ export const CHECKLIST_FORMS: Record<
     MONTHLY: [
       {
         id: "frm-tsm-003",
-        title: "SAT/FRM/TSM/003 REV 000 211022",
-        description: "Checklist Ruangan",
+        title: "Checklist Ruangan",
+        description: "SAT/FRM/TSM/003 REV 000 211022",
       },
       {
         id: "frm-tsm-005",
-        title: "SAT/FRM/TSM/005 REV 211022",
-        description: "Checklist Maintenance",
+        title: "Checklist Maintenance",
+        description: "SAT/FRM/TSM/005 REV 211022",
       },
       {
         id: "frm-tsm-002",
-        title: "SAT/FRM/TSM/002_REV_000_211022",
-        description: "Checklist Warehouse / Peralatan",
+        title: "Checklist Warehouse / Peralatan",
+        description: "SAT/FRM/TSM/002_REV_000_211022",
       },
       {
         id: "frm-tsm-004",
-        title: "SAT/FRM/TSM/004_REV_000_211022",
-        description: "Checklist Main Cable",
+        title: "Checklist Main Cable",
+        description: "SAT/FRM/TSM/004_REV_000_211022",
       },
     ],
-    WEEKLY: [],
+    WEEKLY: [
+      {
+        id: "frm-tsm-003",
+        title: "Checklist Ruangan",
+        description: "SAT/FRM/TSM/003 REV 000 211022",
+      },
+      {
+        id: "frm-tsm-005",
+        title: "Checklist Maintenance",
+        description: "SAT/FRM/TSM/005 REV 211022",
+      },
+      {
+        id: "frm-tsm-002",
+        title: "Checklist Warehouse / Peralatan",
+        description: "SAT/FRM/TSM/002_REV_000_211022",
+      },
+      {
+        id: "frm-tsm-004",
+        title: "Checklist Main Cable",
+        description: "SAT/FRM/TSM/004_REV_000_211022",
+      },
+    ],
   },
 }
 

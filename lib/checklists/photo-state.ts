@@ -6,7 +6,8 @@ export type ChecklistPhotoState = {
 }
 
 export function conditionRequiresPhoto(condition?: ChecklistCondition) {
-  return condition === "RUSAK"
+  if (!condition) return false
+  return ["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition)
 }
 
 export function nextChecklistPhotoState(

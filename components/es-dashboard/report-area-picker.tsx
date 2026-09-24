@@ -93,10 +93,10 @@ export function ReportAreaPicker({
   const hasAreas = displayAreas.length > 0
   const requiresPeriod = true
   const canContinue = Boolean(
-    selectedArea && roomId && (!requiresPeriod || (period && (!availableForms.length || formId)))
+    selectedArea && (selectedArea.code !== "store_hub" ? roomId : true) && (!requiresPeriod || (period && (!availableForms.length || formId)))
   )
   const canOpenChecklistForm =
-    Boolean(selectedArea && roomId && period && (formId || !availableForms.length))
+    Boolean(selectedArea && (selectedArea.code !== "store_hub" ? roomId : true) && period && (formId || !availableForms.length))
 
   function selectPeriod(nextPeriod: Period) {
     setPeriod(nextPeriod)
@@ -192,7 +192,7 @@ export function ReportAreaPicker({
         )}
       </section>
 
-      {selectedArea ? (
+      {selectedArea && selectedArea.code !== "store_hub" ? (
         <section>
           <div className="flex items-center gap-3">
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
@@ -240,11 +240,11 @@ export function ReportAreaPicker({
         </section>
       ) : null}
 
-      {requiresPeriod && selectedArea && roomId ? (
+      {requiresPeriod && selectedArea && (selectedArea.code !== "store_hub" ? roomId : true) ? (
         <section>
           <div className="flex items-start gap-3">
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
-              5
+              {selectedArea.code !== "store_hub" ? "5" : "4"}
             </span>
             <div>
               <h2 className="font-semibold text-[#111111]">Periode Checklist</h2>
@@ -273,11 +273,11 @@ export function ReportAreaPicker({
         </section>
       ) : null}
 
-      {requiresPeriod && selectedArea && roomId && period && availableForms.length > 0 ? (
+      {requiresPeriod && selectedArea && (selectedArea.code !== "store_hub" ? roomId : true) && period && availableForms.length > 0 ? (
         <section>
           <div className="flex items-start gap-3">
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
-              6
+              {selectedArea.code !== "store_hub" ? "6" : "5"}
             </span>
             <div>
               <h2 className="font-semibold text-[#111111]">Pilih Form Checklist</h2>
@@ -308,13 +308,13 @@ export function ReportAreaPicker({
         </section>
       ) : null}
 
-      {canOpenChecklistForm && selectedArea && roomId ? (
+      {canOpenChecklistForm && selectedArea && (selectedArea.code !== "store_hub" ? roomId : true) ? (
         <Link
           href={{
             pathname: `/dashboard/reports/new/${reportType}/${formId || "frm-tsm-003"}`,
             query: {
               areaId: selectedArea.id,
-              roomId: roomId,
+              ...(selectedArea.code !== "store_hub" ? { roomId, roomName: rooms.find(r => r.id === roomId)?.name } : {}),
               period: period,
               ...(workPermit ? { workPermit } : {}),
             },
@@ -331,7 +331,7 @@ export function ReportAreaPicker({
             canContinue && "bg-[#111111] text-white opacity-80",
           )}
         >
-          {!roomId
+          {(!roomId && selectedArea?.code !== "store_hub")
             ? "Pilih ruangan"
             : requiresPeriod && !period
               ? "Pilih periode form"
