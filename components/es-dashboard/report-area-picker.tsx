@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { FlowOptionButton } from "@/components/es-dashboard/flow-option-button"
 import { getChecklistForms } from "@/lib/checklist-config"
+import ROOM_SUGGESTIONS from "@/lib/room-suggestions.json"
 import type {
   EsAreaOption,
   EsDashboardFlowIssue,
@@ -30,12 +31,19 @@ import {
   SelectSeparator,
 } from "@/components/ui/select"
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
@@ -76,13 +84,8 @@ export function ReportAreaPicker({
   const [roomId, setRoomId] = React.useState<string>("")
   const [period, setPeriod] = React.useState<Period>()
   const [formId, setFormId] = React.useState<string>()
-  
-  const [rooms, setRooms] = React.useState([
-    { id: "room-1", name: "Ruangan Coklat" },
-    { id: "room-2", name: "Toilet" },
-    { id: "room-3", name: "Ruang Meeting" },
-    { id: "room-4", name: "Area Loading" },
-  ])
+
+  const [rooms, setRooms] = React.useState<{ id: string, name: string }[]>([])
   const [isAddRoomOpen, setIsAddRoomOpen] = React.useState(false)
   const [newRoomName, setNewRoomName] = React.useState("")
 
@@ -102,6 +105,18 @@ export function ReportAreaPicker({
     setPeriod(nextPeriod)
     setFormId(undefined)
   }
+
+  React.useEffect(() => {
+    if (selectedArea) {
+      if (selectedArea.code === "office") {
+        setRooms(ROOM_SUGGESTIONS["OFFICE"].map((name, i) => ({ id: `office-${i}`, name })))
+      } else if (selectedArea.code === "wh") {
+        setRooms(ROOM_SUGGESTIONS["WAREHOUSE"].map((name, i) => ({ id: `wh-${i}`, name })))
+      } else {
+        setRooms([])
+      }
+    }
+  }, [selectedArea?.code])
 
   const isPeriodCompleted = (area: EsAreaOption, p: Period) =>
     reportType === "checklist" && Boolean(area.completedPeriods?.includes(p))
@@ -215,27 +230,37 @@ export function ReportAreaPicker({
             </div>
           </div>
           <div className="mt-3">
-            <Select
-              value={roomId}
-              onValueChange={(val) => {
-                setRoomId(val || "")
-                setPeriod(undefined)
-                setFormId(undefined)
+            <Combobox
+              items={rooms}
+              value={roomId ? rooms.find(r => r.id === roomId) ?? null : null}
+              onValueChange={(room) => {
+                if (room) {
+                  setRoomId(room.id)
+                  setPeriod(undefined)
+                  setFormId(undefined)
+                }
               }}
+              itemToStringLabel={(room) => room?.name ?? ""}
             >
-              <SelectTrigger className="h-12 w-full rounded-xl border-[#dedede] bg-[#fbfbfb] text-[#111111] transition-colors focus:ring-[#ff8a2a] focus:ring-offset-0">
-                <SelectValue placeholder="Pilih Ruangan...">
-                  {roomId ? rooms.find((r) => r.id === roomId)?.name : "Pilih Ruangan..."}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} className="rounded-xl border-[#dedede] bg-white">
-                {rooms.map((room) => (
-                  <SelectItem key={room.id} value={room.id} className="cursor-pointer rounded-lg text-[#111111] focus:bg-[#fff0e3] focus:text-[#a64f00]">
-                    {room.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <ComboboxInput
+                placeholder="Pilih Ruangan..."
+                className="h-12 w-full rounded-xl border-[#dedede] bg-[#fbfbfb] text-[#111111]"
+              />
+              <ComboboxContent className="rounded-xl border-[#dedede] bg-white">
+                <ComboboxEmpty>Ruangan tidak ditemukan.</ComboboxEmpty>
+                <ComboboxList className="max-h-[152px] overflow-y-auto">
+                  {(room) => (
+                    <ComboboxItem
+                      key={room.id}
+                      value={room}
+                      className="cursor-pointer rounded-lg text-[#111111] data-highlighted:bg-[#fff0e3] data-highlighted:text-[#a64f00]"
+                    >
+                      {room.name}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </div>
         </section>
       ) : null}
@@ -290,7 +315,7 @@ export function ReportAreaPicker({
             {availableForms.map((form) => {
               const formCode = form.id.replace(/-/g, "_").toUpperCase()
               const isFormCompleted = reportType === "checklist" && selectedArea?.completedForms?.includes(formCode)
-              
+
               return (
                 <FlowOptionButton
                   key={form.id}
@@ -370,6 +395,23 @@ export function ReportAreaPicker({
                 }
               }}
             />
+            {selectedArea && (ROOM_SUGGESTIONS[selectedArea.type as keyof typeof ROOM_SUGGESTIONS]?.length > 0) && (
+              <div className="mt-2">
+                <p className="mb-2 text-xs text-[#686868]">Saran Cepat:</p>
+                <div className="flex flex-wrap gap-2">
+                  {ROOM_SUGGESTIONS[selectedArea.type as keyof typeof ROOM_SUGGESTIONS].map((suggestion: string) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => setNewRoomName(suggestion)}
+                      className="rounded-full border border-[#dedede] bg-[#fbfbfa] px-3 py-1.5 text-xs text-[#111111] transition-colors hover:bg-[#f0f0f0]"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button

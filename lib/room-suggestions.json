@@ -1,0 +1,34 @@
+{
+  "WAREHOUSE": [
+    "Ruang Receiving",
+    "Ruang Issuing",
+    "Ruang WHM/DWHM",
+    "Ruang Admin WH",
+    "Ruang Server WH",
+    "Ruang Bad Stok",
+    "Ruang Coklat",
+    "Area Storage",
+    "Musholla"
+  ],
+  "OFFICE": [
+    "Lobby",
+    "Ruang Dealing",
+    "Ruang BM",
+    "Area Operasional",
+    "Area Finance",
+    "Area Marketing/MD",
+    "Area PropDev",
+    "Area HC",
+    "Area IT",
+    "Ruang Server",
+    "Ruang Meeting",
+    "Ruang LP",
+    "Gudang Office/Arsip",
+    "Toilet",
+    "Pos Security",
+    "Ruang Genset",
+    "Ruang Panel LVMDP",
+    "Gudang GA/FA",
+    "Gudang Marketing"
+  ]
+}
