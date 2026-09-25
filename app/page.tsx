@@ -18,12 +18,18 @@ export default function Home() {
             />
           </div>
           <div className="h-9 w-px bg-white/15" />
-          <div className="flex items-center gap-2">
-            <div className="flex flex-col leading-none">
-              <span className="text-sm font-bold tracking-wide">SPARTA</span>
-              <span className="text-[10px] font-medium text-zinc-400">
-                Engineering
-              </span>
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/assets/sparta-engineering-logo.png"
+              alt="SPARTA Engineering"
+              width={400}
+              height={480}
+              priority
+              className="h-10 w-auto object-contain"
+            />
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-bold tracking-wide text-white">SPARTA</span>
+              <span className="text-[10px] font-medium text-zinc-400">Engineering</span>
             </div>
           </div>
         </div>
@@ -64,10 +70,10 @@ export default function Home() {
         <section className="flex justify-center lg:justify-end">
           <div className="rounded-xl border border-white/10 bg-[#22211f] p-8 shadow-2xl shadow-black/25">
             <Image
-              src="/assets/Building-Logo.png"
-              alt="Building Engineering"
-              width={475}
-              height={601}
+              src="/assets/sparta-engineering-logo.png"
+              alt="SPARTA Engineering"
+              width={400}
+              height={480}
               priority
               className="h-64 w-auto object-contain"
             />
@@ -76,7 +82,7 @@ export default function Home() {
       </main>
 
       <footer className="px-4 pb-6 text-center text-xs text-zinc-500">
-        © 2026 SPARTA Engineering. Building & Engineering System.
+        © 2026 Building Maintenance & Energy System
       </footer>
     </div>
   )

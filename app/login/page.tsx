@@ -28,21 +28,17 @@ export default function LoginPage() {
             />
           </div>
           <div className="h-8 w-px bg-white/15" />
-          <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-lg border border-white/10 bg-white">
-              <Image
-                src="/assets/Building-Logo.png"
-                alt=""
-                width={475}
-                height={601}
-                className="h-7 w-auto object-contain"
-              />
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-sm font-bold tracking-wide">SPARTA</span>
-              <span className="text-[10px] font-medium text-zinc-400">
-                Engineering
-              </span>
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/assets/sparta-engineering-logo.png"
+              alt="SPARTA Engineering"
+              width={400}
+              height={480}
+              className="h-10 w-auto object-contain"
+            />
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-bold tracking-wide text-white">SPARTA</span>
+              <span className="text-[10px] font-medium text-zinc-400">Engineering</span>
             </div>
           </div>
         </div>
