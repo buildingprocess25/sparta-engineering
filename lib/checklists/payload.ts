@@ -22,6 +22,8 @@ export type ChecklistPayloadItem = {
   photos: ChecklistPhoto[]
   notes?: string
   handler?: "BES" | "EKSTERNAL"
+  repairForm?: string
+  repairFormName?: string
 }
 
 export type ChecklistPayload = {
@@ -77,7 +79,8 @@ function isChecklistItem(value: unknown): value is ChecklistPayloadItem {
     typeof value.condition === "string" &&
     CONDITION_SET.has(value.condition) &&
     Array.isArray(value.photos) &&
-    isValidHandler
+    isValidHandler &&
+    (value.repairForm === undefined || typeof value.repairForm === "string")
   )
 }
 
