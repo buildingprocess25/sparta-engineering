@@ -88,6 +88,7 @@ export function ReportAreaPicker({
   const [rooms, setRooms] = React.useState<{ id: string, name: string }[]>([])
   const [isAddRoomOpen, setIsAddRoomOpen] = React.useState(false)
   const [newRoomName, setNewRoomName] = React.useState("")
+  const [searchForm, setSearchForm] = React.useState("")
 
   const selectedArea = areas.find((area) => area.id === areaId)
   const availableForms = selectedArea && period ? getChecklistForms(selectedArea.type, period) : []
@@ -223,7 +224,7 @@ export function ReportAreaPicker({
               <button
                 type="button"
                 onClick={() => setIsAddRoomOpen(true)}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-[#dedede] px-2.5 py-1.5 text-xs font-semibold text-[#111111] transition-colors hover:bg-[#f5f5f5]"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-[#dedede] px-2.5 py-1.5 text-xs font-semibold text-[#111111] transition-colors hover:border-[#ffc9a3] hover:bg-[#fff0e3] hover:text-[#a64f00]"
               >
                 + Tambah
               </button>
@@ -311,8 +312,19 @@ export function ReportAreaPicker({
               </p>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-1 gap-3">
-            {availableForms.map((form) => {
+          <div className="mt-3 flex flex-col gap-3">
+            <input
+              type="text"
+              placeholder="Cari form..."
+              value={searchForm}
+              onChange={(e) => setSearchForm(e.target.value)}
+              className="w-full rounded-xl border border-[#dedede] px-4 py-3 text-sm placeholder:text-[#a0a5ad] outline-none focus:border-[#ff8a2a] focus:ring-1 focus:ring-[#ff8a2a] bg-white transition-all"
+            />
+            <div className="grid grid-cols-1 gap-3 max-h-[340px] overflow-y-auto -mr-3 pr-3 pb-1 scrollbar-thin">
+            {availableForms.filter(form => 
+              form.title.toLowerCase().includes(searchForm.toLowerCase()) || 
+              form.description.toLowerCase().includes(searchForm.toLowerCase())
+            ).map((form) => {
               const formCode = form.id.replace(/-/g, "_").toUpperCase()
               const isFormCompleted = reportType === "checklist" && selectedArea?.completedForms?.includes(formCode)
 
@@ -329,6 +341,7 @@ export function ReportAreaPicker({
                 />
               )
             })}
+            </div>
           </div>
         </section>
       ) : null}
@@ -398,7 +411,7 @@ export function ReportAreaPicker({
             {selectedArea && (ROOM_SUGGESTIONS[selectedArea.type as keyof typeof ROOM_SUGGESTIONS]?.length > 0) && (
               <div className="mt-2">
                 <p className="mb-2 text-xs text-[#686868]">Saran Cepat:</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto pr-2 pb-2">
                   {ROOM_SUGGESTIONS[selectedArea.type as keyof typeof ROOM_SUGGESTIONS].map((suggestion: string) => (
                     <button
                       key={suggestion}
@@ -438,7 +451,7 @@ export function ReportAreaPicker({
                   setNewRoomName("")
                 }
               }}
-              className="h-9 rounded-lg bg-[#111111] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#242424] disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-9 rounded-lg bg-[#ff8a2a] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#e67a22] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Simpan
             </button>
