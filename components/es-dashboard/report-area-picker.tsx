@@ -119,12 +119,9 @@ export function ReportAreaPicker({
     }
   }, [selectedArea?.code])
 
-  const isPeriodCompleted = (area: EsAreaOption, p: Period) =>
-    reportType === "checklist" && Boolean(area.completedPeriods?.includes(p))
-
-  const isAreaFullyCompleted = (area: EsAreaOption) =>
-    reportType === "checklist" &&
-    area.periods.every((p) => isPeriodCompleted(area, p))
+  // Mode testing: nonaktifkan status completed agar form/area tidak disable
+  const isPeriodCompleted = (_area: EsAreaOption, _p: Period) => false
+  const isAreaFullyCompleted = (_area: EsAreaOption) => false
 
   function chooseArea(nextAreaId: string) {
     const nextArea = areas.find((area) => area.id === nextAreaId)
@@ -325,18 +322,18 @@ export function ReportAreaPicker({
               form.title.toLowerCase().includes(searchForm.toLowerCase()) || 
               form.description.toLowerCase().includes(searchForm.toLowerCase())
             ).map((form) => {
-              const formCode = form.id.replace(/-/g, "_").toUpperCase()
-              const isFormCompleted = reportType === "checklist" && selectedArea?.completedForms?.includes(formCode)
+              // Mode testing: jangan disable form yang sudah pernah disubmit
+              const isFormCompleted = false
 
               return (
                 <FlowOptionButton
                   key={form.id}
                   title={form.title}
-                  description={isFormCompleted ? "Sudah disubmit" : form.description}
+                  description={form.description}
                   active={formId === form.id}
-                  disabled={isFormCompleted}
+                  disabled={false}
                   onClick={() => {
-                    if (!isFormCompleted) setFormId(form.id)
+                    setFormId(form.id)
                   }}
                 />
               )

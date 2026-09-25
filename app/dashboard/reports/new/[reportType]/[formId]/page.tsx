@@ -136,11 +136,25 @@ export default async function DynamicFormPage({
   })
 
   if (existingReport && existingReport.status !== "DRAFT") {
-    return unavailable(
-      "Laporan sudah dibuat",
-      "Laporan untuk area dan periode ini sudah pernah disubmit.",
-      meta.eyebrow
-    )
+    // Mode testing: izinkan submit berulang dengan membersihkan laporan sebelumnya
+    await getPrisma().checklistItem.deleteMany({
+      where: {
+        report: {
+          areaId: area.id,
+          period: "MONTHLY",
+          periodKey,
+          formCode,
+        },
+      },
+    })
+    await getPrisma().checklistReport.deleteMany({
+      where: {
+        areaId: area.id,
+        period: "MONTHLY",
+        periodKey,
+        formCode,
+      },
+    })
   }
 
   const draft = await reserveChecklistDraft(
