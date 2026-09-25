@@ -28,12 +28,12 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
   "frm-tsm-002": {
     eyebrow: "FRM_TSM_002",
     title: "Checklist Warehouse / Peralatan",
-    description: "Pilih kondisi setiap item. Baik dan rusak wajib memakai foto sebagai bukti.",
+    description: "Pilih kondisi setiap item. Khusus item yang rusak wajib menyertakan foto sebagai bukti.",
   },
   "frm-tsm-003": {
     eyebrow: "FRM_TSM_003",
     title: "Checklist Ruangan",
-    description: "Pilih kondisi setiap item. Baik dan rusak wajib memakai foto sebagai bukti.",
+    description: "Pilih kondisi setiap item. Khusus item yang rusak wajib menyertakan foto sebagai bukti.",
   },
   "frm-tsm-004": {
     eyebrow: "FRM_TSM_004",
@@ -43,7 +43,7 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
   "frm-tsm-005": {
     eyebrow: "FRM_TSM_005",
     title: "Checklist Pompa Air",
-    description: "Pilih kondisi setiap item. Baik dan rusak wajib memakai foto sebagai bukti.",
+    description: "Pilih kondisi setiap item. Khusus item yang rusak wajib menyertakan foto sebagai bukti.",
   },
 }
 

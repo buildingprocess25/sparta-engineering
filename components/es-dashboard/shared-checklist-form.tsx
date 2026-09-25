@@ -18,16 +18,25 @@ import { useRouter } from "next/navigation"
 import { CameraCaptureButton } from "@/components/es-dashboard/camera-capture-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { getChecklistConfig } from "@/lib/checklists/registry"
 import type {
   ChecklistCondition,
   ChecklistPayload,
+  ChecklistPayloadItem,
   ChecklistPhoto,
 } from "@/lib/checklists/payload"
 import {
   getPayloadPhotosForCondition,
   nextChecklistPhotoState,
 } from "@/lib/checklists/photo-state"
+import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
 
@@ -69,12 +78,19 @@ type ItemState = {
   photos: ChecklistPhoto[]
   notes: string
   handler?: "BES" | "EKSTERNAL"
+  repairForm?: string
   uploading: boolean
 }
 
 type UploadNotice = {
   tone: "loading" | "success" | "error"
   message: string
+}
+
+const FOLLOW_UP_LABELS: Record<string, string> = {
+  "SAT/FRM/TSM/014_REV:000_060423": "Form Estimasi Biaya Sipil & ME (014)",
+  "SAT/FRM/TS/065_REV:00_161020": "Form Penggantian Spare Part (065)",
+  "REPAIR_TANPA_BIAYA": "Repair Tanpa Biaya",
 }
 
 type PreviewPhoto = {
@@ -95,18 +111,14 @@ export function SharedChecklistForm({
   const router = useRouter()
   const config = React.useMemo(() => getChecklistConfig(formCode), [formCode])
   
-  const [items, setItems] = React.useState<Record<string, ItemState>>(() => {
+  const [quantities, setQuantities] = React.useState<Record<string, number>>(() => {
     if (!config) return {}
-    return Object.fromEntries(
-      config.items.map((item) => [
-        item.id,
-        {
-          photos: [],
-          notes: "",
-          uploading: false,
-        } satisfies ItemState,
-      ])
-    ) as Record<string, ItemState>
+    return Object.fromEntries(config.items.map((item) => [item.id, 1]))
+  })
+  
+  const [items, setItems] = React.useState<Record<string, ItemState[]>>(() => {
+    if (!config) return {}
+    return Object.fromEntries(config.items.map((item) => [item.id, []]))
   })
   const [errors, setErrors] = React.useState<string[]>([])
   const [uploadNotice, setUploadNotice] = React.useState<UploadNotice>()
@@ -136,34 +148,29 @@ export function SharedChecklistForm({
         item.label.toLowerCase().includes(normalizedQuery)
       )
     : config.items
-  const evaluatedCount = config.items.filter(
-    (item) => items[item.id].condition
-  ).length
+  const evaluatedCount = config.items.filter(item => items[item.id].every(state => state.condition)).length
   const totalCount = config.items.length
   const progressPercentage = Math.round((evaluatedCount / totalCount) * 100)
-  const missingPhotoCount = config.items.filter((item) => {
-    const state = items[item.id]
-    return config.conditionRequiresPhoto(state.condition) && state.photos.length === 0
-  }).length
-  const isUploading = Object.values(items).some((item) => item.uploading)
+  
+  const missingPhotoCount = config.items.reduce((sum, item) => {
+    return sum + items[item.id].filter(state => config.conditionRequiresPhoto(state.condition) && state.photos.length === 0).length
+  }, 0)
+  
+  const isUploading = Object.values(items).some(list => list.some(state => state.uploading))
   
   const hasEvaluatedItems = evaluatedCount > 0
   const isFullyEvaluated = evaluatedCount === totalCount
   const isEvaluationValid = config.allowPartial ? hasEvaluatedItems : isFullyEvaluated
   
   const hasMissingActionInfo = config.items.some((item) => {
-    const state = items[item.id]
-    const requiresAction = [
-      "RUSAK",
-      "REPAIR",
-      "URGENT",
-      "ADJUST_OR_ADD",
-      "CLEAN",
-    ].includes(state.condition || "")
-    if (!requiresAction) return false
-    if (!state.handler) return true
-    if (!state.notes.trim()) return true
-    return false
+    return items[item.id].some((state) => {
+      const requiresAction = ["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "")
+      if (!requiresAction) return false
+      if (!state.handler) return true
+      if (!state.notes.trim()) return true
+      if (!state.repairForm) return true
+      return false
+    })
   })
 
   const canSubmit =
@@ -173,112 +180,159 @@ export function SharedChecklistForm({
     !isUploading &&
     !isPending
 
-  function updateItem(itemId: string, next: Partial<ItemState>) {
-    setItems((current) => ({
-      ...current,
-      [itemId]: { ...current[itemId], ...next },
-    }))
+  function updateItemQty(itemId: string, qty: number) {
+    if (qty < 1) return
+    setQuantities(curr => ({ ...curr, [itemId]: qty }))
+    setItems(curr => {
+      const list = curr[itemId]
+      if (list.length > qty) {
+        return { ...curr, [itemId]: list.slice(0, qty) }
+      }
+      return curr
+    })
   }
 
-  async function uploadPhoto(itemId: string, file: File) {
-    updateItem(itemId, { uploading: true })
+  function addDamagedUnit(itemId: string) {
+    setItems(curr => {
+      const list = curr[itemId]
+      if (list.length >= (quantities[itemId] || 1)) return curr
+      return { ...curr, [itemId]: [...list, { photos: [], notes: "", uploading: false }] }
+    })
+  }
+
+  function removeDamagedUnit(itemId: string) {
+    setItems(curr => {
+      const list = curr[itemId]
+      if (list.length === 0) return curr
+      return { ...curr, [itemId]: list.slice(0, -1) }
+    })
+  }
+
+  function updateItem(itemId: string, index: number, next: Partial<ItemState>) {
+    setItems(curr => {
+      const list = [...curr[itemId]]
+      list[index] = { ...list[index], ...next }
+      return { ...curr, [itemId]: list }
+    })
+  }
+
+  async function uploadPhoto(itemId: string, index: number, file: File) {
+    updateItem(itemId, index, { uploading: true })
     setUploadNotice({ tone: "loading", message: "Foto sedang diupload." })
     setErrors([])
 
     try {
+      const formData = new FormData()
+      formData.set("file", file)
+      formData.set(
+        "context",
+        JSON.stringify({
+          kind: "CHECKLIST_ITEM",
+          reportCode,
+          formCode,
+          itemId,
+          sequence: (items[itemId]?.[index]?.photos.length || 0) + 1,
+        })
+      )
       const response = await fetch("/api/photos/upload", {
         method: "POST",
-        body: buildUploadFormData(itemId, file, items[itemId].photos.length + 1),
+        body: formData,
       })
-      const payload = (await response.json()) as
-        | { fileId: string; url: string }
-        | { error: string }
+      const payload = await response.json()
 
       if (!response.ok || "error" in payload) {
         throw new Error("error" in payload ? payload.error : "Upload gagal.")
       }
 
-      setItems((current) => ({
-        ...current,
-        [itemId]: {
-          ...current[itemId],
-          uploading: false,
-          photos: [...current[itemId].photos, payload],
-        },
-      }))
+      setItems(curr => {
+        const list = [...curr[itemId]]
+        list[index] = { ...list[index], uploading: false, photos: [...list[index].photos, payload] }
+        return { ...curr, [itemId]: list }
+      })
       setUploadNotice({ tone: "success", message: "Upload foto tersimpan." })
     } catch (error) {
-      updateItem(itemId, { uploading: false })
+      updateItem(itemId, index, { uploading: false })
       setUploadNotice({ tone: "error", message: "Upload foto gagal." })
-      setErrors([
-        error instanceof Error ? error.message : "Upload foto gagal.",
-      ])
+      setErrors([error instanceof Error ? error.message : "Upload foto gagal."])
     }
   }
 
-  function deletePhoto(itemId: string, fileId: string) {
-    setItems((current) => ({
-      ...current,
-      [itemId]: {
-        ...current[itemId],
-        photos: current[itemId].photos.filter((p) => p.fileId !== fileId),
-      },
-    }))
-  }
-
-  function buildUploadFormData(itemId: string, file: File, sequence: number) {
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append(
-      "context",
-      JSON.stringify({
-        kind: "CHECKLIST_ITEM",
-        reportCode,
-        formCode: config!.formCode,
-        itemId,
-        sequence,
-      })
-    )
-    return formData
+  function deletePhoto(itemId: string, index: number, fileId: string) {
+    setItems(curr => {
+      const list = [...curr[itemId]]
+      list[index] = { ...list[index], photos: list[index].photos.filter(p => p.fileId !== fileId) }
+      return { ...curr, [itemId]: list }
+    })
   }
 
   function buildPayload(): ChecklistPayload {
     return {
-      formCode: config!.formCode,
+      formCode,
       formName: config!.formName,
       areaCode,
       period: "MONTHLY",
       periodKey,
-      items: config!.items.map((item) => ({
-        id: item.id,
-        label: item.label,
-        condition: items[item.id].condition ?? "TIDAK_ADA",
-        photos: getPayloadPhotosForCondition(
-          items[item.id].condition ?? "TIDAK_ADA",
-          items[item.id].photos
-        ),
-        notes: items[item.id].notes,
-        handler: items[item.id].handler,
-      })),
+      items: config!.items.flatMap((item) => {
+        const qty = quantities[item.id] || 1
+        const damagedList = items[item.id] || []
+        const goodCount = qty - damagedList.length
+
+        const payloadItems: ChecklistPayloadItem[] = []
+        for (let i = 0; i < goodCount; i++) {
+          payloadItems.push({
+            id: item.id,
+            label: item.label,
+            condition: "BAIK",
+            photos: [],
+            notes: "",
+          })
+        }
+        for (const state of damagedList) {
+          payloadItems.push({
+            id: item.id,
+            label: item.label,
+            condition: state.condition ?? "TIDAK_ADA",
+            photos: getPayloadPhotosForCondition(state.condition ?? "TIDAK_ADA", state.photos),
+            notes: state.notes,
+            handler: state.handler,
+            repairForm: state.repairForm === "REPAIR_TANPA_BIAYA" ? undefined : state.repairForm,
+            repairFormName:
+              state.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
+                ? "Form Estimasi Biaya Sipil & ME (014)"
+                : state.repairForm === "SAT/FRM/TS/065_REV:00_161020"
+                ? "Form Penggantian Spare Part (065)"
+                : state.repairForm === "REPAIR_TANPA_BIAYA"
+                ? "Repair Tanpa Biaya"
+                : undefined,
+          })
+        }
+        return payloadItems
+      }),
     }
   }
 
-  function submit() {
-    if (!canSubmit) return
-
+  function handleSubmit() {
     setErrors([])
+
+    const payload = buildPayload()
+    const validation = validateChecklistPayload(payload)
+
+    if (!validation.valid) {
+      setErrors(validation.errors)
+      return
+    }
+
     startTransition(async () => {
-      const result = await submitAction({
-        reportCode,
-        payload: buildPayload(),
-      })
-
-      if (!result.ok) {
-        setErrors(result.errors || ["Terjadi kesalahan saat menyimpan."])
-        return
+      try {
+        const result = await submitAction({ reportCode, payload })
+        if (!result.ok) {
+          setErrors(result.errors)
+          return
+        }
+        router.back()
+      } catch (error) {
+        setErrors([error instanceof Error ? error.message : "Terjadi kesalahan. Coba lagi."])
       }
-
-      router.push("/dashboard/reports")
     })
   }
 
@@ -347,7 +401,7 @@ export function SharedChecklistForm({
           <p className="mt-1 text-sm leading-5 text-[#686868]">
             {config.allowPartial
               ? "Pilih minimal 1 item yang rusak. Kondisi rusak wajib menyertakan foto bukti."
-              : "Evaluasi semua item. Kondisi tertentu wajib memakai foto dari kamera."}
+              : "Pilih kondisi setiap item. Khusus item yang rusak wajib menyertakan foto sebagai bukti."}
           </p>
         </div>
       </section>
@@ -405,166 +459,274 @@ export function SharedChecklistForm({
           <div className="flex flex-col gap-3 border-t border-[#eeeeec] bg-[#fbfbfa] p-3">
             {visibleItems.length > 0 ? (
               visibleItems.map((item) => {
-                const state = items[item.id]
-                const photoRequired = config.conditionRequiresPhoto(state.condition)
+                const list = items[item.id]
+                const totalQty = quantities[item.id] || 1
+                const unitsRusak = list.length
+                const goodCount = totalQty - unitsRusak
 
                 return (
                   <article
                     key={item.id}
                     className="rounded-2xl border border-[#e8e8e6] bg-white p-5 shadow-[0_4px_14px_rgba(17,17,17,0.04)]"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f5f5f3] text-[#707784]">
-                        <item.icon className="size-5" aria-hidden="true" />
-                      </span>
-                      <h4 className="text-base font-semibold text-[#111111]">
-                        {item.label}
-                      </h4>
-                    </div>
-                    
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {config.conditionOptions.map((condition) => {
-                        const isActive = state.condition === condition;
-                        
-                        let activeClasses = "border-[#111111] bg-[#111111] text-white shadow-sm"
-                        if (condition === "BAIK" || condition === "CLEAN") {
-                          activeClasses = "border-green-500 bg-green-50 text-green-700 shadow-sm"
-                        } else if (condition === "RUSAK" || condition === "URGENT" || condition === "REPAIR") {
-                          activeClasses = "border-red-500 bg-red-50 text-red-700 shadow-sm"
-                        }
-
-                        return (
-                          <button
-                            key={condition}
-                            type="button"
-                            onClick={() =>
-                              updateItem(item.id, {
-                                ...nextChecklistPhotoState(state, condition),
-                                // reset action fields if unselecting action conditions
-                                ...(!["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition) ? { handler: undefined, notes: "" } : {})
-                              })
-                            }
-                            className={cn(
-                              "flex-1 min-w-[calc(30%-0.5rem)] rounded-xl border px-3 py-2.5 text-[13px] font-semibold transition-all text-center leading-tight",
-                              isActive
-                                ? activeClasses
-                                : "border-[#e6e2de] bg-[#fbfbfa] text-[#686868] hover:border-[#d0d0d0] hover:bg-white"
-                            )}
-                          >
-                            {config.conditionLabels[condition]}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    {["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "") ? (
-                      <div className="mt-5 border-t border-[#eeeeec] pt-4 flex flex-col gap-4">
-                        <div>
-                          <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
-                            AKAN DIHANDLE <span className="text-red-500">*</span>
-                          </p>
-                          <div className="flex rounded-xl bg-[#f5f5f3] p-1">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f5f5f3] text-[#707784]">
+                          <item.icon className="size-5" aria-hidden="true" />
+                        </span>
+                        <h4 className="text-base font-semibold text-[#111111]">
+                          {item.label}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        {/* UNIT RUSAK STEPPER */}
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-[#707784] tracking-wider uppercase">UNIT RUSAK</span>
+                          <div className="flex items-center rounded-lg border border-[#e8e8e6] bg-[#fbfbfa]">
                             <button
                               type="button"
-                              onClick={() => updateItem(item.id, { handler: "BES" })}
-                              className={cn(
-                                "flex-1 rounded-lg py-2 text-[13px] font-semibold transition-all",
-                                state.handler === "BES"
-                                  ? "bg-[#ff8a2a] text-white shadow"
-                                  : "text-[#707784] hover:text-[#111111]"
-                              )}
+                              onClick={() => removeDamagedUnit(item.id)}
+                              disabled={unitsRusak <= 0}
+                              className="grid size-8 place-items-center text-[#686868] hover:bg-[#efefed] disabled:opacity-30 rounded-l-lg transition-colors"
                             >
-                              BES
+                              -
                             </button>
+                            <span className="w-8 text-center text-sm font-semibold">{unitsRusak}</span>
                             <button
                               type="button"
-                              onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
-                              className={cn(
-                                "flex-1 rounded-lg py-2 text-[13px] font-semibold transition-all",
-                                state.handler === "EKSTERNAL"
-                                  ? "bg-[#ff8a2a] text-white shadow"
-                                  : "text-[#707784] hover:text-[#111111]"
-                              )}
+                              onClick={() => addDamagedUnit(item.id)}
+                              disabled={unitsRusak >= totalQty}
+                              className="grid size-8 place-items-center text-[#686868] hover:bg-[#efefed] disabled:opacity-30 rounded-r-lg transition-colors"
                             >
-                              Eksternal
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* TOTAL QTY STEPPER */}
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-[#707784] tracking-wider uppercase">TOTAL QTY</span>
+                          <div className="flex items-center rounded-lg border border-[#e8e8e6] bg-[#fbfbfa]">
+                            <button
+                              type="button"
+                              onClick={() => updateItemQty(item.id, totalQty - 1)}
+                              disabled={totalQty <= 1}
+                              className="grid size-8 place-items-center text-[#686868] hover:bg-[#efefed] disabled:opacity-30 rounded-l-lg transition-colors"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center text-sm font-semibold">{totalQty}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateItemQty(item.id, totalQty + 1)}
+                              className="grid size-8 place-items-center text-[#686868] hover:bg-[#efefed] rounded-r-lg transition-colors"
+                            >
+                              +
                             </button>
                           </div>
                         </div>
                       </div>
-                    ) : null}
+                    </div>
+                    
+                    {unitsRusak === 0 ? (
+                      <div className="mt-5 p-4 rounded-xl bg-[#fff0e3] border border-[#ffc9a3] text-center text-[13px] text-[#a64f00] font-medium leading-relaxed">
+                        Sebanyak <span className="font-bold">{totalQty} unit</span> tercatat dalam kondisi <span className="font-bold">BAIK</span>.<br />
+                        <span className="text-[#a64f00]/80 text-xs font-normal">Tambahkan angka pada tombol (+) Unit Rusak di atas jika ada yang bermasalah.</span>
+                      </div>
+                    ) : (
+                      <div className="mt-5 flex flex-col gap-6">
+                        {list.map((state, index) => {
+                          const photoRequired = config.conditionRequiresPhoto(state.condition)
+                          return (
+                            <div key={index} className={cn(index > 0 && "border-t border-dashed border-[#dedede] pt-6 relative")}>
+                              <p className="mb-3 text-sm font-bold text-[#707784]">
+                                Laporan Kerusakan #{index + 1}
+                              </p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {config.conditionOptions.map((condition) => {
+                                  const isFullWidth = condition === "TIDAK_ADA"
+                                  const isActive = state.condition === condition
+                                  const isBaik = condition === "BAIK"
+                                  const isTidakAda = condition === "TIDAK_ADA"
 
-                    {photoRequired ? (
-                      <div className="mt-4 border-t border-[#eeeeec] pt-4">
-                        <p className="mb-2 text-xs font-bold text-[#707784]">
-                          Foto bukti *
-                        </p>
-                        
-                        {state.photos.length === 0 ? (
-                          <CameraCaptureButton
-                            disabled={state.uploading}
-                            uploading={state.uploading}
-                            watermarkLines={buildChecklistPhotoWatermarkLines({
-                              areaName,
-                              userLabel: watermarkUserLabel,
-                              userRole: watermarkUserRole,
-                            })}
-                            onCapture={(file) => void uploadPhoto(item.id, file)}
-                          />
-                        ) : null}
+                                  const activeClasses = isBaik
+                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold shadow-xs"
+                                    : isTidakAda
+                                    ? "border-[#111111] bg-[#111111] text-white font-bold shadow-xs"
+                                    : "border-red-500 bg-red-50 text-red-600 font-bold shadow-xs"
 
-                        {state.photos.length > 0 ? (
-                          <div className="mt-3 flex flex-col gap-2">
-                            {state.photos.map((photo) => (
-                              <div key={photo.fileId} className="relative">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setPreviewPhoto({
-                                      itemLabel: item.label,
-                                      url: photo.url,
-                                    })
-                                  }
-                                  className="group w-full overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)] outline-none focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/40"
-                                >
-                                  <Image
-                                    src={photo.url}
-                                    alt={`Foto bukti ${item.label}`}
-                                    width={640}
-                                    height={360}
-                                    className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.01]"
-                                  />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deletePhoto(item.id, photo.fileId);
-                                  }}
-                                  className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-red-500/90 text-white backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 shadow-md"
-                                  aria-label="Hapus foto"
-                                >
-                                  <Trash2 className="size-4" />
-                                </button>
+                                  return (
+                                    <button
+                                      key={condition}
+                                      type="button"
+                                      onClick={() =>
+                                        updateItem(item.id, index, {
+                                          ...nextChecklistPhotoState(state, condition),
+                                          ...(!["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition) ? { handler: undefined, notes: "", repairForm: undefined } : {})
+                                        })
+                                      }
+                                      className={cn(
+                                        "h-11 rounded-xl border px-2 text-[13px] font-bold transition-all flex items-center justify-center text-center leading-tight",
+                                        isFullWidth ? "col-span-3" : "col-span-1",
+                                        isActive
+                                          ? activeClasses
+                                          : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
+                                      )}
+                                    >
+                                      {config.conditionLabels[condition] ?? condition}
+                                    </button>
+                                  )
+                                })}
                               </div>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
 
-                    {["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "") ? (
-                      <div className="mt-4 border-t border-[#eeeeec] pt-4">
-                        <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
-                          RENCANA AKSI <span className="text-red-500">*</span>
-                        </p>
-                        <textarea
-                          value={state.notes}
-                          onChange={(e) => updateItem(item.id, { notes: e.target.value })}
-                          placeholder="Tambahkan rencana aksi..."
-                          className="w-full min-h-[80px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
-                        />
+                              {["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "") ? (
+                                <div className="mt-5 border-t border-[#eeeeec] pt-4 flex flex-col gap-4">
+                                  <div>
+                                    <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
+                                      AKAN DIHANDLE <span className="text-red-500">*</span>
+                                    </p>
+                                    <div className="flex rounded-xl bg-[#f5f5f3] p-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => updateItem(item.id, index, { handler: "BES" })}
+                                        className={cn(
+                                          "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
+                                          state.handler === "BES"
+                                            ? "bg-[#ff8a2a] text-white shadow"
+                                            : "text-[#707784] hover:text-[#111111]"
+                                        )}
+                                      >
+                                        BES
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateItem(item.id, index, { handler: "EKSTERNAL" })}
+                                        className={cn(
+                                          "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
+                                          state.handler === "EKSTERNAL"
+                                            ? "bg-[#ff8a2a] text-white shadow"
+                                            : "text-[#707784] hover:text-[#111111]"
+                                        )}
+                                      >
+                                        Eksternal
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              {photoRequired ? (
+                                <div className="mt-4 border-t border-[#eeeeec] pt-4">
+                                  <p className="mb-2 text-xs font-bold text-[#707784]">
+                                    Foto bukti <span className="text-red-500">*</span>
+                                  </p>
+                                  
+                                  {state.photos.length === 0 ? (
+                                    <CameraCaptureButton
+                                      disabled={state.uploading}
+                                      uploading={state.uploading}
+                                      watermarkLines={buildChecklistPhotoWatermarkLines({
+                                        areaName,
+                                        userLabel: watermarkUserLabel,
+                                        userRole: watermarkUserRole,
+                                      })}
+                                      onCapture={(file) => void uploadPhoto(item.id, index, file)}
+                                    />
+                                  ) : null}
+
+                                  {state.photos.length > 0 ? (
+                                    <div className="mt-3 flex flex-col gap-2">
+                                      {state.photos.map((photo) => (
+                                        <div key={photo.fileId} className="relative">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setPreviewPhoto({
+                                                itemLabel: item.label,
+                                                url: photo.url,
+                                              })
+                                            }
+                                            className="group w-full overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)] outline-none focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/40"
+                                          >
+                                            <Image
+                                              src={photo.url}
+                                              alt={`Foto bukti ${item.label}`}
+                                              width={640}
+                                              height={360}
+                                              className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.01]"
+                                            />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              deletePhoto(item.id, index, photo.fileId);
+                                            }}
+                                            className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-red-500/90 text-white backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 shadow-md"
+                                            aria-label="Hapus foto"
+                                          >
+                                            <Trash2 className="size-4" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : null}
+
+                              {["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "") ? (
+                                <div className="mt-4 border-t border-[#eeeeec] pt-4">
+                                  <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
+                                    RENCANA AKSI <span className="text-red-500">*</span>
+                                  </p>
+                                  <textarea
+                                    value={state.notes}
+                                    onChange={(e) => updateItem(item.id, index, { notes: e.target.value })}
+                                    placeholder="Tambahkan rencana aksi..."
+                                    className="w-full min-h-[80px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
+                                  />
+                                  <div className="mt-3">
+                                    <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
+                                      FORM TINDAK LANJUT <span className="text-red-500">*</span>
+                                    </p>
+                                    <Select
+                                      value={state.repairForm || ""}
+                                      onValueChange={(val) => updateItem(item.id, index, { repairForm: val || undefined })}
+                                    >
+                                      <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#ff8a2a] focus:ring-offset-0">
+                                        <span className={cn("flex-1 text-left truncate", !state.repairForm && "text-[#707784]")}>
+                                          {state.repairForm ? FOLLOW_UP_LABELS[state.repairForm] || state.repairForm : "Pilih form tindak lanjut"}
+                                        </span>
+                                      </SelectTrigger>
+                                      <SelectContent alignItemWithTrigger={false} className="rounded-xl border-[#dedede] bg-white shadow-lg">
+                                        <SelectItem
+                                          value="SAT/FRM/TSM/014_REV:000_060423"
+                                          className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
+                                        >
+                                          Form Estimasi Biaya Sipil & ME (014)
+                                        </SelectItem>
+                                        <SelectItem
+                                          value="SAT/FRM/TS/065_REV:00_161020"
+                                          className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
+                                        >
+                                          Form Penggantian Spare Part (065)
+                                        </SelectItem>
+                                        <SelectItem
+                                          value="REPAIR_TANPA_BIAYA"
+                                          className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
+                                        >
+                                          Repair Tanpa Biaya
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          )
+                        })}
                       </div>
-                    ) : null}
+                    )}
                   </article>
                 )
               })
@@ -581,7 +743,7 @@ export function SharedChecklistForm({
         <Button
           type="button"
           disabled={!canSubmit}
-          onClick={submit}
+          onClick={handleSubmit}
           className="h-12 w-full bg-[#111111] text-white shadow-[0_8px_18px_rgba(17,17,17,0.18)] hover:bg-[#242424]"
         >
           {isPending ? (
