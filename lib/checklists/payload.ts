@@ -33,6 +33,10 @@ export type ChecklistPayload = {
   period: "MONTHLY" | "WEEKLY"
   periodKey: string
   items: ChecklistPayloadItem[]
+  unitNo?: string
+  unitBrand?: string
+  hourMeter?: string
+  generalNotes?: string
 }
 
 export type ChecklistPayloadValidationResult = {

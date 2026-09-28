@@ -30,7 +30,12 @@ export async function submitChecklistAction(input: {
   // Clean formCode to get baseFormId
   const baseFormId = (input.payload.formCode || "").replace("_REPAIR", "")
 
-  if (baseFormId === "FRM_TSM_002" || baseFormId === "FRM_TSM_003" || baseFormId === "FRM_TSM_005") {
+  if (
+    baseFormId === "FRM_TSM_002" ||
+    baseFormId === "FRM_TSM_003" ||
+    baseFormId === "FRM_TSM_005" ||
+    baseFormId === "FRM_TS_016"
+  ) {
     validationResult = validateChecklistPayload(input.payload)
     isSafe = calculateChecklistIsSafe(input.payload)
     photoFileIds = ((input.payload as ChecklistPayload).items || []).flatMap((item: ChecklistPayloadItem) => 

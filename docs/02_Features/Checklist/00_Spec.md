@@ -53,11 +53,30 @@
 
 ## Form Checklist Tersedia
 
-Saat ini terdapat 4 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
-1. **FRM_TSM_002** (Genset)
+Saat ini terdapat 5 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
+1. **FRM_TSM_002** (Genset / Warehouse)
 2. **FRM_TSM_003** (Checklist Ruangan)
 3. **FRM_TSM_004** (Pemakaian Daya/KWH)
 4. **FRM_TSM_005** (Pompa Air)
+5. **FRM_TS_016** (Checklist Pallet Mover Monthly - SAT/FRM/TS/016_Rev: 02_161020)
+
+### Form FRM_TS_016: Monthly Checklist Pallet Mover
+- **Metadata Unit**: Nomor Unit/Serial (`unitNo`), Merk Unit (`unitBrand`), Jam Kerja Alat (`hourMeter`).
+- **12 Kategori Komponen (~41 item pengecekan)**:
+  1. Interview User (`In`)
+  2. Hour Meter 1 (travel) (`W`)
+  3. Body & Structure (`Ch&A`, `Ch`, `Ch&C`)
+  4. Drive Unit (`Ch`, `Ch&A`, `Ch&Cl`)
+  5. Wheel (`Ch&A`)
+  6. Steering / Controller Shaft (`Ch`)
+  7. Hydraulics (`Ch&A`, `Ch&Cl`)
+  8. Safety Foots Pad (`Ch&A`, `Ch`)
+  9. Safety Gate (`Ch`)
+  10. Load Lifting & Hoist Frame (`Ch&L`)
+  11. Electrical System (`Ch`)
+  12. Functional Test (`Td`)
+- **Tindakan Lapangan**: Setiap item menampilkan badge cara tindakan (`In`, `W`, `Ch`, `A`, `Cl`, `L`, `Td`).
+- **Opsi Kondisi**: `BAIK` (OK) dan `RUSAK` (NOK). Item yang rusak wajib foto bukti, penanggung jawab, catatan, dan pilihan form tindak lanjut (`FRM_TS_065` / `FRM_TSM_014` / `REPAIR_TANPA_BIAYA`).
 
 Data form disimpan pada `ChecklistReport.checklistPayload` dalam format JSON. Pengunggahan foto menggunakan endpoint Google Drive dan hanya terkirim setelah Laporan beralih dari status `DRAFT`.
 
