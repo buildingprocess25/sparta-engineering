@@ -1,6 +1,7 @@
 import { SharedChecklistForm } from "@/components/es-dashboard/shared-checklist-form"
 import { FrmTsm004Form } from "@/components/es-dashboard/frm-tsm-004-form"
 import { FrmTs016Form } from "@/components/es-dashboard/frm-ts-016-form"
+import { FrmTsm001Form } from "@/components/es-dashboard/frm-tsm-001-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
@@ -27,6 +28,11 @@ type DynamicFormPageProps = {
 }
 
 const FORM_META: Record<string, { eyebrow: string; title: string; description: string }> = {
+  "frm-tsm-001": {
+    eyebrow: "FRM_TSM_001",
+    title: "Checklist Test ATS & Pemantauan Genset",
+    description: "Pemantauan pengoperasian genset dan pengujian fungsi Automatic Transfer Switch (ATS).",
+  },
   "frm-tsm-002": {
     eyebrow: "FRM_TSM_002",
     title: "Checklist Warehouse / Peralatan",
@@ -202,7 +208,21 @@ export default async function DynamicFormPage({
       title={queryParams.roomName ? `Checklist ${queryParams.roomName}` : meta.title}
       description={isRepair && formId !== "frm-tsm-004" ? "Pilih item yang rusak dan wajib sertakan foto." : meta.description}
     >
-      {formId === "frm-tsm-004" ? (
+      {formId === "frm-tsm-001" ? (
+        <FrmTsm001Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={queryParams.roomName || area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-tsm-004" ? (
         <FrmTsm004Form
           reportCode={draft.reportCode}
           areaCode={area.code}

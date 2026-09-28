@@ -9,10 +9,12 @@ import type { ChecklistPayload, ChecklistPayloadItem, ChecklistPhoto } from "@/l
 import { validateChecklistPayload, calculateChecklistIsSafe } from "@/lib/checklists/payload"
 import type { FrmTsm004Payload } from "@/lib/checklists/payload-004"
 import { validateFrmTsm004Payload } from "@/lib/checklists/payload-004"
+import type { FrmTsm001Payload } from "@/lib/checklists/payload-001"
+import { validateFrmTsm001Payload } from "@/lib/checklists/payload-001"
 
 export async function submitChecklistAction(input: {
   reportCode: string
-  payload: ChecklistPayload | FrmTsm004Payload
+  payload: ChecklistPayload | FrmTsm004Payload | FrmTsm001Payload
 }) {
   const session = await getSession()
   if (
@@ -44,6 +46,11 @@ export async function submitChecklistAction(input: {
   } else if (baseFormId === "FRM_TSM_004") {
     validationResult = validateFrmTsm004Payload(input.payload)
     isSafe = true // Form 004 is purely data entry
+  } else if (baseFormId === "FRM_TSM_001") {
+    validationResult = validateFrmTsm001Payload(input.payload)
+    const p = input.payload as FrmTsm001Payload
+    isSafe = p.atsTest?.systemAtsStatus !== "NOK"
+    photoFileIds = (p.atsTest?.photos || []).map((photo) => photo.fileId)
   } else {
     return { ok: false as const, errors: ["Form ID tidak valid."] }
   }

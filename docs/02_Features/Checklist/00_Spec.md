@@ -53,12 +53,31 @@
 
 ## Form Checklist Tersedia
 
-Saat ini terdapat 5 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
-1. **FRM_TSM_002** (Genset / Warehouse)
-2. **FRM_TSM_003** (Checklist Ruangan)
-3. **FRM_TSM_004** (Pemakaian Daya/KWH)
-4. **FRM_TSM_005** (Pompa Air)
-5. **FRM_TS_016** (Checklist Pallet Mover Monthly - SAT/FRM/TS/016_Rev: 02_161020)
+Saat ini terdapat 6 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
+1. **FRM_TSM_001** (Checklist Test ATS & Pemantauan Genset - SAT/FRM/TSM/001_Rev_000_211022)
+2. **FRM_TSM_002** (Genset / Warehouse)
+3. **FRM_TSM_003** (Checklist Ruangan)
+4. **FRM_TSM_004** (Pemakaian Daya/KWH)
+5. **FRM_TSM_005** (Pompa Air)
+6. **FRM_TS_016** (Checklist Pallet Mover Monthly - SAT/FRM/TS/016_Rev: 02_161020)
+
+### Form FRM_TSM_001: Pemantauan Penggunaan Genset dan Test Fungsi ATS
+- **Identitas Genset**: Cabang (`branch`), Merk Genset (`merk`), Kapasitas (`kva`), dan Periode Bulan (`bulan`).
+- **Log Pengoperasian Mesin (Running Log)**:
+  - Tipe Operasional: `Pemanasan` / `Pemadaman` / `Test ATS`.
+  - Waktu Engine: `start` & `off` (jam:menit).
+  - Hour Meter: `start` & `off` (angka pembacaan).
+  - Parameter: Charger Alternator (Volt), Frekuensi (Hz), Tekanan Oli / Oil Pressure (Kpa).
+  - Tegangan 3 Phase: `R-S`, `S-T`, `T-R` (Volt).
+  - Tegangan Single Phase: `R-N`, `S-N`, `T-N` (Volt).
+  - Beban Arus (Load Ampere): `R`, `S`, `T` (A).
+  - Konsumsi BBM Solar: `fuelConsumption` (Liter).
+- **Pengujian Khusus Sistem ATS**:
+  - Status Sistem ATS: `OK` / `NOK` (dengan opsi upload foto & tindak lanjut jika NOK).
+  - Tegangan Aki saat Charge: `voltageBatteryCharge` (Volt).
+  - Tegangan Aki saat Load Start: `voltageBatteryLoadStart` (Volt).
+  - Durasi Perpindahan Beban PLN ke Genset: `transferDuration` (Menit/Detik, batas maksimal SOP 5 menit).
+- **Catatan & Keterangan**: Catatan kondisi operasional menyeluruh dan disposisi review coordinator & manager.
 
 ### Form FRM_TS_016: Monthly Checklist Pallet Mover
 - **Metadata Unit**: Nomor Unit/Serial (`unitNo`), Merk Unit (`unitBrand`), Jam Kerja Alat (`hourMeter`).
