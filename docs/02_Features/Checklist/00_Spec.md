@@ -97,6 +97,33 @@ Saat ini terdapat 6 jenis form utama yang didigitalkan untuk Checklist & Perbaik
 - **Tindakan Lapangan**: Setiap item menampilkan badge cara tindakan (`In`, `W`, `Ch`, `A`, `Cl`, `L`, `Td`).
 - **Opsi Kondisi**: `BAIK` (OK) dan `RUSAK` (NOK). Item yang rusak wajib foto bukti, penanggung jawab, catatan, dan pilihan form tindak lanjut (`FRM_TS_065` / `FRM_TSM_014` / `REPAIR_TANPA_BIAYA`).
 
+### Form FRM_TSM_006: Checklist Hydrant (SAT/FRM/TSM/006_Rev_000_261022)
+- **Dasar Kebijakan**: SAT/KEB/TSM/002 Kebijakan Perawatan Hydrant.
+- **Identitas & Metadata**:
+  - Lokasi: Nama DC / Area kerja (mis. `DC Pontianak`).
+  - Jenis Hydrant: `jenisHydrant` (mis. `IHB - OHB`).
+  - Jenis Perawatan: `jenisPerawatan` (mis. `General`).
+  - Periode / Tahun: `periodKey` (mis. `2026`).
+- **12 Kategori Pengecekan (~61 item)**:
+  1. *TEST HYDRANT INDICATOR (setiap 1 minggu)* (5 item: Aktifkan main electric pump 2 dt, jockie pump 2 dt, diesel pump 5 mnt, indicator pressure gauge, indikasi kebocoran)
+  2. *KONDISI PANEL* (3 item: Panel main pump, jockie pump, diesel pump luar dan dalam)
+  3. *INDICATOR PADA PANEL* (4 item: Display panel, selector switch, pressure switch, tombol-tombol)
+  4. *KABEL KONEKSI* (6 item: Incoming ke panel, dalam panel, motor main pump, jockie pump, diesel pump, sensors)
+  5. *PANEL PADA MESIN DIESEL PUMP* (11 item: Luar dalam panel, indicator, tombol, selector switch, contactor, relays, kabel koneksi, charger battery, Volted battery 1 [Volt], Volted battery 2 [Volt], kunci starter engine)
+  6. *KONDISI MESIN DIESEL PUMP* (5 item: Level oli, kondisi oli, filter udara, water separator, filter oli)
+  7. *PEMIPAAN* (4 item: Pipa tekanan rendah/intake, tekanan tinggi/discharge, bypass, bypass drain)
+  8. *GATE VALVE* (4 item: Gate valve intake, discharge, bypass, drain)
+  9. *POMPA - POMPA* (3 item: Main pump centrifugal, jockie pump multi impeler, diesel pump centrifugal)
+  10. *MOUNTING BODY PUMP* (3 item: Mounting body main pump, jockie pump, diesel pump)
+  11. *WATER RESERVOIR* (4 item: Level air, saluran pipa inlet, saluran pipa outlet, saluran pipa bypass/return)
+  12. *TEST TEKANAN HYDRANT ACTUAL (setiap 6 Bulan)* (9 item: Fungsi panel otomatis, pilar hydrant, selang flexible & nozel, semburan tekanan air, electric main pump aktif, electric jockie pump aktif, diesel pump aktif, indicator pressure gauge, turn off engine diesel pump after 15 sec)
+- **Tindakan Lapangan**: Menampilkan badge cara tindakan (`CH` = Check, `CL` = Clean, `INSP` = Inspeksi/Ukur, `DO IT` = Laksanakan, `MS` = Make Sure, `R` = Ready).
+- **Opsi Kondisi & Temuan Kerusakan**:
+  - Tombol `Baik` (OK) dan `Rusak` (NOK).
+  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark, penanggung jawab (BES/Eksternal), dan dropdown form tindak lanjut (`SAT/FRM/TSM/014`, `SAT/FRM/TS/065`, atau `Tanpa Biaya`).
+  - Khusus item 5.I & 5.J (*Volted battery 1 & 2*): Disediakan field input nilai voltase (Volt).
+- **Catatan & Approval**: Catatan umum pelaksanaan operasional hydrant dan tanda tangan digital pelaksana (Branch ES).
+
 Data form disimpan pada `ChecklistReport.checklistPayload` dalam format JSON. Pengunggahan foto menggunakan endpoint Google Drive dan hanya terkirim setelah Laporan beralih dari status `DRAFT`.
 
 ## Alur: Checklist vs Perbaikan (Repair)

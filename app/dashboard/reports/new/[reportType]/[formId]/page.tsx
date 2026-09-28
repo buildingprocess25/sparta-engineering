@@ -2,6 +2,7 @@ import { SharedChecklistForm } from "@/components/es-dashboard/shared-checklist-
 import { FrmTsm004Form } from "@/components/es-dashboard/frm-tsm-004-form"
 import { FrmTs016Form } from "@/components/es-dashboard/frm-ts-016-form"
 import { FrmTsm001Form } from "@/components/es-dashboard/frm-tsm-001-form"
+import { FrmTsm006Form } from "@/components/es-dashboard/frm-tsm-006-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
@@ -57,6 +58,11 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
     eyebrow: "FRM_TS_016",
     title: "Checklist Pallet Mover Monthly",
     description: "Inspeksi bulanan pallet mover: 12 kategori komponen mekanikal, elektrikal, hidrolik & fungsional.",
+  },
+  "frm-tsm-006": {
+    eyebrow: "FRM_TSM_006",
+    title: "Checklist Hydrant",
+    description: "Inspeksi mingguan, bulanan, dan 6-bulanan sistem proteksi kebakaran hydrant.",
   },
 }
 
@@ -236,6 +242,20 @@ export default async function DynamicFormPage({
         />
       ) : formId === "frm-ts-016" ? (
         <FrmTs016Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={queryParams.roomName || area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-tsm-006" ? (
+        <FrmTsm006Form
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={queryParams.roomName || area.name}

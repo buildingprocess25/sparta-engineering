@@ -24,6 +24,7 @@ export type ChecklistPayloadItem = {
   handler?: "BES" | "EKSTERNAL"
   repairForm?: string
   repairFormName?: string
+  value?: string
 }
 
 export type ChecklistPayload = {
@@ -37,6 +38,8 @@ export type ChecklistPayload = {
   unitBrand?: string
   hourMeter?: string
   generalNotes?: string
+  jenisHydrant?: string
+  jenisPerawatan?: string
 }
 
 export type ChecklistPayloadValidationResult = {
