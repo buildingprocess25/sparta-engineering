@@ -61,7 +61,7 @@ export async function submitChecklistAction(input: {
     },
   })
 
-  revalidatePath("/dashboard")
+  revalidatePath("/dashboard", "page")
   revalidatePath("/dashboard/reports")
 
   return { ok: true as const, isSafe }

@@ -352,6 +352,7 @@ export function ReportAreaPicker({
               ...(selectedArea.code !== "store_hub" ? { roomId, roomName: rooms.find(r => r.id === roomId)?.name } : {}),
               period: period,
               ...(workPermit ? { workPermit } : {}),
+              reset: "true",
             },
           }}
           className="inline-flex h-12 items-center justify-center rounded-lg bg-[#111111] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#242424]"

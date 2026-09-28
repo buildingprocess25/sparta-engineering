@@ -21,6 +21,7 @@ type DynamicFormPageProps = {
     roomName?: string
     period?: string
     workPermit?: string
+    reset?: string
   }>
 }
 
@@ -136,25 +137,33 @@ export default async function DynamicFormPage({
   })
 
   if (existingReport && existingReport.status !== "DRAFT") {
-    // Mode testing: izinkan submit berulang dengan membersihkan laporan sebelumnya
-    await getPrisma().checklistItem.deleteMany({
-      where: {
-        report: {
+    if (queryParams.reset === "true") {
+      // Mode testing: izinkan submit berulang dengan membersihkan laporan sebelumnya jika dimulai dari area picker
+      await getPrisma().checklistItem.deleteMany({
+        where: {
+          report: {
+            areaId: area.id,
+            period: "MONTHLY",
+            periodKey,
+            formCode,
+          },
+        },
+      })
+      await getPrisma().checklistReport.deleteMany({
+        where: {
           areaId: area.id,
           period: "MONTHLY",
           periodKey,
           formCode,
         },
-      },
-    })
-    await getPrisma().checklistReport.deleteMany({
-      where: {
-        areaId: area.id,
-        period: "MONTHLY",
-        periodKey,
-        formCode,
-      },
-    })
+      })
+    } else {
+      return unavailable(
+        "Checklist Sudah Disubmit",
+        "Laporan checklist untuk area ini sudah pernah disubmit pada periode ini.",
+        meta.eyebrow
+      )
+    }
   }
 
   const draft = await reserveChecklistDraft(

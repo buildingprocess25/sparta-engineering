@@ -114,3 +114,25 @@ Required behavior:
 - Area/period completion indicators must only count submitted reports. `DRAFT`
   reports reserved for photo upload or in-progress form filling must not mark an
   area or period as `Selesai`.
+
+## Form Tindak Lanjut Perbaikan (FRM_TSM_014 & FRM_TS_065)
+
+Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checklist:
+1. **Pilihan Form Tindak Lanjut per Unit**:
+   - `SAT/FRM/TSM/014_REV:000_060423` (Form Estimasi Biaya Sipil & ME)
+   - `SAT/FRM/TS/065_REV:00_161020` (Form Penggantian Spare Part Equipment)
+   - `REPAIR_TANPA_BIAYA` (Perbaikan tanpa biaya)
+
+2. **Alur Halaman Rekapitulasi Tindak Lanjut (`/dashboard/reports/[reportCode]/follow-up`)**:
+   - Jika checklist memiliki item dengan form 014 atau 065, setelah submit checklist user diarahkan ke halaman pengisian form lanjutan.
+   - Jika tidak ada (semua baik atau repair tanpa biaya), laporan langsung menuju antrean approval `PENDING_COORD`.
+   - **Tampilan Step-by-Step (1 Form per Halaman/Langkah)**:
+     - Form ditampilkan secara berurutan unit demi unit sesuai urutan item rusak di checklist (misal: Unit 1 AC [065] -> Unit 2 AC [065] -> Unit 1 Exhaust Fan [014]).
+     - Navigasi antar unit menggunakan tombol "Sebelumnya" dan "Selanjutnya", dengan progress indicator yang jelas (e.g. "Item 1 dari 3").
+     - Pada langkah terakhir, tombol berubah menjadi "Simpan Form Tindak Lanjut" untuk memfinalisasi seluruh data.
+   - **Desain Mobile-First & Input Terstruktur**:
+     - Menggantikan tabel horizontal yang sempit dengan kartu input vertikal yang nyaman di smartphone.
+     - Form 014: Nama barang, Qty, Satuan, Harga Satuan dengan prefix Rupiah, perhitungan subtotal otomatis, serta kemampuan menambah/menghapus baris material.
+     - Form 065: Segmented control jenis perbaikan, input identitas unit (merk, no asset), analisa kerusakan, tindakan, serta kartu rincian spare part (nama part, nomor part, asal part Stock/PB, qty).
+   - Data dasar (Lokasi, Branch, Tanggal, Item Rusak, Rencana Aksi) di-prefill otomatis dari checklist.
+   - Setelah form lanjutan disimpan, laporan dialihkan ke `PENDING_COORD` untuk proses approval berjenjang.
