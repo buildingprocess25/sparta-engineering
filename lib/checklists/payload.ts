@@ -40,6 +40,8 @@ export type ChecklistPayload = {
   generalNotes?: string
   jenisHydrant?: string
   jenisPerawatan?: string
+  subPeriod?: string
+  subPeriodLabel?: string
 }
 
 export type ChecklistPayloadValidationResult = {

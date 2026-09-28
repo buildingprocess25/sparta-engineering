@@ -6,6 +6,7 @@ import {
   Activity,
   AlertCircle,
   BatteryCharging,
+  Calendar,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -14,6 +15,7 @@ import {
   Flame,
   Info,
   Loader2,
+  Lock,
   Send,
   ShieldAlert,
   Sparkles,
@@ -33,6 +35,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  getHydrantWeekRanges,
+  getCurrentHydrantSemester,
+} from "@/lib/checklists/hydrant-calendar"
 import type {
   ChecklistCondition,
   ChecklistPayload,
@@ -41,6 +47,8 @@ import type {
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
+
+export type JenisPerawatanOption = "GENERAL_MINGGUAN" | "BULANAN" | "ENAM_BULANAN"
 
 export type FrmTsm006FormProps = {
   reportCode: string
@@ -62,7 +70,7 @@ export type HydrantCategory = {
   title: string
   subtitle: string
   frequencyBadge: string
-  frequencyTone: "sky" | "amber" | "indigo"
+  frequencyTone: "sky" | "amber" | "indigo" | "orange"
   items: {
     id: string
     code: string
@@ -229,7 +237,7 @@ export const HYDRANT_CATEGORIES: HydrantCategory[] = [
     title: "12. TEST TEKANAN HYDRANT ACTUAL",
     subtitle: "Pengujian semburan air dan tekanan aktual (setiap 6 bulan)",
     frequencyBadge: "6 BULANAN",
-    frequencyTone: "indigo",
+    frequencyTone: "orange",
     items: [
       { id: "12.A", code: "12.A", label: "Fungsi panel otomatis", action: "MS" },
       { id: "12.B", code: "12.B", label: "Pilar hydrant", action: "CH" },
@@ -286,7 +294,14 @@ export function FrmTsm006Form({
   submitAction,
 }: FrmTsm006FormProps) {
   const [jenisHydrant, setJenisHydrant] = React.useState("IHB - OHB")
-  const [jenisPerawatan, setJenisPerawatan] = React.useState("General")
+  const [jenisPerawatan, setJenisPerawatan] = React.useState<JenisPerawatanOption | "">("")
+  const calendarInfo = React.useMemo(() => getHydrantWeekRanges(), [])
+  const [selectedWeek, setSelectedWeek] = React.useState<"MGG_1" | "MGG_2" | "MGG_3" | "MGG_4">(
+    calendarInfo.activeWeekId
+  )
+  const [selectedSemester, setSelectedSemester] = React.useState<"SEMESTER_1" | "SEMESTER_2">(() =>
+    getCurrentHydrantSemester()
+  )
   const [generalNotes, setGeneralNotes] = React.useState("")
 
   const [itemStates, setItemStates] = React.useState<Record<string, ItemState>>({})
@@ -301,13 +316,30 @@ export function FrmTsm006Form({
   const [errors, setErrors] = React.useState<string[]>([])
   const [isPending, startTransition] = React.useTransition()
 
-  // Track progress
-  const totalItemsCount = ALL_ITEMS.length
-  const evaluatedCount = Object.keys(itemStates).filter(
-    (k) => itemStates[k]?.condition !== undefined
+  // Dynamic active categories based on selected jenisPerawatan
+  const activeCategories = React.useMemo(() => {
+    if (!jenisPerawatan) return []
+    if (jenisPerawatan === "GENERAL_MINGGUAN") {
+      return HYDRANT_CATEGORIES.filter((c) => c.id === "cat-1")
+    }
+    if (jenisPerawatan === "BULANAN") {
+      return HYDRANT_CATEGORIES.filter((c) => c.id !== "cat-1" && c.id !== "cat-12")
+    }
+    if (jenisPerawatan === "ENAM_BULANAN") {
+      return HYDRANT_CATEGORIES.filter((c) => c.id === "cat-12")
+    }
+    return []
+  }, [jenisPerawatan])
+
+  const activeItems = React.useMemo(() => activeCategories.flatMap((c) => c.items), [activeCategories])
+
+  // Track progress based on active items only
+  const totalItemsCount = activeItems.length
+  const evaluatedCount = activeItems.filter(
+    (item) => itemStates[item.id]?.condition !== undefined
   ).length
-  const damagedCount = Object.values(itemStates).filter(
-    (s) => s?.condition === "RUSAK"
+  const damagedCount = activeItems.filter(
+    (item) => itemStates[item.id]?.condition === "RUSAK"
   ).length
 
   function updateItem(itemId: string, patch: Partial<ItemState>) {
@@ -415,6 +447,24 @@ export function FrmTsm006Form({
   }
 
   function buildPayload(): ChecklistPayload {
+    let subPeriod: string | undefined = undefined
+    let subPeriodLabel: string | undefined = undefined
+
+    if (jenisPerawatan === "GENERAL_MINGGUAN") {
+      subPeriod = selectedWeek
+      const weekObj = calendarInfo.weeks.find((w) => w.id === selectedWeek)
+      subPeriodLabel = weekObj?.label || selectedWeek
+    } else if (jenisPerawatan === "BULANAN") {
+      subPeriod = "BULANAN"
+      subPeriodLabel = `Bulanan (${calendarInfo.monthName} ${calendarInfo.year})`
+    } else if (jenisPerawatan === "ENAM_BULANAN") {
+      subPeriod = selectedSemester
+      subPeriodLabel =
+        selectedSemester === "SEMESTER_1"
+          ? "Semester 1 (Januari - Juni)"
+          : "Semester 2 (Juli - Desember)"
+    }
+
     return {
       formCode,
       formName: "Checklist Hydrant",
@@ -423,8 +473,10 @@ export function FrmTsm006Form({
       periodKey,
       generalNotes,
       jenisHydrant,
-      jenisPerawatan,
-      items: ALL_ITEMS.map((item) => {
+      jenisPerawatan: jenisPerawatan || undefined,
+      subPeriod,
+      subPeriodLabel,
+      items: activeItems.map((item) => {
         const state = itemStates[item.id]
         const fallbackCondition: ChecklistCondition = isRepairMode ? "BAIK" : "BAIK"
         const cond = state?.condition || fallbackCondition
@@ -469,9 +521,14 @@ export function FrmTsm006Form({
   function handleSubmit() {
     setErrors([])
 
+    if (!jenisPerawatan) {
+      setErrors(["Silakan pilih Jenis Perawatan terlebih dahulu."])
+      return
+    }
+
     if (!isRepairMode && evaluatedCount < totalItemsCount) {
       setErrors([
-        `Seluruh item wajib dievaluasi (${evaluatedCount} dari ${totalItemsCount} terisi). Silakan cek kategori yang belum terisi.`,
+        `Seluruh item wajib dievaluasi (${evaluatedCount} dari ${totalItemsCount} terisi). Silakan periksa item yang belum diisi.`,
       ])
       return
     }
@@ -549,7 +606,8 @@ export function FrmTsm006Form({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* BARIS 1: Inputan Jenis Hydrant dan Periode / Tahun */}
+        <div className="mt-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-xs font-bold text-[#111111]">
               Jenis Hydrant <span className="text-[#ff8a2a]">*</span>
@@ -564,57 +622,224 @@ export function FrmTsm006Form({
 
           <div>
             <label className="mb-1.5 block text-xs font-bold text-[#111111]">
-              Jenis Perawatan <span className="text-[#ff8a2a]">*</span>
-            </label>
-            <Input
-              placeholder="mis. General / Rutin"
-              value={jenisPerawatan}
-              onChange={(e) => setJenisPerawatan(e.target.value)}
-              className="h-10 border-[#e6e2de] bg-[#fbfbfa] text-sm focus-visible:border-[#ff8a2a] focus-visible:ring-[#ff8a2a]/20"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
               Periode / Tahun
             </label>
-            <div className="flex h-10 items-center rounded-lg border border-[#e6e2de] bg-[#fbfbfa] px-3 text-sm font-semibold text-[#111111]">
-              {periodKey}
+            <div className="flex h-10 items-center justify-between rounded-lg border border-[#e6e2de] bg-[#fbfbfa] px-3 text-sm font-semibold text-[#111111]">
+              <span>{periodKey || calendarInfo.year}</span>
+              <span className="text-[11px] font-medium text-[#707784]">Tahun Berjalan</span>
             </div>
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[#707784]">
+        {/* BARIS 2: Dropdown Jenis Perawatan */}
+        <div className="mt-3.5">
+          <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            Jenis Perawatan <span className="text-[#ff8a2a]">*</span>
+          </label>
+          <Select
+            value={jenisPerawatan}
+            onValueChange={(val) => setJenisPerawatan(val as JenisPerawatanOption)}
+          >
+            <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#ff8a2a] focus:ring-offset-0">
+              <span className={cn("flex-1 text-left truncate", !jenisPerawatan && "text-[#707784]")}>
+                {jenisPerawatan === "GENERAL_MINGGUAN"
+                  ? "General Mingguan"
+                  : jenisPerawatan === "BULANAN"
+                  ? "General"
+                  : jenisPerawatan === "ENAM_BULANAN"
+                  ? "Enam Bulan"
+                  : "-- Pilih Jenis Perawatan --"}
+              </span>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} className="rounded-xl border-[#dedede] bg-white shadow-lg">
+              <SelectItem
+                value="GENERAL_MINGGUAN"
+                className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer text-xs"
+              >
+                General Mingguan
+              </SelectItem>
+              <SelectItem
+                value="BULANAN"
+                className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer text-xs"
+              >
+                General
+              </SelectItem>
+              <SelectItem
+                value="ENAM_BULANAN"
+                className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer text-xs"
+              >
+                Enam Bulan
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* BARIS 3: Sub-Selector Dinamis */}
+        {jenisPerawatan === "GENERAL_MINGGUAN" && (
+          <div className="mt-4 rounded-xl border border-[#ff8a2a]/25 bg-[#fffaf5] p-3.5 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ffe8d6] pb-2.5">
+              <div className="flex items-center gap-2">
+                <Calendar className="size-4 text-[#ff8a2a]" />
+                <span className="text-xs font-bold text-[#111111]">
+                  Pilih Minggu Pelaksanaan • {calendarInfo.monthName} {calendarInfo.year}
+                </span>
+              </div>
+              <span className="rounded-full bg-[#ffe8d6] px-2 py-0.5 text-[10px] font-bold text-[#8a3d00]">
+                Total {calendarInfo.daysInMonth} Hari
+              </span>
+            </div>
+
+            {/* 2 Baris: Baris 1 (Mgg 1 & 2), Baris 2 (Mgg 3 & 4) */}
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {calendarInfo.weeks.map((w) => {
+                const isSelected = selectedWeek === w.id
+                return (
+                  <button
+                    key={w.id}
+                    type="button"
+                    disabled={w.isPast}
+                    onClick={() => setSelectedWeek(w.id)}
+                    className={cn(
+                      "flex flex-col items-start rounded-xl border p-2.5 text-left transition-all",
+                      w.isPast
+                        ? "border-dashed border-[#e6e2de] bg-[#f5f4f2] text-[#999] opacity-75 cursor-not-allowed"
+                        : isSelected
+                        ? "border-[#ff8a2a] bg-white text-[#111111] shadow-sm ring-2 ring-[#ff8a2a]/20"
+                        : "border-[#e6e2de] bg-white text-[#555] hover:border-[#ff8a2a]/50 hover:bg-[#fffcf9]"
+                    )}
+                  >
+                    <div className="flex w-full items-center justify-between">
+                      <span className={cn("text-xs font-bold", isSelected && "text-[#ff8a2a]")}>
+                        Mgg {w.weekNumber}
+                      </span>
+                      {w.isPast ? (
+                        <span className="flex items-center gap-0.5 text-[9px] font-bold text-[#888]">
+                          <Lock className="size-2.5" /> Lewat
+                        </span>
+                      ) : w.isCurrent ? (
+                        <span className="rounded bg-[#fff0e3] px-1.5 py-0.5 text-[9px] font-bold text-[#ff8a2a]">
+                          Aktif
+                        </span>
+                      ) : null}
+                    </div>
+                    <span className="mt-1 text-[11px] font-medium leading-tight text-[#666]">
+                      {w.startDay} - {w.endDay} {calendarInfo.monthShort}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-2 text-[10px] text-[#888]">
+              * Minggu yang sudah terlewat terkunci otomatis dan tidak dapat diinput ulang.
+            </p>
+          </div>
+        )}
+
+        {jenisPerawatan === "ENAM_BULANAN" && (
+          <div className="mt-4 rounded-xl border border-[#ff8a2a]/25 bg-[#fffaf5] p-3.5 sm:p-4">
+            <div className="flex items-center gap-2 border-b border-[#ffe8d6] pb-2.5">
+              <Calendar className="size-4 text-[#ff8a2a]" />
+              <span className="text-xs font-bold text-[#111111]">
+                Pilih Semester Pelaksanaan • Tahun {calendarInfo.year}
+              </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {[
+                { id: "SEMESTER_1" as const, label: "Semester 1", period: "Januari - Juni" },
+                { id: "SEMESTER_2" as const, label: "Semester 2", period: "Juli - Desember" },
+              ].map((sem) => {
+                const isSelected = selectedSemester === sem.id
+                return (
+                  <button
+                    key={sem.id}
+                    type="button"
+                    onClick={() => setSelectedSemester(sem.id)}
+                    className={cn(
+                      "flex items-center justify-between rounded-xl border p-3 text-left transition-all",
+                      isSelected
+                        ? "border-[#ff8a2a] bg-white text-[#111111] shadow-sm ring-2 ring-[#ff8a2a]/20"
+                        : "border-[#e6e2de] bg-white text-[#555] hover:border-[#ff8a2a]/50 hover:bg-[#fffcf9]"
+                    )}
+                  >
+                    <div>
+                      <span className={cn("text-xs font-bold block", isSelected && "text-[#ff8a2a]")}>
+                        {sem.label}
+                      </span>
+                      <span className="text-[11px] font-medium text-[#777]">
+                        {sem.period}
+                      </span>
+                    </div>
+                    {isSelected && (
+                      <span className="grid size-5 place-items-center rounded-full bg-[#fff0e3] text-[#ff8a2a]">
+                        <Check className="size-3 stroke-[3]" />
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {jenisPerawatan === "BULANAN" && (
+          <div className="mt-4 rounded-xl border border-amber-200/70 bg-amber-50/40 p-3.5 text-xs text-[#707784]">
+            <div className="flex items-center gap-2 font-bold text-[#111111]">
+              <Calendar className="size-4 text-amber-600" />
+              <span>Pemeriksaan Bulanan Rutin ({calendarInfo.monthName} {calendarInfo.year})</span>
+            </div>
+            <p className="mt-1 text-[11px] text-[#666]">
+              Mencakup Kategori 2 s/d 11: Panel elektrik, kabel koneksi, mesin diesel pump, pemipaan, valve, pompa-pompa, mounting body, dan water reservoir.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[11px] text-[#707784]">
           <span className="rounded-md bg-[#f0eee9] px-2 py-0.5 font-medium text-[#555]">
             Reff: SAT/KEB/TSM/002 Kebijakan Perawatan Hydrant
           </span>
         </div>
       </section>
 
-      {/* Progress Floating Summary */}
-      <section className="rounded-2xl border border-[#e6e2de] bg-white p-3.5 shadow-sm">
-        <div className="flex items-center justify-between text-xs font-bold">
-          <span className="text-[#707784]">Status Evaluasi Item</span>
-          <span className="text-[#111111]">
-            {evaluatedCount} / {totalItemsCount} Dievaluasi
-          </span>
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f0eee9]">
-          <div
-            className="h-full bg-[#ff8a2a] transition-all duration-300"
-            style={{ width: `${(evaluatedCount / totalItemsCount) * 100}%` }}
-          />
-        </div>
-        {damagedCount > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-rose-600">
-            <AlertCircle className="size-3.5" />
-            <span>{damagedCount} item dilaporkan rusak (wajib bukti foto & tindak lanjut)</span>
+      {/* TAMPILAN CHECKLIST: DEFAULT HIDDEN JIKA BELUM PILIH JENIS PERAWATAN */}
+      {!jenisPerawatan ? (
+        <section className="rounded-2xl border border-dashed border-[#dcd7d2] bg-[#fbfbfa] p-8 text-center sm:p-10 shadow-sm">
+          <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#fff0e3] text-[#ff8a2a]">
+            <Droplet className="size-6" />
           </div>
-        )}
-      </section>
+          <h3 className="mt-3 text-base font-bold text-[#111111]">
+            Checklist Hydrant Siap Digunakan
+          </h3>
+          <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-[#707784]">
+            Silakan pilih <strong>Jenis Perawatan</strong> di atas (General Mingguan, Bulanan, atau 6 Bulanan) untuk menampilkan daftar item checklist yang sesuai.
+          </p>
+        </section>
+      ) : (
+        <>
+          {/* Progress Floating Summary */}
+          <section className="rounded-2xl border border-[#e6e2de] bg-white p-3.5 shadow-sm">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-[#707784]">Status Evaluasi Item</span>
+              <span className="text-[#111111]">
+                {evaluatedCount} / {totalItemsCount} Dievaluasi
+              </span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f0eee9]">
+              <div
+                className="h-full bg-[#ff8a2a] transition-all duration-300"
+                style={{ width: `${totalItemsCount > 0 ? (evaluatedCount / totalItemsCount) * 100 : 0}%` }}
+              />
+            </div>
+            {damagedCount > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-rose-600">
+                <AlertCircle className="size-3.5" />
+                <span>{damagedCount} item dilaporkan rusak (wajib bukti foto & tindak lanjut)</span>
+              </div>
+            )}
+          </section>
 
-      {/* 12 KATEGORI CHECKLIST */}
-      {HYDRANT_CATEGORIES.map((cat) => {
+          {/* KATEGORI CHECKLIST DINAMIS */}
+          {activeCategories.map((cat) => {
         const isCollapsed = collapsedCategories[cat.id]
         const catItemsEvaluated = cat.items.filter((item) => itemStates[item.id]?.condition).length
         const catItemsDamaged = cat.items.filter(
@@ -636,28 +861,16 @@ export function FrmTsm006Form({
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#fff0e3] text-[#ff8a2a]">
                   {cat.frequencyTone === "sky" ? (
                     <Activity className="size-4.5" />
-                  ) : cat.frequencyTone === "indigo" ? (
+                  ) : cat.frequencyTone === "orange" || cat.frequencyTone === "indigo" ? (
                     <Flame className="size-4.5" />
                   ) : (
                     <Wrench className="size-4.5" />
                   )}
                 </span>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-[#111111] sm:text-base">
-                      {cat.title}
-                    </h3>
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-[10px] font-bold uppercase",
-                        cat.frequencyTone === "sky" && "bg-sky-100 text-sky-700",
-                        cat.frequencyTone === "amber" && "bg-amber-100 text-amber-700",
-                        cat.frequencyTone === "indigo" && "bg-indigo-100 text-indigo-700"
-                      )}
-                    >
-                      {cat.frequencyBadge}
-                    </span>
-                  </div>
+                  <h3 className="text-sm font-bold text-[#111111] sm:text-base">
+                    {cat.title}
+                  </h3>
                   <p className="text-xs text-[#707784]">{cat.subtitle}</p>
                 </div>
               </div>
@@ -679,9 +892,9 @@ export function FrmTsm006Form({
               </div>
             </button>
 
-            {/* List Item dalam Kategori */}
+            {/* List Item dalam Kategori (Kartu Putih seperti Form 016) */}
             {!isCollapsed && (
-              <div className="divide-y divide-[#f5f4f2] p-2 sm:p-3">
+              <div className="flex flex-col gap-3 p-3 sm:p-4 bg-[#fafaf9]/60">
                 {cat.items.map((item) => {
                   const state = itemStates[item.id]
                   const isDamaged = state?.condition === "RUSAK"
@@ -690,10 +903,7 @@ export function FrmTsm006Form({
                   return (
                     <div
                       key={item.id}
-                      className={cn(
-                        "rounded-xl p-3 transition-colors",
-                        isDamaged ? "bg-[#fffafa]" : "hover:bg-[#fafaf9]"
-                      )}
+                      className="rounded-xl border border-[#e6e2de] bg-white p-3.5 transition-all shadow-[0_2px_8px_rgba(17,17,17,0.02)]"
                     >
                       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 flex-1">
@@ -713,33 +923,45 @@ export function FrmTsm006Form({
                         </div>
 
                         {/* Opsi Kondisi (Baik / Rusak) */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => setCondition(item.id, "BAIK")}
+                            onClick={() => {
+                              updateItem(item.id, {
+                                condition: "BAIK",
+                                photos: [],
+                                notes: "",
+                                handler: undefined,
+                                repairForm: undefined,
+                              })
+                            }}
                             className={cn(
-                              "flex h-9 min-w-20 items-center justify-center gap-1.5 rounded-xl border text-xs font-bold transition-all",
+                              "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
                               isGood
-                                ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm"
-                                : "border-[#e6e2de] bg-white text-[#707784] hover:bg-[#f5f5f3]"
+                                ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs"
+                                : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
                             )}
                           >
-                            <CheckCircle2 className="size-3.5" />
-                            <span>Baik</span>
+                            Baik (V)
                           </button>
 
                           <button
                             type="button"
-                            onClick={() => setCondition(item.id, "RUSAK")}
+                            onClick={() => {
+                              updateItem(item.id, {
+                                condition: "RUSAK",
+                                handler: state?.handler || "BES",
+                                repairForm: state?.repairForm || "SAT/FRM/TS/065_REV:00_161020",
+                              })
+                            }}
                             className={cn(
-                              "flex h-9 min-w-20 items-center justify-center gap-1.5 rounded-xl border text-xs font-bold transition-all",
+                              "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
                               isDamaged
-                                ? "border-red-500 bg-red-50 text-red-600 shadow-sm"
-                                : "border-[#e6e2de] bg-white text-[#707784] hover:bg-[#f5f5f3]"
+                                ? "border-red-500 bg-red-50 text-red-700 shadow-xs font-bold"
+                                : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
                             )}
                           >
-                            <AlertCircle className="size-3.5" />
-                            <span>Rusak</span>
+                            Rusak (X)
                           </button>
                         </div>
                       </div>
@@ -765,44 +987,86 @@ export function FrmTsm006Form({
                         </div>
                       )}
 
-                      {/* Detail Temuan Kerusakan Jika Rusak */}
+                      {/* Detail Temuan Kerusakan Jika Rusak (Identik Form 016) */}
                       {isDamaged && (
-                        <div className="mt-3.5 space-y-3 rounded-xl border border-red-200 bg-white p-3 shadow-xs">
-                          <div className="flex items-center gap-2 text-xs font-bold text-red-600">
-                            <ShieldAlert className="size-4" />
-                            <span>Detail Temuan Kerusakan & Tindak Lanjut</span>
+                        <div className="mt-4 border-t border-[#eeeeec] pt-4 flex flex-col gap-4">
+                          {/* 1. AKAN DIHANDLE */}
+                          <div>
+                            <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
+                              AKAN DIHANDLE <span className="text-red-500">*</span>
+                            </p>
+                            <div className="flex rounded-xl bg-[#f5f5f3] p-1">
+                              <button
+                                type="button"
+                                onClick={() => updateItem(item.id, { handler: "BES" })}
+                                className={cn(
+                                  "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
+                                  state?.handler === "BES"
+                                    ? "bg-[#ff8a2a] text-white shadow"
+                                    : "text-[#707784] hover:text-[#111111]"
+                                )}
+                              >
+                                BES
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
+                                className={cn(
+                                  "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
+                                  state?.handler === "EKSTERNAL"
+                                    ? "bg-[#ff8a2a] text-white shadow"
+                                    : "text-[#707784] hover:text-[#111111]"
+                                )}
+                              >
+                                Eksternal
+                              </button>
+                            </div>
                           </div>
 
-                          {/* Foto Bukti Temuan */}
-                          <div>
-                            <label className="mb-1 block text-xs font-bold text-[#111111]">
-                              Foto Bukti Temuan <span className="text-rose-600">*</span>
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                              {state.photos.map((photo, pIdx) => (
-                                <div
-                                  key={photo.fileId}
-                                  className="group relative size-20 overflow-hidden rounded-xl border border-[#dedede]"
-                                >
-                                  <Image
-                                    src={photo.url}
-                                    alt={`Foto bukti temuan ${item.code}`}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemovePhoto(item.id, pIdx)}
-                                    className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                                  >
-                                    <Trash2 className="size-3" />
-                                  </button>
-                                </div>
-                              ))}
+                          {/* 2. Foto bukti */}
+                          <div className="border-t border-[#eeeeec] pt-4">
+                            <p className="mb-2 text-xs font-bold text-[#707784]">
+                              Foto bukti <span className="text-red-500">*</span>
+                            </p>
+                            {!state?.photos || state.photos.length === 0 ? (
+                              <CameraCaptureButton
+                                disabled={state?.uploading}
+                                uploading={state?.uploading}
+                                watermarkLines={buildChecklistPhotoWatermarkLines({
+                                  areaName: `${areaName} (Hydrant - ${item.code})`,
+                                  userLabel: watermarkUserLabel,
+                                  userRole: watermarkUserRole,
+                                })}
+                                onCapture={(file) => void uploadPhoto(item.id, file)}
+                              />
+                            ) : null}
 
+                            {state?.photos && state.photos.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {state.photos.map((photo, pIdx) => (
+                                  <div key={photo.fileId} className="relative group">
+                                    <div className="group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)]">
+                                      <Image
+                                        src={photo.url}
+                                        alt={`Foto bukti ${item.label}`}
+                                        width={80}
+                                        height={80}
+                                        className="size-20 object-cover"
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemovePhoto(item.id, pIdx)}
+                                      className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow"
+                                      title="Hapus foto"
+                                    >
+                                      <Trash2 className="size-3" />
+                                    </button>
+                                  </div>
+                                ))}
                                 <CameraCaptureButton
-                                  disabled={state.uploading}
-                                  uploading={state.uploading}
+                                  disabled={state?.uploading}
+                                  uploading={state?.uploading}
                                   watermarkLines={buildChecklistPhotoWatermarkLines({
                                     areaName: `${areaName} (Hydrant - ${item.code})`,
                                     userLabel: watermarkUserLabel,
@@ -811,62 +1075,43 @@ export function FrmTsm006Form({
                                   onCapture={(file) => void uploadPhoto(item.id, file)}
                                 />
                               </div>
-                            </div>
+                            ) : null}
+                          </div>
 
-                            {/* Penanggung Jawab (Akan Dihandle) */}
-                            <div>
-                              <label className="mb-1 block text-xs font-bold text-[#111111]">
-                                Akan Dihandle Oleh <span className="text-rose-600">*</span>
-                              </label>
-                              <div className="grid grid-cols-2 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => updateItem(item.id, { handler: "BES" })}
-                                  className={cn(
-                                    "rounded-xl border py-2 text-xs font-bold transition-all",
-                                    state.handler === "BES"
-                                      ? "border-[#ff8a2a] bg-[#fff0e3] text-[#c75f00]"
-                                      : "border-[#e6e2de] bg-[#fbfbfa] text-[#707784] hover:bg-[#f5f5f3]"
-                                  )}
-                                >
-                                  BES (Internal)
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
-                                  className={cn(
-                                    "rounded-xl border py-2 text-xs font-bold transition-all",
-                                    state.handler === "EKSTERNAL"
-                                      ? "border-[#ff8a2a] bg-[#fff0e3] text-[#c75f00]"
-                                      : "border-[#e6e2de] bg-[#fbfbfa] text-[#707784] hover:bg-[#f5f5f3]"
-                                  )}
-                                >
-                                  Eksternal / Vendor
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Form Tindak Lanjut */}
-                            <div>
-                              <label className="mb-1 block text-xs font-bold text-[#111111]">
-                                Tindak Lanjut <span className="text-rose-600">*</span>
-                              </label>
-                              <Select
-                                value={state.repairForm || "SAT/FRM/TS/065_REV:00_161020"}
-                                onValueChange={(val) => updateItem(item.id, { repairForm: val || undefined })}
-                              >
-                              <SelectTrigger className="h-10 border-[#e6e2de] bg-[#fbfbfa] text-xs font-semibold">
-                                <SelectValue placeholder="Pilih alur tindak lanjut..." />
+                          {/* 3. TINDAK LANJUT (Dropdown Form Tindak Lanjut) */}
+                          <div className="border-t border-[#eeeeec] pt-4">
+                            <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
+                              TINDAK LANJUT <span className="text-red-500">*</span>
+                            </p>
+                            <Select
+                              value={state?.repairForm || "SAT/FRM/TS/065_REV:00_161020"}
+                              onValueChange={(val) =>
+                                updateItem(item.id, {
+                                  repairForm: val || undefined,
+                                  notes:
+                                    val === "SAT/FRM/TS/065_REV:00_161020"
+                                      ? "Form Penggantian Spare Part (065)"
+                                      : val === "SAT/FRM/TSM/014_REV:000_060423"
+                                      ? "Form Estimasi Biaya Sipil & ME (014)"
+                                      : "Repair Tanpa Biaya",
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#ff8a2a] focus:ring-offset-0">
+                                <span className={cn("flex-1 text-left truncate", !state?.repairForm && "text-[#707784]")}>
+                                  {state?.repairForm
+                                    ? FOLLOW_UP_OPTIONS.find((o) => o.id === state.repairForm)?.label || state.repairForm
+                                    : "Pilih form tindak lanjut"}
+                                </span>
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent alignItemWithTrigger={false} className="rounded-xl border-[#dedede] bg-white shadow-lg">
                                 {FOLLOW_UP_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.id} value={opt.id} className="text-xs">
-                                    <div className="flex items-center gap-2">
-                                      <span className="rounded bg-[#f0eee9] px-1.5 py-0.5 text-[10px] font-bold text-[#555]">
-                                        {opt.badge}
-                                      </span>
-                                      <span>{opt.label}</span>
-                                    </div>
+                                  <SelectItem
+                                    key={opt.id}
+                                    value={opt.id}
+                                    className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer text-xs"
+                                  >
+                                    {opt.label}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -882,6 +1127,8 @@ export function FrmTsm006Form({
           </section>
         )
       })}
+        </>
+      )}
 
       {/* CARD: Catatan dan Keterangan Pelaksanaan */}
       <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)] sm:p-5">
