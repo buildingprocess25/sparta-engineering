@@ -224,7 +224,7 @@ export default async function DynamicFormPage({
         <FrmTsm001Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName || area.name}
+          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -250,7 +250,7 @@ export default async function DynamicFormPage({
         <FrmTs016Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName || area.name}
+          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -264,7 +264,7 @@ export default async function DynamicFormPage({
         <FrmTsm006Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName || area.name}
+          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -278,7 +278,7 @@ export default async function DynamicFormPage({
         <FrmTs062Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName || area.name}
+          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -293,6 +293,7 @@ export default async function DynamicFormPage({
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={area.name}
+          roomName={queryParams.roomName}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId

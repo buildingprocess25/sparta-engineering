@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import {
-  Building2,
+  Building,
   CheckCircle2,
   Warehouse,
   Factory,
@@ -62,9 +62,16 @@ const periodLabels: Record<Period, string> = {
   WEEKLY: "Weekly",
 }
 
+function getAreaDisplayName(area: { code: string; name: string }) {
+  if (area.code === "office" || area.name.toLowerCase() === "office") {
+    return "Branch"
+  }
+  return area.name
+}
+
 function getAreaIcon(name: string) {
   const lower = name.toLowerCase()
-  if (lower.includes("office")) return Building2
+  if (lower.includes("branch") || lower.includes("office")) return Building
   if (lower.includes("whc")) return Factory
   if (lower.includes("wh")) return Warehouse
   if (lower.includes("depo")) return Boxes
@@ -183,7 +190,7 @@ export function ReportAreaPicker({
                     )}
                   </div>
                   <span className="mt-3 block font-semibold text-[#111111]">
-                    {area.name}
+                    {getAreaDisplayName(area)}
                   </span>
                   <span className="mt-1 block text-xs text-[#686868]">
                     {area.periods.map((item) => periodLabels[item]).join(" / ")}
@@ -215,7 +222,7 @@ export function ReportAreaPicker({
               <div>
                 <h2 className="font-semibold text-[#111111]">Pilih Ruangan</h2>
                 <p className="mt-0.5 text-sm leading-5 text-[#686868]">
-                  Pilih spesifik ruangan di area {selectedArea.name}.
+                  Pilih spesifik ruangan di area {getAreaDisplayName(selectedArea)}.
                 </p>
               </div>
               <button

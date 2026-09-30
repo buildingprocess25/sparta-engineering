@@ -25,6 +25,7 @@ export type ChecklistPayloadItem = {
   repairForm?: string
   repairFormName?: string
   value?: string
+  unitNo?: string
 }
 
 export type ChecklistPayload = {
@@ -89,7 +90,8 @@ function isChecklistItem(value: unknown): value is ChecklistPayloadItem {
     CONDITION_SET.has(value.condition) &&
     Array.isArray(value.photos) &&
     isValidHandler &&
-    (value.repairForm === undefined || typeof value.repairForm === "string")
+    (value.repairForm === undefined || typeof value.repairForm === "string") &&
+    (value.unitNo === undefined || typeof value.unitNo === "string")
   )
 }
 
@@ -122,7 +124,7 @@ export function validateChecklistPayload(
         errors.push(`${item.label} wajib memilih siapa yang akan handle.`)
       }
       if (!item.notes || !item.notes.trim()) {
-        errors.push(`${item.label} wajib mengisi rencana aksi.`)
+        errors.push(`${item.label} wajib mengisi keterangan.`)
       }
     }
   }

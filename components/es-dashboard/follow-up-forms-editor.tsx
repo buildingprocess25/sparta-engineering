@@ -172,7 +172,7 @@ export function FollowUpFormsEditor({
           jenis: existing?.jenis || "PENGGANTIAN_SPARE_PART",
           namaUnit: existing?.namaUnit || unit.label,
           merk: existing?.merk || "",
-          nomorUnit: existing?.nomorUnit || "",
+          nomorUnit: existing?.nomorUnit || item?.unitNo || "",
           nomorTiketProblem: existing?.nomorTiketProblem || "",
           analisa: existing?.analisa || unit.notes || "",
           tindakan: existing?.tindakan || "",

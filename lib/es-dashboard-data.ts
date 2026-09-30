@@ -100,7 +100,7 @@ export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOption
         return {
           id: area.id,
           code: area.code,
-          name: area.name,
+          name: (area.code === "office" || area.name.toLowerCase() === "office") ? "Branch" : area.name,
           type: area.type,
           periods: area.checklistAvailabilities.map(a => a.period),
           completedPeriods,

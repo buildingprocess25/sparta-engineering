@@ -171,6 +171,7 @@ Required behavior:
 - Checklist entry uses a compact mobile-first wizard surface with a header,
   progress summary, search field, category accordion, segmented condition
   controls, and a sticky bottom continue/save action.
+- Pada kartu laporan kerusakan item checklist, input `NOMOR UNIT` diletakkan sejajar di sebelah kiri pilihan dropdown `KONDISI` (2-kolom), dan otomatis mem-prefill `nomorUnit` pada Form Tindak Lanjut 065.
 - Layout and interaction may mirror Sparta Maintenance, but checklist data,
   area names, and SPARTA Engineering brand styling remain owned by this
   project.
@@ -184,7 +185,7 @@ Required behavior:
 - Every captured checklist photo must be watermarked into the uploaded image.
   The watermark uses real checklist context and contains only:
   `SPARTA Engineering`, capture date/time, `Oleh: <user> - <role>`, and
-  `Area: <area name>`.
+  `Area: <area name>` (atau `Area: <area name> - <room name>` apabila ruangan dipilih).
 - Uploaded photo previews appear inline as the image itself, without a separate
   "foto tersimpan" status chip. Tapping the preview opens a dark fullscreen
   image viewer with a close control.
@@ -218,5 +219,5 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
      - Menggantikan tabel horizontal yang sempit dengan kartu input vertikal yang nyaman di smartphone.
      - Form 014: Nama barang, Qty, Satuan, Harga Satuan dengan prefix Rupiah, perhitungan subtotal otomatis, serta kemampuan menambah/menghapus baris material.
      - Form 065: Segmented control jenis perbaikan, input identitas unit (merk, no asset), analisa kerusakan, tindakan, serta kartu rincian spare part (nama part, nomor part, asal part Stock/PB, qty).
-   - Data dasar (Lokasi, Branch, Tanggal, Item Rusak, Rencana Aksi) di-prefill otomatis dari checklist.
+   - Data dasar (Lokasi, Branch, Tanggal, Item Rusak, Keterangan / Rencana Aksi) di-prefill otomatis dari checklist.
    - Setelah form lanjutan disimpan, laporan dialihkan ke `PENDING_COORD` untuk proses approval berjenjang.

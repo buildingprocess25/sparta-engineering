@@ -15,3 +15,18 @@ assert.deepEqual(lines, [
   { text: "Oleh: BMS User (12345678) - ES", weight: 400 },
   { text: "Area: Office", weight: 400 },
 ])
+
+const linesWithRoom = buildChecklistPhotoWatermarkLines({
+  areaName: "WH",
+  roomName: "Ruang Adm Receiving",
+  userLabel: "BMS User (12345678)",
+  userRole: "ES",
+  capturedAt: new Date(2026, 8, 18, 13, 51, 58),
+})
+
+assert.deepEqual(linesWithRoom, [
+  { text: "SPARTA Engineering", weight: 700 },
+  { text: "18 Sep 2026, 13:51:58", weight: 400 },
+  { text: "Oleh: BMS User (12345678) - ES", weight: 400 },
+  { text: "Area: WH - Ruang Adm Receiving", weight: 400 },
+])

@@ -60,6 +60,7 @@ export type SharedChecklistFormProps = {
   reportCode: string
   areaCode: string
   areaName: string
+  roomName?: string
   periodKey: string
   watermarkUserLabel: string
   watermarkUserRole: string
@@ -79,6 +80,7 @@ type ItemState = {
   notes: string
   handler?: "BES" | "EKSTERNAL"
   repairForm?: string
+  unitNo?: string
   uploading: boolean
 }
 
@@ -102,6 +104,7 @@ export function SharedChecklistForm({
   reportCode,
   areaCode,
   areaName,
+  roomName,
   periodKey,
   watermarkUserLabel,
   watermarkUserRole,
@@ -196,7 +199,7 @@ export function SharedChecklistForm({
     setItems(curr => {
       const list = curr[itemId]
       if (list.length >= (quantities[itemId] || 1)) return curr
-      return { ...curr, [itemId]: [...list, { photos: [], notes: "", uploading: false }] }
+      return { ...curr, [itemId]: [...list, { photos: [], notes: "", unitNo: "", uploading: false }] }
     })
   }
 
@@ -295,6 +298,7 @@ export function SharedChecklistForm({
             photos: getPayloadPhotosForCondition(state.condition ?? "TIDAK_ADA", state.photos),
             notes: state.notes,
             handler: state.handler,
+            unitNo: state.unitNo?.trim() || undefined,
             repairForm: state.repairForm === "REPAIR_TANPA_BIAYA" ? undefined : state.repairForm,
             repairFormName:
               state.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
@@ -382,7 +386,7 @@ export function SharedChecklistForm({
                 Checklist Item
               </h2>
               <p className="mt-0.5 text-sm text-[#686868]">
-                {areaName} Monthly - {evaluatedCount} dari {totalCount} item
+                {roomName ? `${areaName} - ${roomName}` : areaName} Monthly - {evaluatedCount} dari {totalCount} item
                 dievaluasi
               </p>
             </div>
@@ -551,75 +555,100 @@ export function SharedChecklistForm({
                               <p className="mb-3 text-sm font-bold text-[#707784]">
                                 Laporan Kerusakan #{index + 1}
                               </p>
-                              <div className="grid grid-cols-3 gap-2">
-                                {config.conditionOptions.map((condition) => {
-                                  const isFullWidth = condition === "TIDAK_ADA"
-                                  const isActive = state.condition === condition
-                                  const isBaik = condition === "BAIK"
-                                  const isTidakAda = condition === "TIDAK_ADA"
-
-                                  const activeClasses = isBaik
-                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold shadow-xs"
-                                    : isTidakAda
-                                    ? "border-[#111111] bg-[#111111] text-white font-bold shadow-xs"
-                                    : "border-red-500 bg-red-50 text-red-600 font-bold shadow-xs"
-
-                                  return (
-                                    <button
-                                      key={condition}
-                                      type="button"
-                                      onClick={() =>
-                                        updateItem(item.id, index, {
-                                          ...nextChecklistPhotoState(state, condition),
-                                          ...(!["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition) ? { handler: undefined, notes: "", repairForm: undefined } : {})
-                                        })
-                                      }
-                                      className={cn(
-                                        "h-11 rounded-xl border px-2 text-[13px] font-bold transition-all flex items-center justify-center text-center leading-tight",
-                                        isFullWidth ? "col-span-3" : "col-span-1",
-                                        isActive
-                                          ? activeClasses
-                                          : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                                      )}
-                                    >
-                                      {config.conditionLabels[condition] ?? condition}
-                                    </button>
-                                  )
-                                })}
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
+                                    Nomor Unit
+                                  </p>
+                                  <input
+                                    type="text"
+                                    value={state.unitNo || ""}
+                                    onChange={(e) => updateItem(item.id, index, { unitNo: e.target.value })}
+                                    placeholder="Contoh: Unit 1"
+                                    className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 transition-all"
+                                  />
+                                </div>
+                                <div>
+                                  <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
+                                    KONDISI <span className="text-red-500">*</span>
+                                  </p>
+                                  <Select
+                                    value={state.condition || ""}
+                                    onValueChange={(val) => {
+                                      const condition = val as ChecklistCondition
+                                      const isBesOnly = ["ADJUST_OR_ADD", "CLEAN", "REPAIR"].includes(condition)
+                                      updateItem(item.id, index, {
+                                        ...nextChecklistPhotoState(state, condition),
+                                        handler: isBesOnly ? "BES" : state.handler,
+                                        ...(!["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition)
+                                          ? { handler: undefined, notes: "", repairForm: undefined }
+                                          : {}),
+                                      })
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
+                                      <span className={cn("flex-1 text-left truncate", !state.condition && "text-[#707784]")}>
+                                        {state.condition ? config.conditionLabels[state.condition] || state.condition : "Pilih kondisi"}
+                                      </span>
+                                    </SelectTrigger>
+                                    <SelectContent alignItemWithTrigger={false} className="rounded-xl border-[#dedede] bg-white shadow-lg">
+                                      {config.conditionOptions.map((condition) => (
+                                        <SelectItem
+                                          key={condition}
+                                          value={condition}
+                                          className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
+                                        >
+                                          {config.conditionLabels[condition] ?? condition}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
 
                               {["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "") ? (
                                 <div className="mt-5 border-t border-[#eeeeec] pt-4 flex flex-col gap-4">
                                   <div>
-                                    <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
+                                    <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
                                       AKAN DIHANDLE <span className="text-red-500">*</span>
                                     </p>
-                                    <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => updateItem(item.id, index, { handler: "BES" })}
-                                        className={cn(
-                                          "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
-                                          state.handler === "BES"
-                                            ? "bg-[#ff8a2a] text-white shadow"
-                                            : "text-[#707784] hover:text-[#111111]"
-                                        )}
-                                      >
-                                        BES
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => updateItem(item.id, index, { handler: "EKSTERNAL" })}
-                                        className={cn(
-                                          "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
-                                          state.handler === "EKSTERNAL"
-                                            ? "bg-[#ff8a2a] text-white shadow"
-                                            : "text-[#707784] hover:text-[#111111]"
-                                        )}
-                                      >
-                                        Eksternal
-                                      </button>
-                                    </div>
+                                    {["ADJUST_OR_ADD", "CLEAN", "REPAIR"].includes(state.condition || "") ? (
+                                      <div className="flex rounded-xl bg-[#f5f5f3] p-1">
+                                        <button
+                                          type="button"
+                                          className="flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all bg-[#ff8a2a] text-white shadow cursor-default"
+                                        >
+                                          BES
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex rounded-xl bg-[#f5f5f3] p-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => updateItem(item.id, index, { handler: "BES" })}
+                                          className={cn(
+                                            "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
+                                            state.handler === "BES"
+                                              ? "bg-[#ff8a2a] text-white shadow"
+                                              : "text-[#707784] hover:text-[#111111]"
+                                          )}
+                                        >
+                                          BES
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => updateItem(item.id, index, { handler: "EKSTERNAL" })}
+                                          className={cn(
+                                            "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
+                                            state.handler === "EKSTERNAL"
+                                              ? "bg-[#ff8a2a] text-white shadow"
+                                              : "text-[#707784] hover:text-[#111111]"
+                                          )}
+                                        >
+                                          Eksternal
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               ) : null}
@@ -636,6 +665,7 @@ export function SharedChecklistForm({
                                       uploading={state.uploading}
                                       watermarkLines={buildChecklistPhotoWatermarkLines({
                                         areaName,
+                                        roomName,
                                         userLabel: watermarkUserLabel,
                                         userRole: watermarkUserRole,
                                       })}
@@ -686,12 +716,12 @@ export function SharedChecklistForm({
                               {["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "") ? (
                                 <div className="mt-4 border-t border-[#eeeeec] pt-4">
                                   <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
-                                    RENCANA AKSI <span className="text-red-500">*</span>
+                                    KETERANGAN <span className="text-red-500">*</span>
                                   </p>
                                   <textarea
                                     value={state.notes}
                                     onChange={(e) => updateItem(item.id, index, { notes: e.target.value })}
-                                    placeholder="Tambahkan rencana aksi..."
+                                    placeholder="Tambahkan keterangan..."
                                     className="w-full min-h-[80px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
                                   />
                                   <div className="mt-3">
@@ -702,7 +732,7 @@ export function SharedChecklistForm({
                                       value={state.repairForm || ""}
                                       onValueChange={(val) => updateItem(item.id, index, { repairForm: val || undefined })}
                                     >
-                                      <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#ff8a2a] focus:ring-offset-0">
+                                      <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
                                         <span className={cn("flex-1 text-left truncate", !state.repairForm && "text-[#707784]")}>
                                           {state.repairForm ? FOLLOW_UP_LABELS[state.repairForm] || state.repairForm : "Pilih form tindak lanjut"}
                                         </span>
@@ -765,8 +795,8 @@ export function SharedChecklistForm({
         {!canSubmit ? (
           <p className="mt-2 text-center text-xs text-[#686868]">
             {config.allowPartial
-              ? "Lengkapi kondisi wajib (foto, handler, rencana aksi) sebelum menyimpan."
-              : "Lengkapi semua pilihan, foto wajib, dan rencana aksi sebelum menyimpan."}
+              ? "Lengkapi kondisi wajib (foto, handler, keterangan) sebelum menyimpan."
+              : "Lengkapi semua pilihan, foto wajib, dan keterangan sebelum menyimpan."}
           </p>
         ) : null}
       </div>

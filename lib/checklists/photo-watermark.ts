@@ -1,5 +1,6 @@
 type ChecklistPhotoWatermarkInput = {
   areaName: string
+  roomName?: string
   userLabel: string
   userRole: string
   capturedAt?: Date
@@ -24,16 +25,29 @@ function formatCapturedAt(value: Date) {
     .replaceAll(".", ":")
 }
 
+function formatLocation(areaName: string, roomName?: string) {
+  const trimmedArea = areaName.trim()
+  const trimmedRoom = roomName?.trim()
+
+  if (trimmedRoom && !trimmedArea.toLowerCase().includes(trimmedRoom.toLowerCase())) {
+    return `${trimmedArea} - ${trimmedRoom}`
+  }
+  return trimmedArea
+}
+
 export function buildChecklistPhotoWatermarkLines({
   areaName,
+  roomName,
   userLabel,
   userRole,
   capturedAt = new Date(),
 }: ChecklistPhotoWatermarkInput): ChecklistPhotoWatermarkLine[] {
+  const location = formatLocation(areaName, roomName)
+
   return [
     { text: "SPARTA Engineering", weight: 700 },
     { text: formatCapturedAt(capturedAt), weight: 400 },
     { text: `Oleh: ${userLabel} - ${userRole}`, weight: 400 },
-    { text: `Area: ${areaName}`, weight: 400 },
+    { text: `Area: ${location}`, weight: 400 },
   ]
 }

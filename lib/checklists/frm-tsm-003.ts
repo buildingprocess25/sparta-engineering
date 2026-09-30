@@ -40,10 +40,8 @@ export const FRM_TSM_003_CONFIG: ChecklistConfig = {
     "ADJUST_OR_ADD",
     "CLEAN",
     "REPAIR",
-    "URGENT",
     "BAIK",
     "RUSAK",
-    "TIDAK_ADA",
   ],
   conditionLabels: {
     ADJUST_OR_ADD: "Adjust/Add (A)",

@@ -12,7 +12,7 @@ const adapter = new PrismaPg({ connectionString })
 const prisma = new PrismaClient({ adapter })
 
 const areaSeeds = [
-  { code: "office", name: "Office", type: "OFFICE", periods: ["MONTHLY"] },
+  { code: "office", name: "Branch", type: "OFFICE", periods: ["MONTHLY"] },
   { code: "whc", name: "WHC", type: "WAREHOUSE", periods: ["MONTHLY", "WEEKLY"] },
   { code: "wh", name: "WH", type: "WAREHOUSE", periods: ["MONTHLY", "WEEKLY"] },
   { code: "depo", name: "Depo", type: "WAREHOUSE", periods: ["MONTHLY", "WEEKLY"] },
