@@ -171,7 +171,10 @@ Required behavior:
 - Checklist entry uses a compact mobile-first wizard surface with a header,
   progress summary, search field, category accordion, segmented condition
   controls, and a sticky bottom continue/save action.
-- Pada kartu laporan kerusakan item checklist, input `NOMOR UNIT` diletakkan sejajar di sebelah kiri pilihan dropdown `KONDISI` (2-kolom), dan otomatis mem-prefill `nomorUnit` pada Form Tindak Lanjut 065.
+- Pada form checklist ruangan (mis. FRM_TSM_003), setiap item langsung menampilkan input evaluasi per unit sesuai `TOTAL QTY` (default 1 unit dengan kondisi awal `BAIK`). Stepper `UNIT RUSAK` dan banner teks dihilangkan.
+- Setiap unit memiliki input `Nomor Unit` (placeholder `Contoh: Unit 1`) sejajar dengan dropdown `KONDISI *` (2-kolom).
+- Kondisi awal `BAIK` memastikan item yang normal sudah ter-evaluasi tanpa harus dipilih satu per satu. Pengguna cukup mengubah kondisi item yang bermasalah (misal menjadi `RUSAK`).
+- Jika kondisi dipilih `BAIK`, unit tidak memerlukan foto bukti atau form lanjutan. Jika dipilih kondisi temuan (`RUSAK`, `REPAIR`, `CLEAN`, `ADJUST_OR_ADD`), form menampilkan pilihan handler (default BES), kamera foto bukti wajib, keterangan, dan pilihan form tindak lanjut (014, 065, Repair Tanpa Biaya) yang mem-prefill `nomorUnit` ke Form 065.
 - Layout and interaction may mirror Sparta Maintenance, but checklist data,
   area names, and SPARTA Engineering brand styling remain owned by this
   project.
@@ -218,6 +221,7 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
    - **Desain Mobile-First & Input Terstruktur**:
      - Menggantikan tabel horizontal yang sempit dengan kartu input vertikal yang nyaman di smartphone.
      - Form 014: Nama barang, Qty, Satuan, Harga Satuan dengan prefix Rupiah, perhitungan subtotal otomatis, serta kemampuan menambah/menghapus baris material.
-     - Form 065: Segmented control jenis perbaikan, input identitas unit (merk, no asset), analisa kerusakan, tindakan, serta kartu rincian spare part (nama part, nomor part, asal part Stock/PB, qty).
+     - Form 065: Segmented control jenis perbaikan, input identitas unit 2-baris (Baris 1: Nama Unit & Merk/Brand; Baris 2: No Unit/Asset & No Tiket Problem), analisa kerusakan, tindakan, serta kartu rincian spare part 2-baris (Baris 1: Nama Part & Nomor Part/Seri; Baris 2: Asal Part via shadcn Select & Jumlah Part).
+     - Header context bar follow-up ditampilkan dalam format 2-kolom x 2-baris (Branch/Depo, Lokasi, Tanggal, Pelapor) agar teks tidak terpotong.
    - Data dasar (Lokasi, Branch, Tanggal, Item Rusak, Keterangan / Rencana Aksi) di-prefill otomatis dari checklist.
    - Setelah form lanjutan disimpan, laporan dialihkan ke `PENDING_COORD` untuk proses approval berjenjang.

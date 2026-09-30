@@ -121,7 +121,20 @@ export function SharedChecklistForm({
   
   const [items, setItems] = React.useState<Record<string, ItemState[]>>(() => {
     if (!config) return {}
-    return Object.fromEntries(config.items.map((item) => [item.id, []]))
+    return Object.fromEntries(
+      config.items.map((item) => [
+        item.id,
+        [
+          {
+            photos: [],
+            notes: "",
+            unitNo: "",
+            uploading: false,
+            condition: config.allowPartial ? undefined : "BAIK",
+          },
+        ],
+      ])
+    )
   })
   const [errors, setErrors] = React.useState<string[]>([])
   const [uploadNotice, setUploadNotice] = React.useState<UploadNotice>()
@@ -151,63 +164,81 @@ export function SharedChecklistForm({
         item.label.toLowerCase().includes(normalizedQuery)
       )
     : config.items
-  const evaluatedCount = config.items.filter(item => items[item.id].every(state => state.condition)).length
+  const evaluatedCount = config.items.filter((item) => {
+    const list = items[item.id] || []
+    return config.allowPartial
+      ? list.some((state) => Boolean(state.condition))
+      : list.length > 0 && list.every((state) => Boolean(state.condition))
+  }).length
   const totalCount = config.items.length
   const progressPercentage = Math.round((evaluatedCount / totalCount) * 100)
   
-  const missingPhotoCount = config.items.reduce((sum, item) => {
-    return sum + items[item.id].filter(state => config.conditionRequiresPhoto(state.condition) && state.photos.length === 0).length
-  }, 0)
-  
-  const isUploading = Object.values(items).some(list => list.some(state => state.uploading))
-  
-  const hasEvaluatedItems = evaluatedCount > 0
-  const isFullyEvaluated = evaluatedCount === totalCount
-  const isEvaluationValid = config.allowPartial ? hasEvaluatedItems : isFullyEvaluated
-  
-  const hasMissingActionInfo = config.items.some((item) => {
-    return items[item.id].some((state) => {
-      const requiresAction = ["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(state.condition || "")
-      if (!requiresAction) return false
-      if (!state.handler) return true
-      if (!state.notes.trim()) return true
-      if (!state.repairForm) return true
-      return false
-    })
-  })
+  const validationIssues = React.useMemo(() => {
+    const issues: string[] = []
+    if (config.allowPartial ? evaluatedCount === 0 : evaluatedCount < totalCount) {
+      issues.push(
+        config.allowPartial
+          ? "Pilih minimal 1 item yang bermasalah."
+          : "Lengkapi pilihan kondisi untuk semua item."
+      )
+    }
+    for (const item of config.items) {
+      const list = items[item.id] || []
+      list.forEach((s, idx) => {
+        const unitLabel =
+          list.length > 1 ? `${item.label} (Unit ${idx + 1})` : item.label
+        if (config.conditionRequiresPhoto(s.condition) && s.photos.length === 0) {
+          issues.push(`Foto bukti wajib diupload untuk ${unitLabel}.`)
+        }
+        const requiresAction = [
+          "RUSAK",
+          "REPAIR",
+          "URGENT",
+          "ADJUST_OR_ADD",
+          "CLEAN",
+        ].includes(s.condition || "")
+        if (requiresAction) {
+          if (!s.handler) issues.push(`Pilih handler untuk ${unitLabel}.`)
+          if (!s.notes.trim()) issues.push(`Isi keterangan untuk ${unitLabel}.`)
+          if (!s.repairForm)
+            issues.push(`Pilih form tindak lanjut untuk ${unitLabel}.`)
+        }
+      })
+    }
+    return issues
+  }, [config, items, evaluatedCount, totalCount])
+
+  const isUploading = Object.values(items).some((list) =>
+    list.some((state) => state.uploading)
+  )
 
   const canSubmit =
-    isEvaluationValid &&
-    missingPhotoCount === 0 &&
-    !hasMissingActionInfo &&
+    validationIssues.length === 0 &&
     !isUploading &&
     !isPending
 
   function updateItemQty(itemId: string, qty: number) {
     if (qty < 1) return
-    setQuantities(curr => ({ ...curr, [itemId]: qty }))
-    setItems(curr => {
-      const list = curr[itemId]
+    setQuantities((curr) => ({ ...curr, [itemId]: qty }))
+    setItems((curr) => {
+      const list = curr[itemId] || []
       if (list.length > qty) {
         return { ...curr, [itemId]: list.slice(0, qty) }
       }
+      if (list.length < qty) {
+        const added: ItemState[] = Array.from(
+          { length: qty - list.length },
+          () => ({
+            photos: [],
+            notes: "",
+            unitNo: "",
+            uploading: false,
+            condition: config?.allowPartial ? undefined : "BAIK",
+          })
+        )
+        return { ...curr, [itemId]: [...list, ...added] }
+      }
       return curr
-    })
-  }
-
-  function addDamagedUnit(itemId: string) {
-    setItems(curr => {
-      const list = curr[itemId]
-      if (list.length >= (quantities[itemId] || 1)) return curr
-      return { ...curr, [itemId]: [...list, { photos: [], notes: "", unitNo: "", uploading: false }] }
-    })
-  }
-
-  function removeDamagedUnit(itemId: string) {
-    setItems(curr => {
-      const list = curr[itemId]
-      if (list.length === 0) return curr
-      return { ...curr, [itemId]: list.slice(0, -1) }
     })
   }
 
@@ -276,41 +307,35 @@ export function SharedChecklistForm({
       period: "MONTHLY",
       periodKey,
       items: config!.items.flatMap((item) => {
-        const qty = quantities[item.id] || 1
-        const damagedList = items[item.id] || []
-        const goodCount = qty - damagedList.length
+        const list = items[item.id] || []
+        const evaluatedList = config!.allowPartial
+          ? list.filter((state) => Boolean(state.condition))
+          : list
 
-        const payloadItems: ChecklistPayloadItem[] = []
-        for (let i = 0; i < goodCount; i++) {
-          payloadItems.push({
-            id: item.id,
-            label: item.label,
-            condition: "BAIK",
-            photos: [],
-            notes: "",
-          })
-        }
-        for (const state of damagedList) {
-          payloadItems.push({
-            id: item.id,
-            label: item.label,
-            condition: state.condition ?? "TIDAK_ADA",
-            photos: getPayloadPhotosForCondition(state.condition ?? "TIDAK_ADA", state.photos),
-            notes: state.notes,
-            handler: state.handler,
-            unitNo: state.unitNo?.trim() || undefined,
-            repairForm: state.repairForm === "REPAIR_TANPA_BIAYA" ? undefined : state.repairForm,
-            repairFormName:
-              state.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
-                ? "Form Estimasi Biaya Sipil & ME (014)"
-                : state.repairForm === "SAT/FRM/TS/065_REV:00_161020"
-                ? "Form Penggantian Spare Part (065)"
-                : state.repairForm === "REPAIR_TANPA_BIAYA"
-                ? "Repair Tanpa Biaya"
-                : undefined,
-          })
-        }
-        return payloadItems
+        return evaluatedList.map((state) => ({
+          id: item.id,
+          label: item.label,
+          condition: state.condition ?? "BAIK",
+          photos: getPayloadPhotosForCondition(
+            state.condition ?? "BAIK",
+            state.photos
+          ),
+          notes: state.notes,
+          handler: state.handler,
+          unitNo: state.unitNo?.trim() || undefined,
+          repairForm:
+            state.repairForm === "REPAIR_TANPA_BIAYA"
+              ? undefined
+              : state.repairForm,
+          repairFormName:
+            state.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
+              ? "Form Estimasi Biaya Sipil & ME (014)"
+              : state.repairForm === "SAT/FRM/TS/065_REV:00_161020"
+              ? "Form Penggantian Spare Part (065)"
+              : state.repairForm === "REPAIR_TANPA_BIAYA"
+              ? "Repair Tanpa Biaya"
+              : undefined,
+        }))
       }),
     }
   }
@@ -472,10 +497,8 @@ export function SharedChecklistForm({
           <div className="flex flex-col gap-3 border-t border-[#eeeeec] bg-[#fbfbfa] p-3">
             {visibleItems.length > 0 ? (
               visibleItems.map((item) => {
-                const list = items[item.id]
+                const list = items[item.id] || []
                 const totalQty = quantities[item.id] || 1
-                const unitsRusak = list.length
-                const goodCount = totalQty - unitsRusak
 
                 return (
                   <article
@@ -492,30 +515,6 @@ export function SharedChecklistForm({
                         </h4>
                       </div>
                       <div className="flex items-center gap-6">
-                        {/* UNIT RUSAK STEPPER */}
-                        <div className="flex flex-col items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-[#707784] tracking-wider uppercase">UNIT RUSAK</span>
-                          <div className="flex items-center rounded-lg border border-[#e8e8e6] bg-[#fbfbfa]">
-                            <button
-                              type="button"
-                              onClick={() => removeDamagedUnit(item.id)}
-                              disabled={unitsRusak <= 0}
-                              className="grid size-8 place-items-center text-[#686868] hover:bg-[#efefed] disabled:opacity-30 rounded-l-lg transition-colors"
-                            >
-                              -
-                            </button>
-                            <span className="w-8 text-center text-sm font-semibold">{unitsRusak}</span>
-                            <button
-                              type="button"
-                              onClick={() => addDamagedUnit(item.id)}
-                              disabled={unitsRusak >= totalQty}
-                              className="grid size-8 place-items-center text-[#686868] hover:bg-[#efefed] disabled:opacity-30 rounded-r-lg transition-colors"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-
                         {/* TOTAL QTY STEPPER */}
                         <div className="flex flex-col items-center gap-1.5">
                           <span className="text-[10px] font-bold text-[#707784] tracking-wider uppercase">TOTAL QTY</span>
@@ -541,33 +540,29 @@ export function SharedChecklistForm({
                       </div>
                     </div>
                     
-                    {unitsRusak === 0 ? (
-                      <div className="mt-5 p-4 rounded-xl bg-[#fff0e3] border border-[#ffc9a3] text-center text-[13px] text-[#a64f00] font-medium leading-relaxed">
-                        Sebanyak <span className="font-bold">{totalQty} unit</span> tercatat dalam kondisi <span className="font-bold">BAIK</span>.<br />
-                        <span className="text-[#a64f00]/80 text-xs font-normal">Tambahkan angka pada tombol (+) Unit Rusak di atas jika ada yang bermasalah.</span>
-                      </div>
-                    ) : (
-                      <div className="mt-5 flex flex-col gap-6">
-                        {list.map((state, index) => {
-                          const photoRequired = config.conditionRequiresPhoto(state.condition)
-                          return (
-                            <div key={index} className={cn(index > 0 && "border-t border-dashed border-[#dedede] pt-6 relative")}>
+                    <div className="mt-5 flex flex-col gap-6">
+                      {list.map((state, index) => {
+                        const photoRequired = config.conditionRequiresPhoto(state.condition)
+                        return (
+                          <div key={index} className={cn(index > 0 && "border-t border-dashed border-[#dedede] pt-6 relative")}>
+                            {totalQty > 1 ? (
                               <p className="mb-3 text-sm font-bold text-[#707784]">
-                                Laporan Kerusakan #{index + 1}
+                                Unit #{index + 1}
                               </p>
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
-                                    Nomor Unit
-                                  </p>
-                                  <input
-                                    type="text"
-                                    value={state.unitNo || ""}
-                                    onChange={(e) => updateItem(item.id, index, { unitNo: e.target.value })}
-                                    placeholder="Contoh: Unit 1"
-                                    className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 transition-all"
-                                  />
-                                </div>
+                            ) : null}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
+                                  Nomor Unit
+                                </p>
+                                <input
+                                  type="text"
+                                  value={state.unitNo || ""}
+                                  onChange={(e) => updateItem(item.id, index, { unitNo: e.target.value })}
+                                  placeholder={`Contoh: Unit ${index + 1}`}
+                                  className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 transition-all"
+                                />
+                              </div>
                                 <div>
                                   <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
                                     KONDISI <span className="text-red-500">*</span>
@@ -579,7 +574,7 @@ export function SharedChecklistForm({
                                       const isBesOnly = ["ADJUST_OR_ADD", "CLEAN", "REPAIR"].includes(condition)
                                       updateItem(item.id, index, {
                                         ...nextChecklistPhotoState(state, condition),
-                                        handler: isBesOnly ? "BES" : state.handler,
+                                        handler: isBesOnly ? "BES" : (state.handler || "BES"),
                                         ...(!["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition)
                                           ? { handler: undefined, notes: "", repairForm: undefined }
                                           : {}),
@@ -765,7 +760,6 @@ export function SharedChecklistForm({
                           )
                         })}
                       </div>
-                    )}
                   </article>
                 )
               })
@@ -793,10 +787,11 @@ export function SharedChecklistForm({
           Simpan Checklist
         </Button>
         {!canSubmit ? (
-          <p className="mt-2 text-center text-xs text-[#686868]">
-            {config.allowPartial
-              ? "Lengkapi kondisi wajib (foto, handler, keterangan) sebelum menyimpan."
-              : "Lengkapi semua pilihan, foto wajib, dan keterangan sebelum menyimpan."}
+          <p className="mt-2 text-center text-xs font-medium text-[#c2410c]">
+            {validationIssues[0] ||
+              (isUploading
+                ? "Menunggu upload foto selesai..."
+                : "Lengkapi semua data sebelum menyimpan.")}
           </p>
         ) : null}
       </div>

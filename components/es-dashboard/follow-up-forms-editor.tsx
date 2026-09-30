@@ -21,6 +21,12 @@ import {
   Sparkles,
   Info
 } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select"
 
 interface MaterialItem {
   id: string
@@ -477,7 +483,7 @@ export function FollowUpFormsEditor({
     <div className="flex flex-col gap-5 pb-32">
       {/* Context Bar */}
       <div className="rounded-xl border border-[#dedede] bg-white p-3.5 shadow-xs">
-        <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 sm:gap-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 text-xs">
           <div className="flex items-center gap-2">
             <Building2 className="size-4 shrink-0 text-[#707784]" />
             <div className="min-w-0">
@@ -781,19 +787,19 @@ export function FollowUpFormsEditor({
                 Identitas Unit Equipment
               </h3>
 
-              <div>
-                <label className="text-xs font-semibold text-zinc-700 mb-1 block">
-                  Nama Unit / Equipment
-                </label>
-                <input
-                  type="text"
-                  value={itemData.namaUnit}
-                  onChange={(e) => updateField065(activeUnit.key, "namaUnit", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
-                />
-              </div>
-
+              {/* Baris 1: Nama Unit / Equipment & Merk / Brand */}
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                    Nama Unit / Equipment
+                  </label>
+                  <input
+                    type="text"
+                    value={itemData.namaUnit}
+                    onChange={(e) => updateField065(activeUnit.key, "namaUnit", e.target.value)}
+                    className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
+                  />
+                </div>
                 <div>
                   <label className="text-xs font-semibold text-zinc-700 mb-1 block">
                     Merk / Brand
@@ -806,6 +812,10 @@ export function FollowUpFormsEditor({
                     className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
                   />
                 </div>
+              </div>
+
+              {/* Baris 2: No. Unit / Asset & No. Tiket Problem (Opsional) */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-zinc-700 mb-1 block">
                     No. Unit / Asset
@@ -818,19 +828,18 @@ export function FollowUpFormsEditor({
                     className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-zinc-700 mb-1 block">
-                  No. Tiket Problem (Opsional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="mis. TKT-2026-0901"
-                  value={itemData.nomorTiketProblem}
-                  onChange={(e) => updateField065(activeUnit.key, "nomorTiketProblem", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
-                />
+                <div>
+                  <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                    No. Tiket Problem (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="mis. TKT-2026-0901"
+                    value={itemData.nomorTiketProblem}
+                    onChange={(e) => updateField065(activeUnit.key, "nomorTiketProblem", e.target.value)}
+                    className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
+                  />
+                </div>
               </div>
             </div>
 
@@ -901,51 +910,70 @@ export function FollowUpFormsEditor({
                     )}
                   </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-zinc-700 mb-1 block">
-                      Nama Part <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="mis. Filter Dryer, Kapasitor 45uF, Bearing"
-                      value={p.namaPart}
-                      onChange={(e) =>
-                        updateSparePartField(activeUnit.key, p.id, "namaPart", e.target.value)
-                      }
-                      className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
-                    />
+                  {/* Baris 1: Nama Part & Nomor Part / Seri */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                        Nama Part <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="mis. Filter Dryer, Kapasitor 45uF, Bearing"
+                        value={p.namaPart}
+                        onChange={(e) =>
+                          updateSparePartField(activeUnit.key, p.id, "namaPart", e.target.value)
+                        }
+                        className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                        Nomor Part / Seri
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Part number / seri (jika ada)"
+                        value={p.nomorPart}
+                        onChange={(e) =>
+                          updateSparePartField(activeUnit.key, p.id, "nomorPart", e.target.value)
+                        }
+                        className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-zinc-700 mb-1 block">
-                      Nomor Part / Seri
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Part number / seri (jika ada)"
-                      value={p.nomorPart}
-                      onChange={(e) =>
-                        updateSparePartField(activeUnit.key, p.id, "nomorPart", e.target.value)
-                      }
-                      className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
-                    />
-                  </div>
-
+                  {/* Baris 2: Asal Part & Jumlah Part */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Asal Part
                       </label>
-                      <select
+                      <Select
                         value={p.asalPart}
-                        onChange={(e) =>
-                          updateSparePartField(activeUnit.key, p.id, "asalPart", e.target.value as any)
+                        onValueChange={(val) =>
+                          updateSparePartField(activeUnit.key, p.id, "asalPart", val as "STOCK" | "PB")
                         }
-                        className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm font-medium focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
                       >
-                        <option value="STOCK">Stock Gudang</option>
-                        <option value="PB">PB (Pengadaan Baru)</option>
-                      </select>
+                        <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm font-medium text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
+                          <span className="flex-1 text-left truncate">
+                            {p.asalPart === "STOCK" ? "Stock Gudang" : "PB (Pengadaan Baru)"}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent alignItemWithTrigger={false} className="rounded-xl border-[#dedede] bg-white shadow-lg">
+                          <SelectItem
+                            value="STOCK"
+                            className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
+                          >
+                            Stock Gudang
+                          </SelectItem>
+                          <SelectItem
+                            value="PB"
+                            className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
+                          >
+                            PB (Pengadaan Baru)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-zinc-700 mb-1 block">
