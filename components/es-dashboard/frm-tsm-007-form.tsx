@@ -313,7 +313,7 @@ export function FrmTsm007Form({
     <div className="flex flex-col gap-5 pb-8">
       {uploadNotice ? (
         <div className={cn("fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-50 flex w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 items-center gap-2 rounded-2xl border bg-white px-4 py-3 text-sm font-semibold shadow-[0_12px_30px_rgba(17,17,17,0.16)]", uploadNotice.tone === "loading" && "border-[#dedede] text-[#111111]", uploadNotice.tone === "success" && "border-[#c9ead2] bg-[#f0fbf3] text-[#1f6b35]", uploadNotice.tone === "error" && "border-[#ffc9a3] bg-[#fff4ec] text-[#8a3d00]")} role="status">
-          {uploadNotice.tone === "loading" ? <Loader2 className="size-4 animate-spin text-[#e6a800]" /> : uploadNotice.tone === "success" ? <Check className="size-4 text-emerald-600" /> : <X className="size-4 text-rose-600" />}
+          {uploadNotice.tone === "loading" ? <Loader2 className="size-4 animate-spin text-[#ff8a2a]" /> : uploadNotice.tone === "success" ? <Check className="size-4 text-emerald-600" /> : <X className="size-4 text-rose-600" />}
           <span>{uploadNotice.message}</span>
         </div>
       ) : null}
@@ -321,7 +321,7 @@ export function FrmTsm007Form({
       {/* CARD: Identitas Unit PLTS */}
       <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)] sm:p-5">
         <div className="flex items-center gap-3 border-b border-[#f0eee9] pb-3.5">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#fff7e0] text-[#e6a800]">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#fff7ed] text-[#ff8a2a]">
             <Sun className="size-5" />
           </span>
           <div className="min-w-0">
@@ -332,42 +332,42 @@ export function FrmTsm007Form({
 
         <div className="mt-4 grid grid-cols-2 gap-3.5">
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">Daya Total PLTS <span className="text-[#e6a800]">*</span></label>
+            <label className="mb-1.5 block text-xs font-bold text-[#111111]">Daya Total PLTS <span className="text-[#ff8a2a]">*</span></label>
             <div className="flex items-center gap-2">
-              <Input placeholder="mis. 198" value={daya} onChange={(e) => setDaya(e.target.value)} className="h-10 border-[#e6e2de] bg-[#fbfbfa] text-sm font-semibold focus-visible:border-[#e6a800] focus-visible:ring-[#e6a800]/20" />
+              <Input placeholder="mis. 198" value={daya} onChange={(e) => setDaya(e.target.value)} className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] font-semibold text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all" />
               <span className="shrink-0 text-xs font-semibold text-[#707784]">KWp</span>
             </div>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-bold text-[#111111]">Tahun</label>
-            <Input placeholder={String(currentYear)} value={tahun} onChange={(e) => setTahun(e.target.value)} className="h-10 border-[#e6e2de] bg-[#fbfbfa] text-sm font-semibold focus-visible:border-[#e6a800] focus-visible:ring-[#e6a800]/20" />
+            <Input placeholder={String(currentYear)} value={tahun} onChange={(e) => setTahun(e.target.value)} className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] font-semibold text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all" />
           </div>
         </div>
 
         <div className="mt-3.5">
-          <label className="mb-1.5 block text-xs font-bold text-[#111111]">Jenis Perawatan <span className="text-[#e6a800]">*</span></label>
+          <label className="mb-1.5 block text-xs font-bold text-[#111111]">Jenis Perawatan <span className="text-[#ff8a2a]">*</span></label>
           <Select value={jenisPerawatan} onValueChange={(val) => setJenisPerawatan(val as JenisPerawatanPLTSOption)}>
-            <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#e6a800] focus:ring-offset-0">
+            <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
               <span className={cn("flex-1 text-left truncate", !jenisPerawatan && "text-[#707784]")}>
                 {jenisPerawatan === "BULANAN" ? "1 (satu) Bulanan" : jenisPerawatan === "TIGA_BULANAN" ? "3 (tiga) Bulanan" : "-- Pilih Jenis Perawatan --"}
               </span>
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false} className="rounded-xl border-[#dedede] bg-white shadow-lg">
-              <SelectItem value="BULANAN" className="text-[#111111] hover:bg-[#fffbeb] focus:bg-[#fffbeb] focus:text-[#b45309] data-[state=checked]:bg-[#fffbeb] data-[state=checked]:text-[#b45309] font-medium py-2.5 cursor-pointer text-xs">1 (satu) Bulanan</SelectItem>
-              <SelectItem value="TIGA_BULANAN" className="text-[#111111] hover:bg-[#fffbeb] focus:bg-[#fffbeb] focus:text-[#b45309] data-[state=checked]:bg-[#fffbeb] data-[state=checked]:text-[#b45309] font-medium py-2.5 cursor-pointer text-xs">3 (tiga) Bulanan</SelectItem>
+              <SelectItem value="BULANAN" className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer text-xs">1 (satu) Bulanan</SelectItem>
+              <SelectItem value="TIGA_BULANAN" className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer text-xs">3 (tiga) Bulanan</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {jenisPerawatan === "BULANAN" && (
-          <div className="mt-4 rounded-xl border border-amber-200/70 bg-amber-50/40 p-3.5">
-            <div className="flex items-center gap-2 font-bold text-[#111111] text-xs"><Calendar className="size-4 text-amber-600" /><span>Pemeriksaan 1 Bulanan</span></div>
+          <div className="mt-4 rounded-xl border border-orange-200/70 bg-orange-50/40 p-3.5">
+            <div className="flex items-center gap-2 font-bold text-[#111111] text-xs"><Calendar className="size-4 text-[#ff8a2a]" /><span>Pemeriksaan 1 Bulanan</span></div>
             <p className="mt-1 text-[11px] text-[#666]">Mencakup: Panel Surya Atap, Panel DC Protection, Panel Inverter, Panel Combiner, Panel Communication &amp; Modem Wi-Fi (Kategori 1–5).</p>
           </div>
         )}
         {jenisPerawatan === "TIGA_BULANAN" && (
-          <div className="mt-4 rounded-xl border border-sky-200/70 bg-sky-50/40 p-3.5">
-            <div className="flex items-center gap-2 font-bold text-[#111111] text-xs"><Calendar className="size-4 text-sky-600" /><span>Pemeriksaan 3 Bulanan</span></div>
+          <div className="mt-4 rounded-xl border border-orange-200/70 bg-orange-50/40 p-3.5">
+            <div className="flex items-center gap-2 font-bold text-[#111111] text-xs"><Calendar className="size-4 text-[#ff8a2a]" /><span>Pemeriksaan 3 Bulanan</span></div>
             <p className="mt-1 text-[11px] text-[#666]">Mencakup: Pembersihan Panel Surya dan Jalur Kabel &amp; Tray Metal Kabel (Kategori 6–7).</p>
           </div>
         )}
@@ -379,7 +379,7 @@ export function FrmTsm007Form({
 
       {!jenisPerawatan ? (
         <section className="rounded-2xl border border-dashed border-[#dcd7d2] bg-[#fbfbfa] p-8 text-center sm:p-10 shadow-sm">
-          <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#fff7e0] text-[#e6a800]"><Sun className="size-6" /></div>
+          <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#fff7ed] text-[#ff8a2a]"><Sun className="size-6" /></div>
           <h3 className="mt-3 text-base font-bold text-[#111111]">Checklist PLTS Siap Digunakan</h3>
           <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-[#707784]">Silakan pilih <strong>Jenis Perawatan</strong> di atas (1 Bulanan atau 3 Bulanan) untuk menampilkan daftar item checklist.</p>
         </section>
@@ -392,7 +392,7 @@ export function FrmTsm007Form({
               <span className="text-[#111111]">{evaluatedCount} / {totalItemsCount} Dievaluasi</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f0eee9]">
-              <div className="h-full bg-[#e6a800] transition-all duration-300" style={{ width: `${totalItemsCount > 0 ? (evaluatedCount / totalItemsCount) * 100 : 0}%` }} />
+              <div className="h-full bg-[#ff8a2a] transition-all duration-300" style={{ width: `${totalItemsCount > 0 ? (evaluatedCount / totalItemsCount) * 100 : 0}%` }} />
             </div>
             {damagedCount > 0 && (
               <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-rose-600">
@@ -406,7 +406,7 @@ export function FrmTsm007Form({
             const isCollapsed = collapsedCategories[cat.id]
             const catItemsEvaluated = cat.items.filter((item) => itemStates[item.id]?.condition).length
             const catItemsDamaged = cat.items.filter((item) => itemStates[item.id]?.condition === "RUSAK").length
-            const catIconBg = cat.frequencyTone === "sky" ? "bg-[#e0f2fe] text-[#0284c7]" : "bg-[#fff7e0] text-[#e6a800]"
+            const catIconBg = "bg-[#fff7ed] text-[#ff8a2a]"
             return (
               <section key={cat.id} className="rounded-2xl border border-[#e6e2de] bg-white shadow-[0_4px_16px_rgba(17,17,17,0.04)] overflow-hidden">
                 <button type="button" onClick={() => toggleCategory(cat.id)} className="flex w-full items-center justify-between border-b border-[#f0eee9] p-4 text-left hover:bg-[#fafaf9] transition-colors sm:p-5">
@@ -415,10 +415,7 @@ export function FrmTsm007Form({
                       {cat.frequencyTone === "sky" ? <Wrench className="size-4" /> : <Zap className="size-4" />}
                     </span>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-[#111111] sm:text-base">{cat.title}</h3>
-                        <span className={cn("hidden rounded-full px-2 py-0.5 text-[10px] font-bold sm:inline-block", cat.frequencyTone === "sky" ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700")}>{cat.frequencyBadge}</span>
-                      </div>
+                      <h3 className="text-sm font-bold text-[#111111] sm:text-base">{cat.title}</h3>
                       <p className="text-xs text-[#707784]">{cat.subtitle}</p>
                     </div>
                   </div>
@@ -458,7 +455,7 @@ export function FrmTsm007Form({
                             <div className="mt-2.5 rounded-lg border border-[#f0eee9] bg-[#fafafa] p-2.5">
                               <label className="mb-1 block text-[11px] font-bold text-[#111111]">Hasil Ukur Tegangan</label>
                               <div className="flex items-center gap-2">
-                                <Input placeholder={item.id.startsWith("2") ? "mis. 850" : "mis. 220"} value={state?.voltageValue || ""} onChange={(e) => updateItem(item.id, { voltageValue: e.target.value })} className="h-8 max-w-[140px] border-[#e6e2de] text-xs font-bold" />
+                                <Input placeholder={item.id.startsWith("2") ? "mis. 850" : "mis. 220"} value={state?.voltageValue || ""} onChange={(e) => updateItem(item.id, { voltageValue: e.target.value })} className="h-9 max-w-[140px] border-[#e8e8e6] bg-white text-xs font-bold shadow-xs outline-none focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20" />
                                 <span className="text-xs font-semibold text-[#707784]">{item.id.startsWith("2") ? "V DC" : "V AC"}</span>
                               </div>
                             </div>
@@ -469,8 +466,8 @@ export function FrmTsm007Form({
                               <div>
                                 <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">AKAN DIHANDLE <span className="text-red-500">*</span></p>
                                 <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                                  <button type="button" onClick={() => updateItem(item.id, { handler: "BES" })} className={cn("flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all", state?.handler === "BES" ? "bg-[#e6a800] text-white shadow" : "text-[#707784] hover:text-[#111111]")}>BES</button>
-                                  <button type="button" onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })} className={cn("flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all", state?.handler === "EKSTERNAL" ? "bg-[#e6a800] text-white shadow" : "text-[#707784] hover:text-[#111111]")}>Eksternal</button>
+                                  <button type="button" onClick={() => updateItem(item.id, { handler: "BES" })} className={cn("flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all", state?.handler === "BES" ? "bg-[#ff8a2a] text-white shadow" : "text-[#707784] hover:text-[#111111]")}>BES</button>
+                                  <button type="button" onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })} className={cn("flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all", state?.handler === "EKSTERNAL" ? "bg-[#ff8a2a] text-white shadow" : "text-[#707784] hover:text-[#111111]")}>Eksternal</button>
                                 </div>
                               </div>
                               <div className="border-t border-[#eeeeec] pt-4">
@@ -493,7 +490,7 @@ export function FrmTsm007Form({
                               <div className="border-t border-[#eeeeec] pt-4">
                                 <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">TINDAK LANJUT <span className="text-red-500">*</span></p>
                                 <Select value={state?.repairForm || "SAT/FRM/TS/065_REV:00_161020"} onValueChange={(val) => updateItem(item.id, { repairForm: val || undefined, notes: val === "SAT/FRM/TS/065_REV:00_161020" ? "Form Penggantian Spare Part (065)" : val === "SAT/FRM/TSM/014_REV:000_060423" ? "Form Estimasi Biaya ME (014)" : "Repair Tanpa Biaya" })}>
-                                  <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#e6a800] focus:ring-offset-0">
+                                  <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
                                     <span className={cn("flex-1 text-left truncate", !state?.repairForm && "text-[#707784]")}>
                                       {state?.repairForm ? FOLLOW_UP_OPTIONS.find((o) => o.id === state.repairForm)?.label || state.repairForm : "Pilih form tindak lanjut"}
                                     </span>
@@ -521,12 +518,12 @@ export function FrmTsm007Form({
       {/* Catatan */}
       <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)] sm:p-5">
         <label className="mb-2 block text-xs font-bold text-[#111111]">Catatan &amp; Keterangan Pelaksanaan</label>
-        <textarea rows={3} placeholder="Tuliskan catatan teknis atau rangkuman hasil inspeksi sistem PLTS..." value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)} className="w-full rounded-xl border border-[#e6e2de] bg-[#fbfbfa] p-3 text-xs leading-relaxed text-[#111111] placeholder:text-[#999] focus-visible:border-[#e6a800] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6a800]/20" />
+        <textarea rows={3} placeholder="Tuliskan catatan teknis atau rangkuman hasil inspeksi sistem PLTS..." value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)} className="w-full rounded-xl border border-[#e8e8e6] bg-white p-3 text-xs leading-relaxed text-[#111111] placeholder:text-[#999] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 transition-all" />
       </section>
 
       {/* Verifikasi */}
       <section className="rounded-2xl border border-[#e6e2de] bg-[#fbfbfa] p-4 text-xs text-[#707784] sm:p-5">
-        <div className="flex items-center gap-2 font-bold text-[#111111]"><Info className="size-4 text-[#e6a800]" /><span>Verifikasi &amp; Pelaksana Inspeksi</span></div>
+        <div className="flex items-center gap-2 font-bold text-[#111111]"><Info className="size-4 text-[#ff8a2a]" /><span>Verifikasi &amp; Pelaksana Inspeksi</span></div>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <div className="rounded-xl border border-[#e6e2de] bg-white p-2.5">
             <span className="block text-[10px] font-semibold text-[#888]">Dibuat oleh</span>
@@ -552,7 +549,7 @@ export function FrmTsm007Form({
       )}
 
       <div className="pt-2">
-        <Button type="button" onClick={handleSubmit} disabled={isPending} className="h-12 w-full rounded-2xl bg-[#e6a800] text-sm font-bold text-white shadow-lg shadow-[#e6a800]/25 transition-all hover:bg-[#c99200] disabled:opacity-50">
+        <Button type="button" onClick={handleSubmit} disabled={isPending} className="h-12 w-full rounded-2xl bg-[#ff8a2a] text-sm font-bold text-white shadow-lg shadow-[#ff8a2a]/25 transition-all hover:bg-[#ea580c] disabled:opacity-50">
           {isPending ? (
             <div className="flex items-center gap-2"><Loader2 className="size-4 animate-spin" /><span>Menyimpan Laporan PLTS...</span></div>
           ) : (

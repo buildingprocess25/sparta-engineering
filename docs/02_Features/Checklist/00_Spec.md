@@ -53,7 +53,7 @@
 
 ## Form Checklist Tersedia
 
-Saat ini terdapat 8 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
+Saat ini terdapat 9 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
 1. **FRM_TSM_001** (Checklist Test ATS & Pemantauan Genset - SAT/FRM/TSM/001_Rev_000_211022)
 2. **FRM_TSM_002** (Genset / Warehouse)
 3. **FRM_TSM_003** (Checklist Ruangan)
@@ -62,6 +62,7 @@ Saat ini terdapat 8 jenis form utama yang didigitalkan untuk Checklist & Perbaik
 6. **FRM_TS_016** (Checklist Pallet Mover Monthly - SAT/FRM/TS/016_Rev: 02_161020)
 7. **FRM_TSM_006** (Checklist Hydrant - SAT/FRM/TSM/006_Rev_000_261022)
 8. **FRM_TS_062** (Checklist Hand Pallet Monthly - SAT/FRM/TS/062_Rev : 00_161020)
+9. **FRM_TSM_007** (Checklist Pemeliharaan PLTS - SAT/FRM/TSM/007_Rev_000_111122)
 
 ### Form FRM_TSM_001: Pemantauan Penggunaan Genset dan Test Fungsi ATS
 - **Identitas Genset**: Cabang (`branch`), Merk Genset (`merk`), Kapasitas (`kva`), dan Periode Bulan (`bulan`).
@@ -142,6 +143,23 @@ Saat ini terdapat 8 jenis form utama yang didigitalkan untuk Checklist & Perbaik
   - Dibuat oleh: Br Engineering Support
   - Diperiksa oleh: Br Engineering Coord
   - Disetujui oleh: Br Building & Maintenance Mgr
+
+### Form FRM_TSM_007: Checklist Pemeliharaan PLTS
+- **Dasar Kebijakan**: SAT/KEB/TSM/003 Kebijakan Perawatan PLTS di HO/Branch/Depo.
+- **Identitas & Metadata**:
+  - `Daya Total PLTS`: Daya kapasitas sistem PLTS dalam satuan KWp (misal 198 KWp).
+  - `Tahun`: Tahun pelaksanaan inspeksi berkala.
+  - `Jenis Perawatan`: 2 opsi periode dinamis:
+    - `1 (satu) Bulanan`: Kategori 1–5 (Panel Surya Atap, Panel DC Protection, Panel Inverter, Panel Combiner, Panel Communication & Modem Wi-Fi).
+    - `3 (tiga) Bulanan`: Kategori 6–7 (Pembersihan Panel Surya, Jalur Kabel & Tray Metal Kabel).
+- **Desain & Interaksi Form**:
+  - Aksen visual konsisten menggunakan Spartan Orange (`#ff8a2a`) untuk status fokus input, button handler (`BES` / `Eksternal`), dan banner informasi periode.
+  - Tinggi elemen input dan dropdown disamakan (`!h-11 h-11`) mengikuti standar formulir checklist ruangan.
+  - Header kartu kategori menyajikan judul dan deskripsi ringkas tanpa perulangan badge periode frekuensi.
+- **Approval & Verifikasi**:
+  - Dibuat oleh: Branch Engineering Support
+  - Diperiksa oleh: Branch Engineering Coord
+  - Diketahui oleh: Branch B&M MGR
 
 Data form disimpan pada `ChecklistReport.checklistPayload` dalam format JSON. Pengunggahan foto menggunakan endpoint Google Drive dan hanya terkirim setelah Laporan beralih dari status `DRAFT`.
 
