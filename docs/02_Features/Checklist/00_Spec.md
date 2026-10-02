@@ -220,7 +220,7 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
      - Pada langkah terakhir, tombol berubah menjadi "Simpan Form Tindak Lanjut" untuk memfinalisasi seluruh data.
    - **Desain Mobile-First & Input Terstruktur**:
      - Menggantikan tabel horizontal yang sempit dengan kartu input vertikal yang nyaman di smartphone.
-     - Form 014: Nama barang, Qty, Satuan, Harga Satuan dengan prefix Rupiah, perhitungan subtotal otomatis, serta kemampuan menambah/menghapus baris material.
+     - Form 014: Kartu rincian material disusun 2-baris (Baris 1: Nama Barang/Material & Satuan; Baris 2: Qty & Harga Satuan dengan prefix Rupiah), perhitungan subtotal otomatis, serta kemampuan menambah/menghapus baris material.
      - Form 065: Segmented control jenis perbaikan, input identitas unit 2-baris (Baris 1: Nama Unit & Merk/Brand; Baris 2: No Unit/Asset & No Tiket Problem), analisa kerusakan, tindakan, serta kartu rincian spare part 2-baris (Baris 1: Nama Part & Nomor Part/Seri; Baris 2: Asal Part via shadcn Select & Jumlah Part).
      - Header context bar follow-up ditampilkan dalam format 2-kolom x 2-baris (Branch/Depo, Lokasi, Tanggal, Pelapor) agar teks tidak terpotong.
    - Data dasar (Lokasi, Branch, Tanggal, Item Rusak, Keterangan / Rencana Aksi) di-prefill otomatis dari checklist.

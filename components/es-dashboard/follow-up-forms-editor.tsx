@@ -619,32 +619,18 @@ export function FollowUpFormsEditor({
                     )}
                   </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-zinc-700 mb-1 block">
-                      Nama Barang / Material / Pekerjaan <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="mis. Semen Portland 50kg, Cat Tembok, Pipa PVC"
-                      value={m.namaBarang}
-                      onChange={(e) =>
-                        updateMaterialField(activeUnit.key, m.id, "namaBarang", e.target.value)
-                      }
-                      className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
-                    />
-                  </div>
-
+                  {/* Baris 1: Nama Barang / Material / Pekerjaan & Satuan */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-semibold text-zinc-700 mb-1 block">
-                        Jumlah (Qty)
+                        Nama Barang / Material / Pekerjaan <span className="text-red-500">*</span>
                       </label>
                       <input
-                        type="number"
-                        min="1"
-                        value={m.jumlah}
+                        type="text"
+                        placeholder="mis. Semen Portland 50kg, Cat Tembok, Pipa PVC"
+                        value={m.namaBarang}
                         onChange={(e) =>
-                          updateMaterialField(activeUnit.key, m.id, "jumlah", e.target.value)
+                          updateMaterialField(activeUnit.key, m.id, "namaBarang", e.target.value)
                         }
                         className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
                       />
@@ -665,24 +651,41 @@ export function FollowUpFormsEditor({
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-zinc-700 mb-1 block">
-                      Harga Satuan (Rp)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
-                        Rp
-                      </span>
+                  {/* Baris 2: Jumlah (Qty) & Harga Satuan (Rp) */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                        Jumlah (Qty)
+                      </label>
                       <input
                         type="number"
-                        min="0"
-                        placeholder="0"
-                        value={m.hargaUnit || ""}
+                        min="1"
+                        value={m.jumlah}
                         onChange={(e) =>
-                          updateMaterialField(activeUnit.key, m.id, "hargaUnit", e.target.value)
+                          updateMaterialField(activeUnit.key, m.id, "jumlah", e.target.value)
                         }
-                        className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 pl-10 pr-3 text-sm font-semibold focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
+                        className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 px-3 text-sm focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
                       />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                        Harga Satuan (Rp)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
+                          Rp
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={m.hargaUnit || ""}
+                          onChange={(e) =>
+                            updateMaterialField(activeUnit.key, m.id, "hargaUnit", e.target.value)
+                          }
+                          className="h-11 w-full rounded-xl border border-[#dedede] bg-zinc-50/50 pl-10 pr-3 text-sm font-semibold focus:border-[#ff8a2a] focus:bg-white focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all"
+                        />
+                      </div>
                     </div>
                   </div>
 
