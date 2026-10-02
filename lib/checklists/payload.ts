@@ -43,6 +43,8 @@ export type ChecklistPayload = {
   jenisPerawatan?: string
   subPeriod?: string
   subPeriodLabel?: string
+  dayaPLTS?: string
+  tahunPLTS?: string
 }
 
 export type ChecklistPayloadValidationResult = {

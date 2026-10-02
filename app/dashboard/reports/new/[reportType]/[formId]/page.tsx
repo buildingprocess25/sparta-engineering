@@ -3,6 +3,7 @@ import { FrmTsm004Form } from "@/components/es-dashboard/frm-tsm-004-form"
 import { FrmTs016Form } from "@/components/es-dashboard/frm-ts-016-form"
 import { FrmTsm001Form } from "@/components/es-dashboard/frm-tsm-001-form"
 import { FrmTsm006Form } from "@/components/es-dashboard/frm-tsm-006-form"
+import { FrmTsm007Form } from "@/components/es-dashboard/frm-tsm-007-form"
 import { FrmTs062Form } from "@/components/es-dashboard/frm-ts-062-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
@@ -69,6 +70,11 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
     eyebrow: "FRM_TS_062",
     title: "Checklist Hand Pallet",
     description: "Inspeksi bulanan hand pallet: identity unit, painting, body & structure, wheels, hydraulics, dan functional test.",
+  },
+  "frm-tsm-007": {
+    eyebrow: "FRM_TSM_007",
+    title: "Checklist Pembangkit Listrik Tenaga Surya (PLTS)",
+    description: "Inspeksi 1 bulanan dan 3 bulanan sistem panel surya: panel atap, DC protection, inverter, combiner, komunikasi, pembersihan panel, dan jalur kabel.",
   },
 }
 
@@ -276,6 +282,20 @@ export default async function DynamicFormPage({
         />
       ) : formId === "frm-ts-062" ? (
         <FrmTs062Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-tsm-007" ? (
+        <FrmTsm007Form
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
