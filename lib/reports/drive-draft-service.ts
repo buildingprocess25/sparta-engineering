@@ -1,8 +1,9 @@
-export type ChecklistDraftPeriod = "MONTHLY" | "WEEKLY"
+export type ChecklistDraftPeriod = "MONTHLY" | "WEEKLY" | "QUARTERLY" | "SEMESTER"
 
 export type ChecklistDraft = {
   reportCode: string
   areaId: string
+  roomId?: string | null
   periodKey: string
   formCode: string
 }
@@ -10,11 +11,13 @@ export type ChecklistDraft = {
 export type ReserveChecklistDraftInput = {
   authorId: string
   areaId: string
+  roomId?: string | null
   areaCode: string
   formCode: string
   period: ChecklistDraftPeriod
   periodKey: string
 }
+
 
 export type CreateChecklistDraftInput = ReserveChecklistDraftInput & {
   reportCode: string
@@ -36,6 +39,7 @@ function matchesDraft(
 ): boolean {
   return (
     draft.areaId === input.areaId &&
+    (draft.roomId ?? null) === (input.roomId ?? null) &&
     draft.periodKey === input.periodKey &&
     draft.formCode === input.formCode
   )

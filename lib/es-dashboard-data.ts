@@ -1,5 +1,6 @@
 import { getPrisma } from "@/lib/prisma"
 import type {
+  ChecklistPeriodType,
   EsDashboardFlowOptions,
   EsDashboardStat,
   EsDashboardUserContext,
@@ -49,62 +50,50 @@ export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOption
     const areas = await getPrisma().area.findMany({
       where: { isActive: true },
       include: {
-        checklistAvailabilities: {
-          orderBy: { period: "asc" },
+        rooms: {
+          where: { isActive: true },
+          orderBy: { name: "asc" },
+          include: {
+            formAvailabilities: {
+              orderBy: { period: "asc" },
+            },
+          },
         },
-      },
-    })
-
-    const currentWeeklyKey = getCurrentPeriodKey("WEEKLY")
-    const currentMonthlyKey = getCurrentPeriodKey("MONTHLY")
-
-    const completedReports = await getPrisma().checklistReport.findMany({
-      where: {
-        category: "PREVENTIVE",
-        OR: [
-          { period: "WEEKLY", periodKey: currentWeeklyKey },
-          { period: "MONTHLY", periodKey: currentMonthlyKey },
-        ],
-      },
-      select: {
-        areaId: true,
-        period: true,
-        status: true,
-        formCode: true,
       },
     })
 
     const mappedAreas = areas
       .map((area) => {
-        const completedPeriods: Array<"MONTHLY" | "WEEKLY"> = []
-        const completedFormsSet = new Set<string>()
-        
-        for (const period of area.checklistAvailabilities.map(a => a.period)) {
-          const periodReports = completedReports.filter(
-            r => r.areaId === area.id && r.period === period && submittedChecklistStatuses.has(r.status)
-          )
-          
-          periodReports.forEach(r => {
-            if (r.formCode) completedFormsSet.add(r.formCode)
+        const areaPeriodsSet = new Set<ChecklistPeriodType>()
+        area.rooms.forEach((r) => {
+          r.formAvailabilities.forEach((f) => {
+            areaPeriodsSet.add(f.period as ChecklistPeriodType)
           })
-
-          const requiredForms = getChecklistForms(area.type, period).filter(f => !f.id.endsWith("-repair"))
-          const requiredCount = Math.max(1, requiredForms.length)
-          const completedCount = new Set(periodReports.map(r => r.formCode || "unknown")).size
-          
-          if (completedCount >= requiredCount) {
-            completedPeriods.push(period)
-          }
-        }
+        })
+        const periods = areaPeriodsSet.size > 0
+          ? Array.from(areaPeriodsSet)
+          : (["MONTHLY", "WEEKLY"] as ChecklistPeriodType[])
 
         return {
           id: area.id,
           code: area.code,
-          name: (area.code === "office" || area.name.toLowerCase() === "office") ? "Branch" : area.name,
+          name:
+            area.code === "office" || area.name.toLowerCase() === "office"
+              ? "Branch"
+              : area.name,
           type: area.type,
-          periods: area.checklistAvailabilities.map(a => a.period),
-          completedPeriods,
-          completedForms: Array.from(completedFormsSet),
+          periods,
+          rooms: area.rooms.map((r) => ({
+            id: r.id,
+            areaId: r.areaId,
+            name: r.name,
+            code: r.code,
+            formAvailabilities: r.formAvailabilities.map((fa) => ({
+              id: fa.id,
+              formCode: fa.formCode,
+              period: fa.period as ChecklistPeriodType,
+            })),
+          })),
         }
       })
       .sort((left, right) => {

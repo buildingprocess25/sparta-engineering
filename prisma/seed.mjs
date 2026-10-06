@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg"
 import { hash } from "bcryptjs"
 import { PrismaClient } from "../generated/prisma/index.js"
+import { seedRoomsFromExcel } from "../scripts/seed-rooms-from-excel.mjs"
 
 const connectionString = process.env.DATABASE_URL
 
@@ -70,7 +71,7 @@ async function main() {
   const demoPasswordHash = await hash(demoPassword, 10)
 
   for (const seed of areaSeeds) {
-    const area = await prisma.area.upsert({
+    await prisma.area.upsert({
       where: { code: seed.code },
       update: {
         name: seed.name,
@@ -84,23 +85,10 @@ async function main() {
         isActive: true,
       },
     })
-
-    for (const period of seed.periods) {
-      await prisma.areaChecklistAvailability.upsert({
-        where: {
-          areaId_period: {
-            areaId: area.id,
-            period,
-          },
-        },
-        update: {},
-        create: {
-          areaId: area.id,
-          period,
-        },
-      })
-    }
   }
+
+  await seedRoomsFromExcel()
+
 
   for (const seed of headOfficeUserSeeds) {
     await prisma.user.upsert({

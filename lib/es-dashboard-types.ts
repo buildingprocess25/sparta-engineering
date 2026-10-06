@@ -1,12 +1,28 @@
+export type ChecklistPeriodType = "WEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMESTER"
+
+export type EsRoomOption = {
+  id: string
+  areaId: string
+  name: string
+  code: string
+  formAvailabilities: Array<{
+    id: string
+    formCode: string
+    period: ChecklistPeriodType
+  }>
+}
+
 export type EsAreaOption = {
   id: string
   code: string
   name: string
   type: "OFFICE" | "WAREHOUSE"
-  periods: Array<"MONTHLY" | "WEEKLY">
-  completedPeriods?: Array<"MONTHLY" | "WEEKLY">
+  periods: ChecklistPeriodType[]
+  completedPeriods?: ChecklistPeriodType[]
   completedForms?: string[]
+  rooms?: EsRoomOption[]
 }
+
 
 export type EsDashboardFlowIssue = {
   title: string

@@ -32,9 +32,10 @@ export type ChecklistPayload = {
   formCode: string
   formName: string
   areaCode: string
-  period: "MONTHLY" | "WEEKLY"
+  period: "MONTHLY" | "WEEKLY" | "QUARTERLY" | "SEMESTER"
   periodKey: string
   items: ChecklistPayloadItem[]
+
   unitNo?: string
   unitBrand?: string
   hourMeter?: string
@@ -72,7 +73,10 @@ function isChecklistPayload(value: unknown): value is ChecklistPayload {
     typeof value.formCode === "string" &&
     typeof value.formName === "string" &&
     typeof value.areaCode === "string" &&
-    (value.period === "MONTHLY" || value.period === "WEEKLY") &&
+    (value.period === "MONTHLY" ||
+      value.period === "WEEKLY" ||
+      value.period === "QUARTERLY" ||
+      value.period === "SEMESTER") &&
     typeof value.periodKey === "string"
   )
 }

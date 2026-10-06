@@ -5,6 +5,8 @@ import { FrmTsm001Form } from "@/components/es-dashboard/frm-tsm-001-form"
 import { FrmTsm006Form } from "@/components/es-dashboard/frm-tsm-006-form"
 import { FrmTsm007Form } from "@/components/es-dashboard/frm-tsm-007-form"
 import { FrmTs062Form } from "@/components/es-dashboard/frm-ts-062-form"
+import { FrmTs043Form } from "@/components/es-dashboard/frm-ts-043-form"
+import { FrmTs045Form } from "@/components/es-dashboard/frm-ts-045-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
@@ -76,6 +78,16 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
     title: "Checklist Pembangkit Listrik Tenaga Surya (PLTS)",
     description: "Inspeksi 1 bulanan dan 3 bulanan sistem panel surya: panel atap, DC protection, inverter, combiner, komunikasi, pembersihan panel, dan jalur kabel.",
   },
+  "frm-ts-043": {
+    eyebrow: "FRM_TS_043",
+    title: "Checklist Forklift Weekly",
+    description: "Inspeksi mingguan unit forklift: cleaning handle, dashboard, cooling fan, traction motor, motor pump, dan wheel.",
+  },
+  "frm-ts-045": {
+    eyebrow: "FRM_TS_045",
+    title: "Checklist Pallet Mover Weekly",
+    description: "Inspeksi mingguan unit pallet mover: handle operation, access modul room, cooling fan, distribution panel, traction motor, motor pump, dan wheel.",
+  },
 }
 
 function unavailable(title: string, description: string, eyebrow?: string) {
@@ -121,13 +133,23 @@ export default async function DynamicFormPage({
     )
   }
   
-  if (!queryParams.areaId || queryParams.period !== "MONTHLY") {
+  const validPeriods = ["WEEKLY", "MONTHLY", "QUARTERLY", "SEMESTER"] as const
+  type ValidPeriod = (typeof validPeriods)[number]
+
+  if (
+    !queryParams.areaId ||
+    !queryParams.period ||
+    !validPeriods.includes(queryParams.period as ValidPeriod)
+  ) {
     return unavailable(
-      "Form belum tersedia",
-      `${meta.eyebrow} hanya tersedia untuk checklist Monthly pada tahap ini.`,
-      meta.eyebrow
+      "Periode belum dipilih",
+      "Pilih area, ruangan, dan periode checklist yang valid.",
+      meta.eyebrow,
     )
   }
+
+  const selectedPeriod = queryParams.period as ValidPeriod
+  const roomId = queryParams.roomId || null
 
   const [area, user] = await Promise.all([
     getPrisma().area.findUnique({
@@ -144,26 +166,26 @@ export default async function DynamicFormPage({
     return unavailable(
       "Area tidak ditemukan",
       "Data area checklist belum tersedia atau sudah tidak aktif.",
-      meta.eyebrow
+      meta.eyebrow,
     )
   }
 
-  const periodKey = getCurrentPeriodKey("MONTHLY")
-  
-  const formCode = reportType === "repair" 
-    ? `${formId.replace(/-/g, "_").toUpperCase()}_REPAIR` 
-    : formId.replace(/-/g, "_").toUpperCase()
+  const periodKey = getCurrentPeriodKey(selectedPeriod)
 
-  const existingReport = await getPrisma().checklistReport.findUnique({
+  const formCode =
+    reportType === "repair"
+      ? `${formId.replace(/-/g, "_").toUpperCase()}_REPAIR`
+      : formId.replace(/-/g, "_").toUpperCase()
+
+  const existingReport = await getPrisma().checklistReport.findFirst({
     where: {
-      areaId_period_periodKey_formCode: {
-        areaId: area.id,
-        period: "MONTHLY",
-        periodKey,
-        formCode,
-      }
+      areaId: area.id,
+      roomId,
+      period: selectedPeriod,
+      periodKey,
+      formCode,
     },
-    select: { status: true }
+    select: { id: true, status: true },
   })
 
   if (existingReport && existingReport.status !== "DRAFT") {
@@ -171,27 +193,19 @@ export default async function DynamicFormPage({
       // Mode testing: izinkan submit berulang dengan membersihkan laporan sebelumnya jika dimulai dari area picker
       await getPrisma().checklistItem.deleteMany({
         where: {
-          report: {
-            areaId: area.id,
-            period: "MONTHLY",
-            periodKey,
-            formCode,
-          },
+          reportId: existingReport.id,
         },
       })
-      await getPrisma().checklistReport.deleteMany({
+      await getPrisma().checklistReport.delete({
         where: {
-          areaId: area.id,
-          period: "MONTHLY",
-          periodKey,
-          formCode,
+          id: existingReport.id,
         },
       })
     } else {
       return unavailable(
         "Checklist Sudah Disubmit",
-        "Laporan checklist untuk area ini sudah pernah disubmit pada periode ini.",
-        meta.eyebrow
+        "Laporan checklist untuk ruangan ini sudah pernah disubmit pada periode ini.",
+        meta.eyebrow,
       )
     }
   }
@@ -201,11 +215,12 @@ export default async function DynamicFormPage({
     {
       authorId: session.userId,
       areaId: area.id,
+      roomId,
       areaCode: area.code,
       formCode: formCode,
-      period: "MONTHLY",
+      period: selectedPeriod,
       periodKey,
-    }
+    },
   )
 
   const isRepair = reportType === "repair"
@@ -296,6 +311,34 @@ export default async function DynamicFormPage({
         />
       ) : formId === "frm-tsm-007" ? (
         <FrmTsm007Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-ts-043" ? (
+        <FrmTs043Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-ts-045" ? (
+        <FrmTs045Form
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}

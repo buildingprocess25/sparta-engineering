@@ -49,16 +49,30 @@ di proyek ini.
 
 Area berlaku global untuk semua cabang. Area `OFFICE` memakai office checklist family. Area `WAREHOUSE` memakai shared warehouse checklist family untuk WHC, WH, Depo, Bulky, Store Hub, dan Gudang Anak.
 
-### AreaChecklistAvailability
+### Room
 | Field | Tipe | Keterangan |
 |---|---|---|
 | id | String (cuid) | Primary key |
 | areaId | String | Relasi ke Area |
-| period | ChecklistPeriod | Enum (MONTHLY, WEEKLY) |
+| name | String | Nama ruangan, contoh: "R. Adm Receiving", "Area Lobby" |
+| code | String | Unique stable code ruangan yang digenerate saat seed |
+| isActive | Boolean | Ruangan aktif dan dapat dipilih di flow checklist jika `true` |
 | createdAt | DateTime | Timestamp pembuatan |
 | updatedAt | DateTime | Timestamp update terakhir |
 
-Constraint: `@@unique([areaId, period])`.
+Relasi: `belongsTo Area`, `hasMany RoomFormAvailability`, `hasMany ChecklistReport`.
+
+### RoomFormAvailability
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| roomId | String | Relasi ke Room |
+| formCode | String | Kode form checklist, contoh: `FRM_TSM_003`, `FRM_TS_016`, dll |
+| period | ChecklistPeriod | Enum (WEEKLY, MONTHLY, QUARTERLY, SEMESTER) |
+| createdAt | DateTime | Timestamp pembuatan |
+| updatedAt | DateTime | Timestamp update terakhir |
+
+Constraint: `@@unique([roomId, formCode, period])`. Tabel ini menggantikan `AreaChecklistAvailability` sehingga form checklist terikat langsung per ruangan.
 
 ### ChecklistReport
 | Field | Tipe | Keterangan |
@@ -67,10 +81,11 @@ Constraint: `@@unique([areaId, period])`.
 | reportCode | String? | Unique operational report code generated when the draft is reserved |
 | formCode | String? | Form code such as `FRM_TSM_003` |
 | areaId | String | Relasi ke Area |
+| roomId | String? | Relasi ke Room (spesifik ruangan yang dicek) |
 | authorId | String | Relasi ke User pembuat laporan (ES) |
 | category | ReportCategory | Enum (PREVENTIVE, INCIDENTAL). Pembeda laporan rutin dan insidental |
-| period | ChecklistPeriod? | Enum (MONTHLY, WEEKLY). Berlaku hanya untuk PREVENTIVE |
-| periodKey | String? | Penanda periode unik (misal "2026-W37" atau "2026-09"). Berlaku hanya untuk PREVENTIVE |
+| period | ChecklistPeriod? | Enum (WEEKLY, MONTHLY, QUARTERLY, SEMESTER). Berlaku hanya untuk PREVENTIVE |
+| periodKey | String? | Penanda periode unik (misal "2026-W37", "2026-09", "2026-Q3", "2026-S2"). Berlaku hanya untuk PREVENTIVE |
 | status | ReportStatus | Enum (DRAFT, PENDING_COORD, PENDING_MANAGER, PENDING_REQUESTER, COMPLETED, REJECTED). Default: `DRAFT` |
 | isSafe | Boolean | True jika 100% aman (bypass Requester approval) |
 | checklistPayload | Json | One JSON object containing submitted checklist item results |
@@ -80,7 +95,7 @@ Constraint: `@@unique([areaId, period])`.
 | createdAt | DateTime | Timestamp pembuatan laporan |
 | updatedAt | DateTime | Timestamp update terakhir |
 
-Constraint: `@@unique([areaId, period, periodKey])` untuk mencegah duplikasi laporan preventif. Laporan insidental (`period = null`) tidak dibatasi.
+Constraint: `@@unique([areaId, roomId, period, periodKey, formCode])` untuk mencegah duplikasi laporan preventif per ruangan. Laporan insidental (`period = null`) tidak dibatasi.
 
 ### GoogleDriveFolderCache
 | Field | Tipe | Keterangan |

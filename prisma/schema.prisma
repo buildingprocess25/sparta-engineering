@@ -22,35 +22,54 @@ model User {
 }
 
 model Area {
-  id                      String                      @id @default(cuid())
-  name                    String
-  type                    AreaType
-  createdAt               DateTime                    @default(now()) @db.Timestamptz(3)
-  updatedAt               DateTime                    @updatedAt @db.Timestamptz(3)
-  code                    String                      @unique
-  isActive                Boolean                     @default(true)
-  checklistAvailabilities AreaChecklistAvailability[]
-  reports                 ChecklistReport[]
+  id        String            @id @default(cuid())
+  name      String
+  type      AreaType
+  createdAt DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime          @updatedAt @db.Timestamptz(3)
+  code      String            @unique
+  isActive  Boolean           @default(true)
+  rooms     Room[]
+  reports   ChecklistReport[]
 
   @@index([type])
   @@index([isActive])
 }
 
-model AreaChecklistAvailability {
+model Room {
+  id                 String                 @id @default(cuid())
+  areaId             String
+  name               String
+  code               String                 @unique
+  isActive           Boolean                @default(true)
+  createdAt          DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime               @updatedAt @db.Timestamptz(3)
+  area               Area                   @relation(fields: [areaId], references: [id])
+  formAvailabilities RoomFormAvailability[]
+  reports            ChecklistReport[]
+
+  @@index([areaId])
+  @@index([isActive])
+}
+
+model RoomFormAvailability {
   id        String          @id @default(cuid())
-  areaId    String
+  roomId    String
+  formCode  String
   period    ChecklistPeriod
   createdAt DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt DateTime        @updatedAt @db.Timestamptz(3)
-  area      Area            @relation(fields: [areaId], references: [id])
+  room      Room            @relation(fields: [roomId], references: [id])
 
-  @@unique([areaId, period])
+  @@unique([roomId, formCode, period])
+  @@index([roomId])
   @@index([period])
 }
 
 model ChecklistReport {
   id                String           @id @default(cuid())
   areaId            String
+  roomId            String?
   authorId          String
   status            ReportStatus     @default(DRAFT)
   isSafe            Boolean          @default(false)
@@ -67,11 +86,13 @@ model ChecklistReport {
   reportCode        String?          @unique
   items             ChecklistItem[]
   area              Area             @relation(fields: [areaId], references: [id])
+  room              Room?            @relation(fields: [roomId], references: [id])
   author            User             @relation("ReportAuthor", fields: [authorId], references: [NIK])
 
-  @@unique([areaId, period, periodKey, formCode])
+  @@unique([areaId, roomId, period, periodKey, formCode])
   @@index([authorId])
   @@index([areaId])
+  @@index([roomId])
   @@index([status])
   @@index([reportCode])
 }
@@ -116,6 +137,8 @@ enum AreaType {
 enum ChecklistPeriod {
   MONTHLY
   WEEKLY
+  QUARTERLY
+  SEMESTER
 }
 
 enum ReportStatus {

@@ -31,29 +31,30 @@
 
 ## UI & Alur Pengguna
 
-- **Route(s)**: `/dashboard`, `/dashboard/checklist`
-- **Alur Kasar**:
+- **Route(s)**: `/dashboard`, `/dashboard/reports/new`
+- **Alur Baru (Room-Based Checklist)**:
   1. ES masuk SPARTA.
   2. ES memilih untuk mengisi atau melewati *Form Ijin Kerja*.
   3. ES memilih jalur **Checklist** atau **Perbaikan by AHO / Temuan ES**.
-  4. ES pilih Area dan Jenis Form.
-  5. ES mengisi matriks kondisi barang.
-  6. Submit (membuat Laporan Baru).
-  7. Laporan masuk antrean Approval:
+  4. ES memilih **Area** (misal: Branch / Office atau Warehouse).
+  5. ES memilih **Ruangan** spesifik di dalam Area tersebut (ruangan sudah default dari master data Excel, tidak dapat ditambah manual oleh user).
+  6. Sistem menyaring dan hanya menampilkan **Form Checklist** yang berlaku untuk ruangan tersebut berdasarkan master `RoomFormAvailability`.
+  7. ES memilih **Periode** yang tersedia (Weekly, Monthly, Triwulan / Quarterly, Semester).
+  8. ES mengisi checklist dan submit laporan (laporan terikat ke `areaId` dan `roomId`).
+  9. Laporan masuk antrean Approval:
      - Jika 100% aman: `Coord -> Manager -> Selesai`
      - Jika ada kerusakan: `Coord -> Manager -> Requester -> Input PB/PJU -> Selesai`
 
-
-
 ## Data & API
 
-- Model utama yang dibutuhkan: `ChecklistReport`, `ChecklistItem`, `Area`, `User`.
+- Model utama yang dibutuhkan: `ChecklistReport`, `ChecklistItem`, `Area`, `Room`, `RoomFormAvailability`, `User`.
 - Status approval: `PENDING_COORD`, `PENDING_MANAGER`, `PENDING_REQUESTER`, `COMPLETED`, `REJECTED`.
-*(Detail field akan didokumentasikan lebih lanjut di `docs/01_Architecture/10_Data_Models.md`)*
+- Periode Checklist (`ChecklistPeriod`): `WEEKLY`, `MONTHLY`, `QUARTERLY`, `SEMESTER`.
+*(Detail field didokumentasikan di `docs/01_Architecture/10_Data_Models.md`)*
 
 ## Form Checklist Tersedia
 
-Saat ini terdapat 9 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
+Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
 1. **FRM_TSM_001** (Checklist Test ATS & Pemantauan Genset - SAT/FRM/TSM/001_Rev_000_211022)
 2. **FRM_TSM_002** (Genset / Warehouse)
 3. **FRM_TSM_003** (Checklist Ruangan)
@@ -63,6 +64,9 @@ Saat ini terdapat 9 jenis form utama yang didigitalkan untuk Checklist & Perbaik
 7. **FRM_TSM_006** (Checklist Hydrant - SAT/FRM/TSM/006_Rev_000_261022)
 8. **FRM_TS_062** (Checklist Hand Pallet Monthly - SAT/FRM/TS/062_Rev : 00_161020)
 9. **FRM_TSM_007** (Checklist Pemeliharaan PLTS - SAT/FRM/TSM/007_Rev_000_111122)
+10. **FRM_TS_043** (Checklist Forklift Weekly - SAT/FRM/TS/043_Rev : 01_161020)
+11. **FRM_TS_045** (Checklist Pallet Mover Weekly - SAT/FRM/TS/045_Rev : 01_161020)
+
 
 ### Form FRM_TSM_001: Pemantauan Penggunaan Genset dan Test Fungsi ATS
 - **Identitas Genset**: Cabang (`branch`), Merk Genset (`merk`), Kapasitas (`kva`), dan Periode Bulan (`bulan`).
@@ -156,12 +160,66 @@ Saat ini terdapat 9 jenis form utama yang didigitalkan untuk Checklist & Perbaik
   - Aksen visual konsisten menggunakan Spartan Orange (`#ff8a2a`) untuk status fokus input, button handler (`BES` / `Eksternal`), dan banner informasi periode.
   - Tinggi elemen input dan dropdown disamakan (`!h-11 h-11`) mengikuti standar formulir checklist ruangan.
   - Header kartu kategori menyajikan judul dan deskripsi ringkas tanpa perulangan badge periode frekuensi.
+### Form FRM_TS_043: Checklist Forklift Weekly (SAT/FRM/TS/043_Rev : 01_161020)
+- **Dasar SOP**: `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`.
+- **Identitas & Metadata**:
+  - `No. Unit`: Nomor unit Forklift (misal `FL-01`).
+  - `Branch & Lokasi`: Terisi otomatis dari konteks (misal `BANJARMASIN / Area Charger Battery`).
+  - `Bulan & Tahun`: Terisi otomatis dari kalender aktif (misal `Oktober 2026`).
+  - `Sub-selector Minggu`: Radio/segmented control `Minggu 1` s/d `Minggu 5`.
+  - `Tanggal Pelaksanaan`: Input tanggal pelaksanaan inspeksi mingguan.
+  - `Hour Meter 1 (H1)`: Input jam kerja / pembacaan hour meter unit Forklift.
+- **Struktur Kategori & 21 Item Pemeriksaan**:
+  1. **1. CLEANING MULTI TASK HANDLE** (1 item: `Cleaning Multi Task Handle`, Tindakan: `CL/C`)
+  2. **2. CLEANING DASHBOARD** (5 item: `Acces 1`, `Acces 2`, `Acces 3`, `Acces 4`, `Distribution Panel`, Tindakan: `CL/C`)
+  3. **3. CLEANING COOLING FAN** (2 item: `Cooling Fan Acces`, `Cooling Fan Motor`, Tindakan: `CL/C`)
+  4. **4. CLEAN & CHECK MOTOR TRACTION** (4 item: `Mounting Secure`, `Cable Connection`, `Brake Pad Condition`, `Armatures Condition`, Tindakan: `CL/C`)
+  5. **5. CLEAN & CHECK MOTOR PUMP 1** (4 item: `Mounting Secure`, `Cable Connection`, `Brushes Condition`, `Armatures Condition`, Tindakan: `CL/C`)
+  6. **6. CLEAN & CHECK MOTOR PUMP 2** (4 item: `Mounting Secure`, `Cable Connection`, `Brushes Condition`, `Armatures Condition`, Tindakan: `CL/C`)
+  7. **7. WHEEL (RODA)** (1 item: `Cleaning`, Tindakan: `CL/C`)
+- **Tindakan Lapangan**:
+  - `CL/C`: Clean & Check (Bersihkan & Periksa).
+- **Opsi Kondisi & Temuan Kerusakan (Standar Form Equipment)**:
+  - Default kondisi awal seluruh item: `Baik (V)`.
+  - Opsi: `Baik (V)` dan `Rusak (X)`.
+  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark otomatis, penanggung jawab (`BES` / `Eksternal`), catatan, dan dropdown form tindak lanjut (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, `REPAIR_TANPA_BIAYA`).
 - **Approval & Verifikasi**:
   - Dibuat oleh: Branch Engineering Support
   - Diperiksa oleh: Branch Engineering Coord
-  - Diketahui oleh: Branch B&M MGR
+  - Disetujui oleh: Br Building & Maintenance Mgr
+
+### Form FRM_TS_045: Checklist Pallet Mover Weekly (SAT/FRM/TS/045_Rev : 01_161020)
+- **Dasar SOP**: `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`.
+- **Identitas & Metadata**:
+  - `No. Unit`: Nomor unit Pallet Mover (misal `PM-01`).
+  - `Merk Unit`: Merk unit Pallet Mover (misal `Noblelift`).
+  - `Branch & Lokasi`: Terisi otomatis dari konteks (misal `BANJARMASIN / Area Charger Battery` atau `Fresh Food`).
+  - `Bulan & Tahun`: Terisi otomatis dari kalender aktif.
+  - `Sub-selector Minggu`: Terkunci otomatis sesuai minggu berjalan (`Minggu 1` s/d `Minggu 5`).
+  - `Tanggal Pelaksanaan`: Input tanggal pelaksanaan inspeksi mingguan.
+  - `Hour Meter 1 (H1)`: Input jam kerja / pembacaan hour meter unit Pallet Mover.
+- **Struktur Kategori & 12 Item Pemeriksaan (Tindakan CL/C)**:
+  1. **1. CLEANING HANDLE OPERATION** (1 item: `Cleaning Handle Operation`, Tindakan: `CL/C`)
+  2. **2. CLEANING ACCESS MODUL ROOM** (1 item: `Cleaning Access Modul Room`, Tindakan: `CL/C`)
+  3. **3. CLEANING COOLING FAN ACCESS** (1 item: `Cleaning Cooling Fan Access`, Tindakan: `CL/C`)
+  4. **4. DISTRIBUTION PANEL** (1 item: `Distribution Panel`, Tindakan: `CL/C`)
+  5. **5. CLEAN & CHECK MOTOR TRACTION** (4 item: `Mounting secure`, `Cable connection`, `Brushes & Armatures Condition`, `Brake pad condition`, Tindakan: `CL/C`)
+  6. **6. CLEAN & CHECK MOTOR PUMP** (3 item: `Mounting secure`, `Cable connection`, `Brushes & Armatures Condition`, Tindakan: `CL/C`)
+  7. **7. WHEEL (RODA)** (1 item: `Cleaning`, Tindakan: `CL/C`)
+- **Tindakan Lapangan**:
+  - `CL/C`: Clean & Check (Bersihkan & Periksa).
+- **Opsi Kondisi & Temuan Kerusakan**:
+  - Seluruh item berstatus awal kosong (tanpa default Baik).
+  - Opsi: `Baik (V)` dan `Rusak (X)`.
+  - Khusus item yang Rusak: Panel temuan standar SPARTA terbuka dengan `AKAN DIHANDLE` (BES / Eksternal), `Foto bukti *` ber-watermark otomatis, `KETERANGAN *`, dan dropdown `FORM TINDAK LANJUT *` (065 / 014 / Tanpa Biaya).
+- **Approval & Verifikasi**:
+  - Dibuat oleh: Branch Engineering Support
+  - Diperiksa oleh: Branch Engineering Coord
+  - Disetujui oleh: Br Building & Maintenance Mgr
 
 Data form disimpan pada `ChecklistReport.checklistPayload` dalam format JSON. Pengunggahan foto menggunakan endpoint Google Drive dan hanya terkirim setelah Laporan beralih dari status `DRAFT`.
+
+
 
 ## Alur: Checklist vs Perbaikan (Repair)
 

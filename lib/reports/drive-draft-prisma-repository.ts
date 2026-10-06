@@ -24,6 +24,7 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
         select: {
           reportCode: true,
           areaId: true,
+          roomId: true,
           periodKey: true,
           formCode: true,
         },
@@ -37,6 +38,7 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
       return {
         reportCode: draft.reportCode,
         areaId: draft.areaId,
+        roomId: draft.roomId,
         periodKey: draft.periodKey,
         formCode: draft.formCode,
       }
@@ -58,6 +60,7 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
         data: {
           reportCode: input.reportCode,
           areaId: input.areaId,
+          roomId: input.roomId || null,
           authorId: input.authorId,
           category: "PREVENTIVE",
           formCode: input.formCode,

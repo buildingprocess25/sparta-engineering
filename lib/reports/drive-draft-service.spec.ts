@@ -3,24 +3,14 @@ import assert from "node:assert/strict"
 import {
   reserveChecklistDraft,
   type ChecklistDraftRepository,
+  type CreateChecklistDraftInput,
+  type ChecklistDraft,
 } from "./drive-draft-service"
 
 class FakeRepository implements ChecklistDraftRepository {
-  existingDraft: {
-    reportCode: string
-    areaId: string
-    periodKey: string
-    formCode: string
-  } | null = null
+  existingDraft: ChecklistDraft | null = null
   deleted: string[] = []
-  created: Array<{
-    reportCode: string
-    areaId: string
-    authorId: string
-    formCode: string
-    period: "MONTHLY" | "WEEKLY"
-    periodKey: string
-  }> = []
+  created: CreateChecklistDraftInput[] = []
 
   async findDraftByUser(authorId: string) {
     return authorId === "ES001" ? this.existingDraft : null
@@ -30,16 +20,10 @@ class FakeRepository implements ChecklistDraftRepository {
     return `ENG-${input.areaCode.toUpperCase()}-202609-001`
   }
 
-  async createDraft(input: {
-    reportCode: string
-    areaId: string
-    authorId: string
-    formCode: string
-    period: "MONTHLY" | "WEEKLY"
-    periodKey: string
-  }) {
+  async createDraft(input: CreateChecklistDraftInput) {
     this.created.push(input)
   }
+
 
   async deleteDraft(reportCode: string) {
     this.deleted.push(reportCode)

@@ -25,14 +25,14 @@ function formatCapturedAt(value: Date) {
     .replaceAll(".", ":")
 }
 
-function formatLocation(areaName: string, roomName?: string) {
-  const trimmedArea = areaName.trim()
-  const trimmedRoom = roomName?.trim()
+function formatLocation(areaName?: string, roomName?: string) {
+  const trimmedArea = (areaName || "").trim()
+  const trimmedRoom = (roomName || "").trim()
 
-  if (trimmedRoom && !trimmedArea.toLowerCase().includes(trimmedRoom.toLowerCase())) {
+  if (trimmedRoom && trimmedArea && !trimmedArea.toLowerCase().includes(trimmedRoom.toLowerCase())) {
     return `${trimmedArea} - ${trimmedRoom}`
   }
-  return trimmedArea
+  return trimmedArea || trimmedRoom || "-"
 }
 
 export function buildChecklistPhotoWatermarkLines({
