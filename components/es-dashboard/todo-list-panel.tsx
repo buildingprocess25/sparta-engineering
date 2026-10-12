@@ -112,7 +112,7 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
             <div className="flex items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 border border-white/10">
               <Layers className="size-3.5 text-slate-400 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-medium text-slate-300 leading-tight">Total tugas</p>
+                <p className="text-[10px] font-medium text-slate-300 leading-tight whitespace-nowrap">Total</p>
                 <p className="text-xs font-bold text-white leading-tight">{total}</p>
               </div>
             </div>
@@ -120,7 +120,7 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
             <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-2.5 py-1.5 border border-amber-500/20">
               <Clock className="size-3.5 text-amber-400 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-medium text-amber-300 leading-tight">Belum selesai</p>
+                <p className="text-[10px] font-medium text-amber-300 leading-tight whitespace-nowrap">Pending</p>
                 <p className="text-xs font-bold text-amber-400 leading-tight">{pending}</p>
               </div>
             </div>
@@ -128,7 +128,7 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
             <div className="flex items-center gap-2 rounded-lg bg-rose-500/10 px-2.5 py-1.5 border border-rose-500/20">
               <AlertCircle className="size-3.5 text-rose-400 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-medium text-rose-300 leading-tight">Terlewat</p>
+                <p className="text-[10px] font-medium text-rose-300 leading-tight whitespace-nowrap">Terlewat</p>
                 <p className="text-xs font-bold text-rose-400 leading-tight">{overdue}</p>
               </div>
             </div>
@@ -136,7 +136,7 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
             <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 border border-emerald-500/20">
               <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-medium text-emerald-300 leading-tight">Selesai</p>
+                <p className="text-[10px] font-medium text-emerald-300 leading-tight whitespace-nowrap">Selesai</p>
                 <p className="text-xs font-bold text-emerald-400 leading-tight">{completed}</p>
               </div>
             </div>
