@@ -31,7 +31,7 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
   const [activeTab, setActiveTab] = React.useState<FilterTab>("PENDING")
   const [searchQuery, setSearchQuery] = React.useState("")
   const [currentPage, setCurrentPage] = React.useState(1)
-  const itemsPerPage = 8
+  const itemsPerPage = 6
 
   const { total, pending, completed, overdue, tasks } = todoData
 
