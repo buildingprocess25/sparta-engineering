@@ -19,18 +19,20 @@ model User {
   createdAt          DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt          DateTime          @updatedAt @db.Timestamptz(3)
   reports            ChecklistReport[] @relation("ReportAuthor")
+  assignments        PicAssignment[]
 }
 
 model Area {
-  id        String            @id @default(cuid())
-  name      String
-  type      AreaType
-  createdAt DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime          @updatedAt @db.Timestamptz(3)
-  code      String            @unique
-  isActive  Boolean           @default(true)
-  rooms     Room[]
-  reports   ChecklistReport[]
+  id         String            @id @default(cuid())
+  name       String
+  type       AreaType
+  createdAt  DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime          @updatedAt @db.Timestamptz(3)
+  code       String            @unique
+  isActive   Boolean           @default(true)
+  rooms      Room[]
+  reports    ChecklistReport[]
+  equipments Equipment[]
 
   @@index([type])
   @@index([isActive])
@@ -47,6 +49,8 @@ model Room {
   area               Area                   @relation(fields: [areaId], references: [id])
   formAvailabilities RoomFormAvailability[]
   reports            ChecklistReport[]
+  equipments         Equipment[]
+  assignments        PicAssignment[]
 
   @@index([areaId])
   @@index([isActive])
@@ -88,11 +92,16 @@ model ChecklistReport {
   area              Area             @relation(fields: [areaId], references: [id])
   room              Room?            @relation(fields: [roomId], references: [id])
   author            User             @relation("ReportAuthor", fields: [authorId], references: [NIK])
+  taskId            String?          @unique
+  task              ChecklistTask?   @relation(fields: [taskId], references: [id])
+  equipmentId       String?
+  equipment         Equipment?       @relation(fields: [equipmentId], references: [id])
 
   @@unique([areaId, roomId, period, periodKey, formCode])
   @@index([authorId])
   @@index([areaId])
   @@index([roomId])
+  @@index([equipmentId])
   @@index([status])
   @@index([reportCode])
 }
@@ -163,4 +172,72 @@ enum ItemCondition {
 enum ReportCategory {
   PREVENTIVE
   INCIDENTAL
+}
+
+enum TaskStatus {
+  PENDING
+  OVERDUE
+  COMPLETED
+  CANCELLED
+}
+
+model Equipment {
+  id          String            @id @default(cuid())
+  branchName  String
+  roomId      String?
+  areaId      String?
+  name        String
+  unitNo      Int               @default(1)
+  code        String            @unique
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime          @updatedAt @db.Timestamptz(3)
+  room        Room?             @relation(fields: [roomId], references: [id])
+  area        Area?             @relation(fields: [areaId], references: [id])
+  assignments PicAssignment[]
+  reports     ChecklistReport[]
+
+  @@unique([branchName, name, unitNo])
+  @@index([branchName])
+  @@index([roomId])
+  @@index([areaId])
+}
+
+model PicAssignment {
+  id          String          @id @default(cuid())
+  userNik     String
+  equipmentId String?
+  roomId      String?
+  formCode    String
+  period      ChecklistPeriod
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(3)
+  user        User            @relation(fields: [userNik], references: [NIK])
+  equipment   Equipment?      @relation(fields: [equipmentId], references: [id])
+  room        Room?           @relation(fields: [roomId], references: [id])
+  tasks       ChecklistTask[]
+
+  @@index([userNik])
+  @@index([equipmentId])
+  @@index([roomId])
+  @@index([period])
+}
+
+model ChecklistTask {
+  id           String           @id @default(cuid())
+  assignmentId String
+  targetDate   DateTime         @db.Timestamptz(3)
+  periodKey    String
+  status       TaskStatus       @default(PENDING)
+  completedAt  DateTime?        @db.Timestamptz(3)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @db.Timestamptz(3)
+  assignment   PicAssignment    @relation(fields: [assignmentId], references: [id])
+  report       ChecklistReport?
+
+  @@unique([assignmentId, periodKey])
+  @@index([assignmentId])
+  @@index([status])
+  @@index([periodKey])
 }

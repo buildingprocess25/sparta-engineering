@@ -117,3 +117,51 @@ Constraint: `@@unique([areaId, roomId, period, periodKey, formCode])` untuk menc
 | photoUrls | Json | Array URL/ID foto kerusakan dari storage/CDN. Default: `[]` |
 | createdAt | DateTime | Timestamp pembuatan |
 | updatedAt | DateTime | Timestamp update terakhir |
+
+### Equipment
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| branchName | String | Nama cabang (e.g. "BALARAJA") |
+| roomId | String? | Relasi opsional ke Room |
+| areaId | String? | Relasi opsional ke Area |
+| name | String | Nama/tipe equipment (e.g. "CONVEYOR", "EXHAUST FAN", "GENSET") |
+| unitNo | Int | Nomor unit (e.g. 1, 2, 49) |
+| code | String | Unique code equipment (e.g. "BALARAJA-CONVEYOR-1") |
+| isActive | Boolean | Status aktif alat |
+| createdAt | DateTime | Timestamp pembuatan |
+| updatedAt | DateTime | Timestamp update terakhir |
+
+Constraint: `@@unique([branchName, name, unitNo])`.
+
+### PicAssignment
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| userNik | String | Relasi ke User (PIC) |
+| equipmentId | String? | Relasi opsional ke Equipment |
+| roomId | String? | Relasi opsional ke Room |
+| formCode | String | Kode form checklist (e.g. "SAT/FRM/TS/041") |
+| period | ChecklistPeriod | Enum (WEEKLY, MONTHLY, QUARTERLY, SEMESTER) |
+| isActive | Boolean | Status penugasan aktif |
+| createdAt | DateTime | Timestamp pembuatan |
+| updatedAt | DateTime | Timestamp update terakhir |
+
+Relasi: `belongsTo User`, `belongsTo Equipment`, `belongsTo Room`, `hasMany ChecklistTask`.
+
+### ChecklistTask (To-Do List Rutin)
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| assignmentId | String | Relasi ke PicAssignment |
+| targetDate | DateTime | Tanggal jadwal pelaksanaan kalender |
+| periodKey | String | Kunci periode kalender (e.g. "2026-W41", "2026-10") |
+| status | TaskStatus | Enum (PENDING, OVERDUE, COMPLETED, CANCELLED) |
+| reportId | String? | Relasi opsional ke ChecklistReport penyelesai |
+| completedAt | DateTime? | Waktu penyelesaian checklist |
+| createdAt | DateTime | Timestamp pembuatan task |
+| updatedAt | DateTime | Timestamp update terakhir |
+
+Relasi: `belongsTo PicAssignment`, `belongsTo ChecklistReport`.
+Constraint: `@@unique([assignmentId, periodKey])` untuk mencegah generate duplikat tugas.
+

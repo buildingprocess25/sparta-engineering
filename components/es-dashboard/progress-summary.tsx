@@ -3,8 +3,17 @@ import { ShieldCheck } from "lucide-react"
 import { SectionHeading } from "@/components/es-dashboard/section-heading"
 import { getPreventiveProgressSummary } from "@/lib/es-dashboard-data"
 
-export async function ProgressSummary() {
-  const { total, completed, percentage } = await getPreventiveProgressSummary()
+type ProgressSummaryProps = {
+  total?: number
+  completed?: number
+  percentage?: number
+}
+
+export async function ProgressSummary(props: ProgressSummaryProps) {
+  const fallback = await getPreventiveProgressSummary()
+  const total = props.total ?? fallback.total
+  const completed = props.completed ?? fallback.completed
+  const percentage = props.percentage ?? fallback.percentage
   
   return (
     <section className="mt-8">

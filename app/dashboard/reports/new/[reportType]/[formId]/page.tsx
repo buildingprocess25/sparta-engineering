@@ -29,6 +29,7 @@ type DynamicFormPageProps = {
     period?: string
     workPermit?: string
     reset?: string
+    taskId?: string
   }>
 }
 
@@ -55,7 +56,7 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
   },
   "frm-tsm-005": {
     eyebrow: "FRM_TSM_005",
-    title: "Checklist Pompa Air",
+    title: "Checklist Bangunan & Penunjang / Pompa",
     description: "Pilih kondisi setiap item. Khusus item yang rusak wajib menyertakan foto sebagai bukti.",
   },
   "frm-ts-016": {
@@ -87,6 +88,31 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
     eyebrow: "FRM_TS_045",
     title: "Checklist Pallet Mover Weekly",
     description: "Inspeksi mingguan unit pallet mover: handle operation, access modul room, cooling fan, distribution panel, traction motor, motor pump, dan wheel.",
+  },
+  "frm-ts-041": {
+    eyebrow: "FRM_TS_041",
+    title: "Checklist Conveyor",
+    description: "Inspeksi pemeliharaan rutin unit conveyor.",
+  },
+  "frm-ts-063": {
+    eyebrow: "FRM_TS_063",
+    title: "Checklist Exhaust Fan",
+    description: "Inspeksi pemeliharaan rutin unit exhaust fan.",
+  },
+  "frm-ts-064": {
+    eyebrow: "FRM_TS_064",
+    title: "Checklist Table Lifter",
+    description: "Inspeksi pemeliharaan rutin table lifter / dock leveler.",
+  },
+  "frm-ts-022": {
+    eyebrow: "FRM_TS_022",
+    title: "Checklist Genset",
+    description: "Inspeksi pemeliharaan operasional genset.",
+  },
+  "frm-ts-029": {
+    eyebrow: "FRM_TS_029",
+    title: "Checklist Forklift Monthly",
+    description: "Inspeksi bulanan unit forklift.",
   },
 }
 
@@ -136,10 +162,58 @@ export default async function DynamicFormPage({
   const validPeriods = ["WEEKLY", "MONTHLY", "QUARTERLY", "SEMESTER"] as const
   type ValidPeriod = (typeof validPeriods)[number]
 
+  let areaId = queryParams.areaId
+  let roomId = queryParams.roomId || null
+  let roomName = queryParams.roomName
+  let selectedPeriod = queryParams.period as ValidPeriod | undefined
+  let equipmentId: string | undefined = undefined
+
+  // Jika datang dari Tugas Rutin (To-Do List), auto-resolve data terkait
+  if (queryParams.taskId) {
+    const task = await getPrisma().checklistTask.findUnique({
+      where: { id: queryParams.taskId },
+      include: {
+        assignment: {
+          include: {
+            equipment: true,
+            room: true,
+          },
+        },
+      },
+    })
+
+    if (task) {
+      if (!selectedPeriod) {
+        selectedPeriod = task.assignment.period as ValidPeriod
+      }
+      if (task.assignment.room) {
+        roomId = roomId || task.assignment.room.id
+        roomName = roomName || task.assignment.room.name
+        areaId = areaId || task.assignment.room.areaId
+      } else if (task.assignment.equipment) {
+        equipmentId = task.assignment.equipment.id
+        roomName =
+          roomName ||
+          `${task.assignment.equipment.name}${task.assignment.equipment.unitNo ? ` Unit ${task.assignment.equipment.unitNo}` : ""}`.trim()
+        roomId = roomId || task.assignment.equipment.roomId || null
+        areaId = areaId || task.assignment.equipment.areaId || undefined
+      }
+    }
+  }
+
+  // Fallback areaId jika tugas belum terhubung ke area spesifik
+  if (!areaId) {
+    const defaultArea = await getPrisma().area.findFirst({
+      where: { isActive: true },
+      orderBy: { code: "asc" },
+    })
+    if (defaultArea) areaId = defaultArea.id
+  }
+
   if (
-    !queryParams.areaId ||
-    !queryParams.period ||
-    !validPeriods.includes(queryParams.period as ValidPeriod)
+    !areaId ||
+    !selectedPeriod ||
+    !validPeriods.includes(selectedPeriod)
   ) {
     return unavailable(
       "Periode belum dipilih",
@@ -148,12 +222,9 @@ export default async function DynamicFormPage({
     )
   }
 
-  const selectedPeriod = queryParams.period as ValidPeriod
-  const roomId = queryParams.roomId || null
-
   const [area, user] = await Promise.all([
     getPrisma().area.findUnique({
-      where: { id: queryParams.areaId },
+      where: { id: areaId },
       select: { id: true, code: true, name: true },
     }),
     getPrisma().user.findUnique({
@@ -177,16 +248,23 @@ export default async function DynamicFormPage({
       ? `${formId.replace(/-/g, "_").toUpperCase()}_REPAIR`
       : formId.replace(/-/g, "_").toUpperCase()
 
-  const existingReport = await getPrisma().checklistReport.findFirst({
-    where: {
-      areaId: area.id,
-      roomId,
-      period: selectedPeriod,
-      periodKey,
-      formCode,
-    },
-    select: { id: true, status: true },
-  })
+  const existingReport = queryParams.taskId
+    ? await getPrisma().checklistReport.findFirst({
+        where: {
+          taskId: queryParams.taskId,
+        },
+        select: { id: true, status: true },
+      })
+    : await getPrisma().checklistReport.findFirst({
+        where: {
+          areaId: area.id,
+          roomId,
+          period: selectedPeriod,
+          periodKey,
+          formCode,
+        },
+        select: { id: true, status: true },
+      })
 
   if (existingReport && existingReport.status !== "DRAFT") {
     if (queryParams.reset === "true") {
@@ -204,7 +282,7 @@ export default async function DynamicFormPage({
     } else {
       return unavailable(
         "Checklist Sudah Disubmit",
-        "Laporan checklist untuk ruangan ini sudah pernah disubmit pada periode ini.",
+        "Laporan checklist untuk tugas / ruangan ini sudah pernah disubmit pada periode ini.",
         meta.eyebrow,
       )
     }
@@ -220,6 +298,8 @@ export default async function DynamicFormPage({
       formCode: formCode,
       period: selectedPeriod,
       periodKey,
+      taskId: queryParams.taskId || null,
+      equipmentId: equipmentId || null,
     },
   )
 
@@ -238,14 +318,14 @@ export default async function DynamicFormPage({
           )}
         </>
       }
-      title={queryParams.roomName ? `Checklist ${queryParams.roomName}` : meta.title}
+      title={roomName ? `Checklist ${roomName}` : meta.title}
       description={isRepair && formId !== "frm-tsm-004" ? "Pilih item yang rusak dan wajib sertakan foto." : meta.description}
     >
       {formId === "frm-tsm-001" ? (
         <FrmTsm001Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -271,7 +351,7 @@ export default async function DynamicFormPage({
         <FrmTs016Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -285,7 +365,7 @@ export default async function DynamicFormPage({
         <FrmTsm006Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -299,7 +379,7 @@ export default async function DynamicFormPage({
         <FrmTs062Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -313,7 +393,7 @@ export default async function DynamicFormPage({
         <FrmTsm007Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -327,7 +407,7 @@ export default async function DynamicFormPage({
         <FrmTs043Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -341,7 +421,7 @@ export default async function DynamicFormPage({
         <FrmTs045Form
           reportCode={draft.reportCode}
           areaCode={area.code}
-          areaName={queryParams.roomName ? `${area.name} - ${queryParams.roomName}` : area.name}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId
@@ -356,7 +436,7 @@ export default async function DynamicFormPage({
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={area.name}
-          roomName={queryParams.roomName}
+          roomName={roomName}
           periodKey={periodKey}
           watermarkUserLabel={
             user ? `${user.name} (${user.NIK})` : session.userId

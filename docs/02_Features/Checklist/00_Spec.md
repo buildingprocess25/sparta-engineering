@@ -32,9 +32,15 @@
 
 ## UI & Alur Pengguna
 
-- **Route(s)**: `/dashboard`, `/dashboard/reports/new`, `/dashboard/reports/new/work-permit`
+- **Route(s)**: `/dashboard`, `/dashboard/reports/new`, `/dashboard/reports/new/work-permit`, `/dashboard/reports/new/[reportType]/[formId]`
+- **Alur Laporan Rutin (To-Do List)**:
+  1. PIC / ES login ke SPARTA $\rightarrow$ Dashboard utama langsung menampilkan **Tugas Rutin PIC (To-Do List)**.
+  2. Daftar tugas digenerate otomatis per bulan berjalan dari model `PicAssignment` (terkoneksi ke `Equipment` atau `Room`).
+  3. PIC dapat memfilter tugas: **Perlu Dikerjakan**, **Mingguan**, **Bulanan**, **Selesai**, atau **Semua**, serta mencari berdasarkan nama alat/ruangan.
+  4. PIC mengklik tombol **Kerjakan** pada kartu tugas $\rightarrow$ langsung diarahkan ke form checklist terkait tanpa perlu memilih area atau ruangan secara manual (data area, ruangan, kode form, dan nama unit sudah terisi otomatis via `taskId`).
+  5. Setelah PIC melengkapi item checklist dan menekan Submit, status `ChecklistTask` otomatis diperbarui menjadi `COMPLETED`, tanggal penyelesaian tercatat, dan persentase progres dashboard bertambah secara real-time.
 - **Alur Laporan Non-Rutin**:
-  1. ES masuk SPARTA dan klik 'Buat Laporan Baru'.
+  1. ES masuk SPARTA dan klik 'Buat Laporan Baru' di bawah panel To-Do List.
   2. ES mengisi *Form Ijin Kerja* (SAT/FRM/MED/003) secara digital (Wajib / Mandatory, tanpa opsi lewati).
   3. ES memilih jalur **Checklist** atau **Perbaikan by AHO / Temuan ES**.
   4. ES memilih **Area** (misal: Branch / Office atau Warehouse).

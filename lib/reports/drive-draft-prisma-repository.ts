@@ -27,6 +27,8 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
           roomId: true,
           periodKey: true,
           formCode: true,
+          taskId: true,
+          equipmentId: true,
         },
         orderBy: { updatedAt: "desc" },
       })
@@ -41,6 +43,8 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
         roomId: draft.roomId,
         periodKey: draft.periodKey,
         formCode: draft.formCode,
+        taskId: draft.taskId,
+        equipmentId: draft.equipmentId,
       }
     },
 
@@ -67,6 +71,8 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
           period: input.period,
           periodKey: input.periodKey,
           status: "DRAFT",
+          taskId: input.taskId || null,
+          equipmentId: input.equipmentId || null,
         },
       })
     },

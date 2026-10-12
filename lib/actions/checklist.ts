@@ -64,6 +64,18 @@ export async function submitChecklistAction(input: {
     return { ok: false as const, errors: validationResult.errors }
   }
 
+  const existingReport = await getPrisma().checklistReport.findFirst({
+    where: {
+      reportCode: input.reportCode,
+      authorId: session.userId,
+      status: "DRAFT",
+    },
+    select: {
+      id: true,
+      taskId: true,
+    },
+  })
+
   await getPrisma().checklistReport.updateMany({
     where: {
       reportCode: input.reportCode,
@@ -77,6 +89,16 @@ export async function submitChecklistAction(input: {
       status: "PENDING_COORD",
     },
   })
+
+  if (existingReport?.taskId) {
+    await getPrisma().checklistTask.update({
+      where: { id: existingReport.taskId },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+      },
+    })
+  }
 
   revalidatePath("/dashboard", "page")
   revalidatePath("/dashboard/reports")

@@ -6,10 +6,12 @@ import { ProgressSummary } from "@/components/es-dashboard/progress-summary"
 import { ReportFlow } from "@/components/es-dashboard/report-flow"
 import { StatsGrid } from "@/components/es-dashboard/stats-grid"
 import { WelcomePanel } from "@/components/es-dashboard/welcome-panel"
+import { TodoListPanel } from "@/components/es-dashboard/todo-list-panel"
 import {
   getEsDashboardStats,
   getEsDashboardUserContext,
 } from "@/lib/es-dashboard-data"
+import { getUserTodoTasks } from "@/lib/tasks/todo-service"
 import { getSession } from "@/lib/session"
 
 export default async function DashboardPage() {
@@ -17,9 +19,10 @@ export default async function DashboardPage() {
   const role = session?.role as string
 
   if (role === "ES") {
-    const [userContext, stats] = await Promise.all([
+    const [userContext, stats, todoData] = await Promise.all([
       getEsDashboardUserContext(session?.userId as string),
       getEsDashboardStats(),
+      getUserTodoTasks(session?.userId as string),
     ])
 
     return (
@@ -27,8 +30,17 @@ export default async function DashboardPage() {
         <DashboardShell>
           <DashboardHeader email={session?.email as string} role={role} />
           <WelcomePanel user={userContext} />
+          <TodoListPanel todoData={todoData} />
           <ReportFlow />
-          <ProgressSummary />
+          <ProgressSummary
+            total={todoData.total}
+            completed={todoData.completed}
+            percentage={
+              todoData.total > 0
+                ? Math.round((todoData.completed / todoData.total) * 100)
+                : 0
+            }
+          />
           <StatsGrid stats={stats} />
         </DashboardShell>
         <BottomNavigation />

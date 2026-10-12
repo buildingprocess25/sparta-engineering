@@ -6,6 +6,8 @@ export type ChecklistDraft = {
   roomId?: string | null
   periodKey: string
   formCode: string
+  taskId?: string | null
+  equipmentId?: string | null
 }
 
 export type ReserveChecklistDraftInput = {
@@ -16,6 +18,8 @@ export type ReserveChecklistDraftInput = {
   formCode: string
   period: ChecklistDraftPeriod
   periodKey: string
+  taskId?: string | null
+  equipmentId?: string | null
 }
 
 
