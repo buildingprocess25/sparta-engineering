@@ -108,36 +108,36 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
           </div>
 
           {/* Quick Metrics Cards */}
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2 border border-white/10">
-              <Layers className="size-4 text-slate-400" />
-              <div>
-                <p className="text-[10px] uppercase font-bold text-slate-400">Total Tugas</p>
-                <p className="text-sm font-bold text-white">{total}</p>
+          <div className="mt-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="flex items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 border border-white/10">
+              <Layers className="size-3.5 text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[9px] uppercase font-semibold tracking-wider text-slate-400 truncate">Total Tugas</p>
+                <p className="text-xs font-bold text-white leading-tight">{total}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 border border-amber-500/20">
-              <Clock className="size-4 text-amber-400" />
-              <div>
-                <p className="text-[10px] uppercase font-bold text-amber-300">Belum Selesai</p>
-                <p className="text-sm font-bold text-amber-400">{pending}</p>
+            <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-2.5 py-1.5 border border-amber-500/20">
+              <Clock className="size-3.5 text-amber-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[9px] uppercase font-semibold tracking-wider text-amber-300 truncate">Belum Selesai</p>
+                <p className="text-xs font-bold text-amber-400 leading-tight">{pending}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 rounded-lg bg-rose-500/10 px-3 py-2 border border-rose-500/20">
-              <AlertCircle className="size-4 text-rose-400" />
-              <div>
-                <p className="text-[10px] uppercase font-bold text-rose-300">Terlewat</p>
-                <p className="text-sm font-bold text-rose-400">{overdue}</p>
+            <div className="flex items-center gap-2 rounded-lg bg-rose-500/10 px-2.5 py-1.5 border border-rose-500/20">
+              <AlertCircle className="size-3.5 text-rose-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[9px] uppercase font-semibold tracking-wider text-rose-300 truncate">Terlewat</p>
+                <p className="text-xs font-bold text-rose-400 leading-tight">{overdue}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 border border-emerald-500/20">
-              <CheckCircle2 className="size-4 text-emerald-400" />
-              <div>
-                <p className="text-[10px] uppercase font-bold text-emerald-300">Selesai</p>
-                <p className="text-sm font-bold text-emerald-400">{completed}</p>
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 border border-emerald-500/20">
+              <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[9px] uppercase font-semibold tracking-wider text-emerald-300 truncate">Selesai</p>
+                <p className="text-xs font-bold text-emerald-400 leading-tight">{completed}</p>
               </div>
             </div>
           </div>
