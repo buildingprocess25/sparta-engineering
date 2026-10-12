@@ -22,7 +22,7 @@ import {
 import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service"
 import { cn } from "@/lib/utils"
 
-type FilterTab = "ALL" | "PENDING" | "WEEKLY" | "MONTHLY" | "COMPLETED"
+type FilterTab = "ALL" | "PENDING" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMESTER" | "COMPLETED"
 
 interface TodoListPanelProps {
   todoData: UserTodoSummary
@@ -36,6 +36,12 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
 
   const { total, pending, completed, overdue, tasks } = todoData
 
+  // Count per period dynamically
+  const weeklyCount = React.useMemo(() => tasks.filter((t) => t.period === "WEEKLY").length, [tasks])
+  const monthlyCount = React.useMemo(() => tasks.filter((t) => t.period === "MONTHLY").length, [tasks])
+  const quarterlyCount = React.useMemo(() => tasks.filter((t) => t.period === "QUARTERLY").length, [tasks])
+  const semesterCount = React.useMemo(() => tasks.filter((t) => t.period === "SEMESTER").length, [tasks])
+
   // Filter tasks based on activeTab and searchQuery
   const filteredTasks = React.useMemo(() => {
     return tasks.filter((task) => {
@@ -48,6 +54,10 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
         if (task.period !== "WEEKLY") return false
       } else if (activeTab === "MONTHLY") {
         if (task.period !== "MONTHLY") return false
+      } else if (activeTab === "QUARTERLY") {
+        if (task.period !== "QUARTERLY") return false
+      } else if (activeTab === "SEMESTER") {
+        if (task.period !== "SEMESTER") return false
       }
 
       // Search query filter
@@ -171,31 +181,69 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
               Perlu Dikerjakan ({pending + overdue})
             </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("WEEKLY")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
-                activeTab === "WEEKLY"
-                  ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
-              )}
-            >
-              Mingguan
-            </button>
+            {/* Tab Mingguan */}
+            {weeklyCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("WEEKLY")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                  activeTab === "WEEKLY"
+                    ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
+                )}
+              >
+                Mingguan ({weeklyCount})
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("MONTHLY")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
-                activeTab === "MONTHLY"
-                  ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
-              )}
-            >
-              Bulanan
-            </button>
+            {/* Tab Bulanan */}
+            {monthlyCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("MONTHLY")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                  activeTab === "MONTHLY"
+                    ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
+                )}
+              >
+                Bulanan ({monthlyCount})
+              </button>
+            )}
+
+            {/* Tab 3 Bulanan jika user punya penugasan 3 bulanan */}
+            {quarterlyCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("QUARTERLY")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                  activeTab === "QUARTERLY"
+                    ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
+                )}
+              >
+                3 Bulanan ({quarterlyCount})
+              </button>
+            )}
+
+            {/* Tab 6 Bulanan jika user punya penugasan 6 bulanan */}
+            {semesterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("SEMESTER")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                  activeTab === "SEMESTER"
+                    ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
+                )}
+              >
+                6 Bulanan ({semesterCount})
+              </button>
+            )}
 
             <button
               type="button"
@@ -319,10 +367,20 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
                               "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold",
                               task.period === "WEEKLY"
                                 ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                : task.period === "QUARTERLY"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : task.period === "SEMESTER"
+                                ? "bg-cyan-50 text-cyan-700 border border-cyan-200"
                                 : "bg-purple-50 text-purple-700 border border-purple-200"
                             )}
                           >
-                            {task.period === "WEEKLY" ? "Mingguan" : "Bulanan"}
+                            {task.period === "WEEKLY"
+                              ? "Mingguan"
+                              : task.period === "QUARTERLY"
+                              ? "3 Bulanan"
+                              : task.period === "SEMESTER"
+                              ? "6 Bulanan"
+                              : "Bulanan"}
                           </span>
 
                           {/* Form Code */}
