@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  X,
 } from "lucide-react"
 
 import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service"
@@ -81,10 +82,10 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all">
         {/* Header Section */}
         <div className="border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-[#ff8a2a] text-black shadow-sm">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ff8a2a] text-black shadow-sm">
                   <Sparkles className="size-4" />
                 </span>
                 <h3 className="text-lg font-bold tracking-tight text-white">
@@ -97,8 +98,8 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
             </div>
 
             {/* Quick Completion Progress Bar */}
-            <div className="flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2 backdrop-blur-sm sm:w-64">
-              <div className="flex-1">
+            <div className="flex shrink-0 items-center gap-3 rounded-xl bg-white/10 px-3.5 py-2 backdrop-blur-sm sm:w-64">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-slate-200">Progres Bulan Ini</span>
                   <span className="font-bold text-[#ff8a2a]">{completionPercentage}%</span>
@@ -153,17 +154,17 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
         </div>
 
         {/* Filter Tabs & Search Bar */}
-        <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
-          {/* Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5">
+        <div className="border-b border-slate-100 bg-slate-50/50 p-4 space-y-3">
+          {/* Row 1: Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setActiveTab("PENDING")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
                 activeTab === "PENDING"
-                  ? "bg-[#ff8a2a] text-black shadow-sm"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
               )}
             >
               <Clock className="size-3.5" />
@@ -174,10 +175,10 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
               type="button"
               onClick={() => setActiveTab("WEEKLY")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
                 activeTab === "WEEKLY"
-                  ? "bg-[#ff8a2a] text-black shadow-sm"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
               )}
             >
               Mingguan
@@ -187,10 +188,10 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
               type="button"
               onClick={() => setActiveTab("MONTHLY")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
                 activeTab === "MONTHLY"
-                  ? "bg-[#ff8a2a] text-black shadow-sm"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
               )}
             >
               Bulanan
@@ -200,10 +201,10 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
               type="button"
               onClick={() => setActiveTab("COMPLETED")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
                 activeTab === "COMPLETED"
-                  ? "bg-[#ff8a2a] text-black shadow-sm"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
               )}
             >
               <CheckCircle2 className="size-3.5" />
@@ -214,26 +215,36 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
               type="button"
               onClick={() => setActiveTab("ALL")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
                 activeTab === "ALL"
-                  ? "bg-[#ff8a2a] text-black shadow-sm"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  ? "bg-[#ff8a2a] text-black shadow-xs ring-1 ring-[#ff8a2a]"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900"
               )}
             >
               Semua ({total})
             </button>
           </div>
 
-          {/* Search Input */}
-          <div className="relative sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+          {/* Row 2: Search Input (Full width, placed below tabs) */}
+          <div className="relative w-full">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari alat atau ruangan..."
-              className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:border-[#ff8a2a] focus:outline-none focus:ring-1 focus:ring-[#ff8a2a]"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-xs text-slate-800 placeholder-slate-400 shadow-xs transition-colors focus:border-[#ff8a2a] focus:outline-none focus:ring-1 focus:ring-[#ff8a2a]"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-600"
+                aria-label="Bersihkan pencarian"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
