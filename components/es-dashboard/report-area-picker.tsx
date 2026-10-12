@@ -143,8 +143,8 @@ export function ReportAreaPicker({
             <h2 className="font-semibold text-[#111111]">Pilih Area</h2>
             <p className="mt-1 text-sm leading-5 text-[#686868]">
               {workPermit === "fill"
-                ? "Form Ijin Kerja akan diisi sebelum laporan detail."
-                : "Lanjut tanpa Form Ijin Kerja, lalu pilih area laporan."}
+                ? "Form Izin Kerja (SAT/FRM/MED/003) terkonfirmasi aktif."
+                : "Pilih area laporan untuk melanjutkan."}
             </p>
           </div>
         </div>

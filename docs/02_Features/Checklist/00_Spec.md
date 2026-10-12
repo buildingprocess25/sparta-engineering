@@ -12,29 +12,30 @@
 ## Scope
 
 **Dalam scope:**
-- Keputusan awal untuk mengisi atau melewati *Form Ijin Kerja* sebagai langkah opsional/kondisional pada alur ES.
+- Pengisian *Form Ijin Kerja* (SAT/FRM/MED/003) sebagai prasyarat **Mandatory (Wajib)** sebelum melanjutkan laporan non-rutin.
+- Tombol 'Lewati' dihapus untuk kepatuhan SMK3 dan kebijakan kerja aman.
 - Form pengisian checklist (Weekly & Monthly).
 - Pemilihan Area (Office vs WHC/Gudang).
 - Pencatatan status per item (Baik, Clean, Repair, Rusak, Tidak Ada).
 - Alur Approval berjenjang.
 
 **Luar scope:**
-- Persistensi detail *Form Ijin Kerja* lengkap masih akan dipisahkan ke iterasi berikutnya.
+- Tanda tangan digital multi-stakeholder eksternal offline (approval digital diselesaikan via akun internal).
 
 ## Aturan Bisnis (Business Rules)
 
-1. **Langkah Awal ES**: Setelah masuk SPARTA, ES melihat pilihan untuk mengisi *Form Ijin Kerja* atau melewatinya jika tidak diperlukan.
-2. **Pilihan Jalur Kerja**: Setelah keputusan *Form Ijin Kerja*, ES memilih antara **Checklist** atau **Perbaikan by AHO / Temuan ES**.
+1. **Langkah Awal ES (Mandatory Izin Kerja)**: Setelah masuk SPARTA dan memilih 'Buat Laporan', ES wajib melengkapi *Form Ijin Kerja* (SAT/FRM/MED/003). Opsi lewati ditiadakan demi penegakan klausul keselamatan kerja (SMK3).
+2. **Pilihan Jalur Kerja**: Setelah Form Ijin Kerja terkonfirmasi, ES melanjutkan ke pemilihan jenis laporan (**Checklist** atau **Perbaikan by AHO / Temuan ES**).
 3. **Model Pengisian Data**: ES membuat "Dokumen Laporan Baru" (record baru) di dalam sistem setiap kali jadwal checklist tiba.
 4. **Alur Approval (Tanpa Kerusakan)**: Jika laporan checklist 100% aman (tidak ada laporan kerusakan), maka proses approval cukup melalui **Coord** dan **Manager**, lalu status menjadi Selesai (Tidak perlu sampai ke Requester).
 5. **Alur Approval (Ada Kerusakan)**: Jika terdapat temuan kerusakan, alur akan mengikuti proses yang lebih panjang (ES -> Coord -> Manager -> Requester -> Input PB/PJU -> Selesai).
 
 ## UI & Alur Pengguna
 
-- **Route(s)**: `/dashboard`, `/dashboard/reports/new`
-- **Alur Baru (Room-Based Checklist)**:
-  1. ES masuk SPARTA.
-  2. ES memilih untuk mengisi atau melewati *Form Ijin Kerja*.
+- **Route(s)**: `/dashboard`, `/dashboard/reports/new`, `/dashboard/reports/new/work-permit`
+- **Alur Laporan Non-Rutin**:
+  1. ES masuk SPARTA dan klik 'Buat Laporan Baru'.
+  2. ES mengisi *Form Ijin Kerja* (SAT/FRM/MED/003) secara digital (Wajib / Mandatory, tanpa opsi lewati).
   3. ES memilih jalur **Checklist** atau **Perbaikan by AHO / Temuan ES**.
   4. ES memilih **Area** (misal: Branch / Office atau Warehouse).
   5. ES memilih **Ruangan** spesifik di dalam Area tersebut (ruangan sudah default dari master data Excel, tidak dapat ditambah manual oleh user).
@@ -66,6 +67,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 9. **FRM_TSM_007** (Checklist Pemeliharaan PLTS - SAT/FRM/TSM/007_Rev_000_111122)
 10. **FRM_TS_043** (Checklist Forklift Weekly - SAT/FRM/TS/043_Rev : 01_161020)
 11. **FRM_TS_045** (Checklist Pallet Mover Weekly - SAT/FRM/TS/045_Rev : 01_161020)
+12. **FRM_MED_003** (Form Izin Kerja - SAT/FRM/MED/003_Rev:000_180225) - **Mandatory**
 
 
 ### Form FRM_TSM_001: Pemantauan Penggunaan Genset dan Test Fungsi ATS
@@ -301,3 +303,35 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
      - Header context bar follow-up ditampilkan dalam format 2-kolom x 2-baris (Branch/Depo, Lokasi, Tanggal, Pelapor) agar teks tidak terpotong.
    - Data dasar (Lokasi, Branch, Tanggal, Item Rusak, Keterangan / Rencana Aksi) di-prefill otomatis dari checklist.
    - Setelah form lanjutan disimpan, laporan dialihkan ke `PENDING_COORD` untuk proses approval berjenjang.
+
+### Form FRM_MED_003: Form Izin Kerja (SAT/FRM/MED/003_Rev:000_180225) - Mandatory
+- **Dasar Kebijakan**: SAT/KEB/MED/001 Kebijakan Persyaratan Kerja Aman (SMK3).
+- **Status Alur**: **Mandatory (Wajib)** sebelum membuat laporan non-rutin. Tombol lewati ditiadakan.
+- **Bagian 1: Header & Identitas Pekerjaan**:
+  - Kegiatan / Pekerjaan
+  - Lokasi pekerjaan
+  - PIC / Pengawas SAT
+  - Internal / Rekanan / Kontraktor
+  - Tanggal pelaksanaan
+  - Lama Pekerjaan (estimasi waktu/durasi)
+- **Bagian 2: Informasi Pekerja & Persyaratan Administrasi**:
+  - Daftar Nama Pekerja (hingga 5 orang pekerja)
+  - Persyaratan Kompetensi & Administrasi (Checkbox):
+    - Sertifikat Kompetensi
+    - Safety Induction
+    - Job Safety Analysis (JSA)
+    - Konfirmasi Kondisi Mental Pekerja (Phobia)
+    - Persyaratan Lainnya (teks)
+- **Bagian 3: Jenis Pekerjaan Berisiko & APD/APK Khusus**:
+  1. *Hot Work (Kerja Api)*: Lock Out, Barikade, Ventilasi, Welding Cutting Torch, Acetylene, Grinding Machine, Cutting Disk, Fire Blanket, Oxygen, Lainnya.
+  2. *Work Height & Excavation (Kerja Ketinggian & Galian)*: Handrail, Platform/Alas, Alat Komunikasi, Scaffolding, Lampu Penerangan, Crane, Safety Line, Safety Sign, Safety Net, Lainnya.
+  3. *Confined Space Area (Area Terbatas)*: Ventilasi Udara, Proteksi Area, Oxygen, Breathing Apparatus, Log Out, Lainnya.
+  4. *High Voltage Electrical (Listrik Tegangan Tinggi)*: Instalasi Listrik, Proteksi Terminal, Proteksi Arus, Proteksi Tegangan, Alat Komunikasi, Ampere Meter, Lock Out, Proteksi Area, Proteksi Panel, Lainnya.
+- **Bagian 4: Standar APD & Fire Protection**:
+  - APD: Topi/Helm, Kacamata, Masker, Faceshield, Welding Facer, Apron, Ear plug/ear muff, Safety Vest, Sarung tangan bahan/kulit/karet, Safety shoes, Welding gloves, Dust mask, Body harness, Lainnya.
+  - Fire Protection: APAR Dry Chemical Powder, APAR CO2, APAR Foam, Air, Pasir, Lainnya.
+- **Bagian 5: Pengesahan & Tanda Tangan**:
+  - Pemohon: Branch Engineering Support (BES)
+  - Menyetujui: Branch Building & Maintenance Manager, P2K3/Delegate, Sekretaris P2K3
+  - Catatan hasil pemeriksaan pasca pekerjaan
+
