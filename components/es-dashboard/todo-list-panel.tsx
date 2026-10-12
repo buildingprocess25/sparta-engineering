@@ -92,42 +92,22 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all">
         {/* Header Section */}
         <div className="border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ff8a2a] text-black shadow-sm">
-                  <Sparkles className="size-4" />
-                </span>
-                <h3 className="text-lg font-bold tracking-tight text-white">
-                  Tugas Rutin PIC (To-Do List)
-                </h3>
-              </div>
-              <p className="mt-1 text-xs text-slate-300">
-                Daftar checklist inventaris equipment & ruangan yang ditugaskan kepada Anda.
-              </p>
-            </div>
-
-            {/* Quick Completion Progress Bar */}
-            <div className="flex shrink-0 items-center gap-3 rounded-xl bg-white/10 px-3.5 py-2 backdrop-blur-sm sm:w-64">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-200">Progres Bulan Ini</span>
-                  <span className="font-bold text-[#ff8a2a]">{completionPercentage}%</span>
-                </div>
-                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
-                  <div
-                    className="h-full rounded-full bg-[#ff8a2a] transition-all duration-500"
-                    style={{ width: `${completionPercentage}%` }}
-                  />
-                </div>
-              </div>
-              <span className="text-xs font-semibold text-slate-300">
-                {completed}/{total}
+          {/* Top Title */}
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ff8a2a] text-black shadow-sm">
+                <Sparkles className="size-4" />
               </span>
+              <h3 className="text-lg font-bold tracking-tight text-white">
+                Tugas Rutin PIC (To-Do List)
+              </h3>
             </div>
+            <p className="mt-1 text-xs text-slate-300">
+              Daftar checklist inventaris equipment & ruangan yang ditugaskan kepada Anda.
+            </p>
           </div>
 
-          {/* Quick Metrics Pills */}
+          {/* Quick Metrics Cards */}
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2 border border-white/10">
               <Layers className="size-4 text-slate-400" />
@@ -159,6 +139,23 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
                 <p className="text-[10px] uppercase font-bold text-emerald-300">Selesai</p>
                 <p className="text-sm font-bold text-emerald-400">{completed}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Progress Bar (Placed below the 4 metric cards) */}
+          <div className="mt-3.5 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-xs">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-slate-200">Progres Bulan Ini</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-[#ff8a2a]">{completionPercentage}%</span>
+                <span className="text-xs text-slate-400 font-medium">({completed}/{total} selesai)</span>
+              </div>
+            </div>
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[#ff8a2a] transition-all duration-500"
+                style={{ width: `${completionPercentage}%` }}
+              />
             </div>
           </div>
         </div>
