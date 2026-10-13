@@ -4,15 +4,11 @@ import * as React from "react"
 import Link from "next/link"
 import {
   AlertCircle,
-  Calendar,
   CheckCircle2,
   Clock,
   Layers,
   Search,
   Sparkles,
-  Wrench,
-  DoorOpen,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -310,17 +306,10 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
               {paginatedTasks.map((task) => {
                 const isCompleted = task.status === "COMPLETED"
                 const isOverdue = task.status === "OVERDUE"
-
-                // Target date formatting
-                const targetDateFormatted = new Intl.DateTimeFormat("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                }).format(new Date(task.targetDate))
 
                 // Link direct ke form checklist tanpa mampir pilih area/ruangan
                 const taskUrl = `/dashboard/reports/new/checklist/${task.formSlug}?taskId=${task.id}&roomName=${encodeURIComponent(
@@ -328,65 +317,51 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
                 )}&period=${task.period}`
 
                 return (
-                  <div
+                  <Link
                     key={task.id}
+                    href={taskUrl}
                     className={cn(
-                      "group relative flex flex-col justify-between rounded-xl border p-4 transition-all duration-200",
+                      "group relative flex flex-col justify-between rounded-xl border p-3 transition-all duration-200 hover:shadow-xs",
                       isCompleted
-                        ? "border-emerald-200 bg-emerald-50/20"
+                        ? "border-emerald-200 bg-emerald-50/20 hover:border-emerald-300"
                         : isOverdue
-                        ? "border-rose-200 bg-rose-50/20 hover:border-rose-300 hover:shadow-md"
-                        : "border-slate-200 bg-white hover:border-[#ff8a2a]/50 hover:shadow-md"
+                        ? "border-rose-200 bg-rose-50/20 hover:border-rose-300"
+                        : "border-slate-200 bg-white hover:border-[#ff8a2a] hover:bg-orange-50/10"
                     )}
                   >
-                    <div>
-                      {/* Top Badges */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* Object Type Pill */}
-                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                            {task.objectType === "EQUIPMENT" ? (
-                              <>
-                                <Wrench className="size-3 text-slate-500" />
-                                Unit
-                              </>
-                            ) : (
-                              <>
-                                <DoorOpen className="size-3 text-slate-500" />
-                                Ruangan
-                              </>
-                            )}
-                          </span>
-
-                          {/* Period Pill */}
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold",
-                              task.period === "WEEKLY"
-                                ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                : task.period === "QUARTERLY"
-                                ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                : task.period === "SEMESTER"
-                                ? "bg-cyan-50 text-cyan-700 border border-cyan-200"
-                                : "bg-purple-50 text-purple-700 border border-purple-200"
-                            )}
-                          >
-                            {task.period === "WEEKLY"
-                              ? "Mingguan"
+                    {/* Top Badges */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Period Pill */}
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold",
+                            task.period === "WEEKLY"
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
                               : task.period === "QUARTERLY"
-                              ? "3 Bulanan"
+                              ? "bg-amber-50 text-amber-700 border border-amber-200"
                               : task.period === "SEMESTER"
-                              ? "6 Bulanan"
-                              : "Bulanan"}
-                          </span>
+                              ? "bg-cyan-50 text-cyan-700 border border-cyan-200"
+                              : "bg-purple-50 text-purple-700 border border-purple-200"
+                          )}
+                        >
+                          {task.period === "WEEKLY"
+                            ? "Mingguan"
+                            : task.period === "QUARTERLY"
+                            ? "3 Bulanan"
+                            : task.period === "SEMESTER"
+                            ? "6 Bulanan"
+                            : "Bulanan"}
+                        </span>
 
-                          {/* Form Code */}
-                          <span className="text-[10px] font-medium text-slate-400">
-                            {task.formCode.split("_")[0]}
-                          </span>
-                        </div>
+                        {/* Form Code */}
+                        <span className="text-[10px] font-medium text-slate-400">
+                          {task.formCode.split("_")[0]}
+                        </span>
+                      </div>
 
-                        {/* Status Badge */}
+                      {/* Status Badge & Arrow */}
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {isCompleted ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                             <CheckCircle2 className="size-3" />
@@ -403,50 +378,17 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
                             Pending
                           </span>
                         )}
-                      </div>
-
-                      {/* Object Name & Details */}
-                      <div className="mt-3">
-                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#ff8a2a] transition-colors">
-                          {task.objectName}
-                        </h4>
-                        <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                          {task.branchName && (
-                            <span>Cabang: {task.branchName}</span>
-                          )}
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="size-3 text-slate-400" />
-                            Batas: {targetDateFormatted}
-                          </span>
-                        </div>
+                        <ChevronRight className="size-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-[#ff8a2a]" />
                       </div>
                     </div>
 
-                    {/* Bottom Action Button */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-400">
-                        {isCompleted
-                          ? "Tugas telah diselesaikan"
-                          : "Klik untuk membuka form"}
-                      </span>
-
-                      {isCompleted ? (
-                        <div className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                          <CheckCircle2 className="size-3.5" />
-                          Terdata
-                        </div>
-                      ) : (
-                        <Link
-                          href={taskUrl}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-[#ff8a2a] px-3 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-[#ff9c48] hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff8a2a]"
-                        >
-                          Kerjakan
-                          <ArrowRight className="size-3.5" />
-                        </Link>
-                      )}
+                    {/* Object Name */}
+                    <div className="mt-2">
+                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#ff8a2a] transition-colors leading-snug">
+                        {task.objectName}
+                      </h4>
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
