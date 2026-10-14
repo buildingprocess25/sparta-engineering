@@ -155,11 +155,13 @@ export function FrmMed003Form({
       // ignore session storage error
     }
 
-    // Redirect to the chosen destination (checklist, repair, or back to select flow)
+    // Redirect to the chosen destination (checklist, repair, select flow, or dashboard)
     if (targetNext === "repair") {
       router.push("/dashboard/reports/new/repair/area?workPermit=fill")
     } else if (targetNext === "select" || targetNext === "new") {
       router.push("/dashboard/reports/new?permit=done")
+    } else if (targetNext === "dashboard") {
+      router.push("/dashboard")
     } else {
       router.push("/dashboard/reports/new/checklist/area?workPermit=fill")
     }

@@ -7,6 +7,7 @@ import { ReportFlow } from "@/components/es-dashboard/report-flow"
 import { StatsGrid } from "@/components/es-dashboard/stats-grid"
 import { WelcomePanel } from "@/components/es-dashboard/welcome-panel"
 import { TodoListPanel } from "@/components/es-dashboard/todo-list-panel"
+import { WorkPermitCard } from "@/components/es-dashboard/work-permit-card"
 import {
   getEsDashboardStats,
   getEsDashboardUserContext,
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
         <DashboardShell>
           <DashboardHeader email={session?.email as string} role={role} />
           <WelcomePanel user={userContext} />
+          <WorkPermitCard />
           <TodoListPanel todoData={todoData} />
           <ReportFlow />
           <ProgressSummary

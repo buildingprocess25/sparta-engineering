@@ -34,10 +34,11 @@
 
 - **Route(s)**: `/dashboard`, `/dashboard/reports/new`, `/dashboard/reports/new/work-permit`, `/dashboard/reports/new/[reportType]/[formId]`
 - **Alur Laporan Rutin (To-Do List)**:
-  1. PIC / ES login ke SPARTA $\rightarrow$ Dashboard utama langsung menampilkan **Tugas Rutin PIC (To-Do List)**.
-  2. Daftar tugas digenerate otomatis per bulan berjalan dari model `PicAssignment` (terkoneksi ke `Equipment` atau `Room`).
-  3. PIC dapat memfilter tugas: **Perlu Dikerjakan**, **Mingguan**, **Bulanan**, **Selesai**, atau **Semua**, serta mencari berdasarkan nama alat/ruangan.
-  4. PIC mengklik tombol **Kerjakan** pada kartu tugas $\rightarrow$ langsung diarahkan ke form checklist terkait tanpa perlu memilih area atau ruangan secara manual (data area, ruangan, kode form, dan nama unit sudah terisi otomatis via `taskId`).
+  1. PIC / ES login ke SPARTA $\rightarrow$ Dashboard utama menampilkan **Banner Form Izin Kerja (SAT/FRM/MED/003)** tepat di atas **Tugas Rutin PIC (To-Do List)** sebagai pengingat kepatuhan K3/SMK3 dengan tombol "Isi Form Izin Kerja".
+  2. **Kunci Tugas Rutin (Lock / Disabled State)**: Seluruh kartu tugas dalam To-Do List berstatus terkunci (`disabled`) dan tidak dapat diklik selama ES belum mengisi Form Izin Kerja (`sparta_work_permit` belum terisi pada sesi aktif). Panel menampilkan pesan peringatan K3 beserta indikator gembok pada kartu tugas.
+  3. Setelah Form Izin Kerja terisi dan terkonfirmasi, kunci kartu to-do otomatis terbuka.
+  4. PIC dapat memfilter tugas: **Pending**, **Mingguan**, **Bulanan**, **Selesai**, atau **Semua**, memilih kategori **Equipment** / **Ruangan**, serta mencari berdasarkan nama alat/ruangan.
+  5. PIC mengklik kartu tugas yang sudah terbuka $\rightarrow$ langsung diarahkan ke form checklist terkait tanpa perlu memilih area atau ruangan secara manual (data area, ruangan, kode form, dan nama unit sudah terisi otomatis via `taskId`).
   5. Setelah PIC melengkapi item checklist dan menekan Submit, status `ChecklistTask` otomatis diperbarui menjadi `COMPLETED`, tanggal penyelesaian tercatat, dan persentase progres dashboard bertambah secara real-time.
 - **Alur Laporan Non-Rutin**:
   1. ES masuk SPARTA dan klik 'Buat Laporan Baru' di bawah panel To-Do List.
