@@ -122,3 +122,20 @@ export async function deleteFileFromDrive(fileId: string): Promise<void> {
     supportsAllDrives: true,
   })
 }
+
+export async function downloadFileFromDrive(fileId: string): Promise<Buffer | null> {
+  try {
+    const { drive } = getGoogleDriveClient()
+    const response = await drive.files.get(
+      { fileId, alt: "media", supportsAllDrives: true },
+      { responseType: "arraybuffer" }
+    )
+    if (response?.data) {
+      return Buffer.from(response.data as ArrayBuffer)
+    }
+    return null
+  } catch (err) {
+    console.warn(`[Drive download error] fileId ${fileId}:`, err)
+    return null
+  }
+}

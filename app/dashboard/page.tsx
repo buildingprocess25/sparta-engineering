@@ -14,10 +14,35 @@ import {
 } from "@/lib/es-dashboard-data"
 import { getUserTodoTasks } from "@/lib/tasks/todo-service"
 import { getSession } from "@/lib/session"
+import { getRealDashboardStats, getRealAdminReports } from "@/lib/manager-dashboard"
+import { ManagerDashboardView } from "@/components/manager-dashboard/manager-dashboard-view"
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams?: Promise<{ view?: string }>
+}
+
+export default async function DashboardPage(props: DashboardPageProps) {
+  const searchParams = await props.searchParams
   const session = await getSession()
   const role = session?.role as string
+  const forceManagerView = searchParams?.view === "manager"
+
+  // If user role is MANAGER, COORD, HO, ADMIN or explicit view=manager is requested
+  if (forceManagerView || role === "MANAGER" || role === "COORD" || role === "HO" || role === "ADMIN") {
+    const [realStats, realReports] = await Promise.all([
+      getRealDashboardStats("ALL"),
+      getRealAdminReports({}),
+    ])
+
+    return (
+      <ManagerDashboardView
+        userEmail={session?.email as string || "admin@admin.com"}
+        userRole={role || "ADMIN HO"}
+        initialRealStats={realStats}
+        initialReports={realReports}
+      />
+    )
+  }
 
   if (role === "ES") {
     const [userContext, stats, todoData] = await Promise.all([

@@ -11,6 +11,7 @@ import type { FrmTsm004Payload } from "@/lib/checklists/payload-004"
 import { validateFrmTsm004Payload } from "@/lib/checklists/payload-004"
 import type { FrmTsm001Payload } from "@/lib/checklists/payload-001"
 import { validateFrmTsm001Payload } from "@/lib/checklists/payload-001"
+import { generateAndUploadReportPdf } from "@/lib/reports/drive-pdf-service"
 
 export async function submitChecklistAction(input: {
   reportCode: string
@@ -100,8 +101,28 @@ export async function submitChecklistAction(input: {
     })
   }
 
+  // Automatic PDF generation & Google Drive upload
+  try {
+    await generateAndUploadReportPdf(input.reportCode)
+  } catch (pdfErr) {
+    console.error(`[PDF Auto-Generate Error] on report ${input.reportCode}:`, pdfErr)
+  }
+
   revalidatePath("/dashboard", "page")
   revalidatePath("/dashboard/reports")
+  revalidatePath(`/dashboard/reports/${input.reportCode}`)
 
   return { ok: true as const, isSafe }
+}
+
+export async function triggerReportPdfUploadAction(reportCode: string) {
+  try {
+    const res = await generateAndUploadReportPdf(reportCode)
+    revalidatePath(`/dashboard/reports/${reportCode}`)
+    revalidatePath("/dashboard/reports")
+    return res
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { ok: false, reportCode, error: message }
+  }
 }
