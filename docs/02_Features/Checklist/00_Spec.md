@@ -74,7 +74,8 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 9. **FRM_TSM_007** (Checklist Pemeliharaan PLTS - SAT/FRM/TSM/007_Rev_000_111122)
 10. **FRM_TS_043** (Checklist Forklift Weekly - SAT/FRM/TS/043_Rev : 01_161020)
 11. **FRM_TS_045** (Checklist Pallet Mover Weekly - SAT/FRM/TS/045_Rev : 01_161020)
-12. **FRM_MED_003** (Form Izin Kerja - SAT/FRM/MED/003_Rev:000_180225) - **Mandatory**
+12. **FRM_TS_029** (Checklist Forklift Monthly - SAT/FRM/TS/029_Rev : 02_161020)
+13. **FRM_MED_003** (Form Izin Kerja - SAT/FRM/MED/003_Rev:000_180225) - **Mandatory**
 
 
 ### Form FRM_TSM_001: Pemantauan Penggunaan Genset dan Test Fungsi ATS
@@ -112,6 +113,34 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   12. Functional Test (`Td`)
 - **Tindakan Lapangan**: Setiap item menampilkan badge cara tindakan (`In`, `W`, `Ch`, `A`, `Cl`, `L`, `Td`).
 - **Opsi Kondisi**: `BAIK` (OK) dan `RUSAK` (NOK). Item yang rusak wajib foto bukti, penanggung jawab, catatan, dan pilihan form tindak lanjut (`FRM_TS_065` / `FRM_TSM_014` / `REPAIR_TANPA_BIAYA`).
+
+### Form FRM_TS_029: Monthly Checklist Forklift (SAT/FRM/TS/029_Rev : 02_161020)
+- **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
+- **Identitas & Metadata**:
+  - `Lokasi`: Area/Gudang operasional forklift.
+  - `No. Unit / Serial`: Nomor identifikasi atau serial number unit (misal `FL-01`).
+  - `Merk Unit`: Merk unit forklift (misal `Toyota`, `Nichiyu`, `TCM`).
+  - `Hour Meter 1 (travel)`: Nilai pembacaan HM travel pada saat inspeksi.
+  - `Periode / Bulan`: Periode bulanan pelaksanaan (Jan s/d Des).
+- **12 Kategori Komponen (~45 item pemeriksaan)**:
+  1. Interview User (`In`)
+  2. Hour Meter 1 (travel) (`W`)
+  3. Body & Structure (`Ch&A`, `Ch`, `Ch&C`)
+  4. Drive Unit (`Ch`, `Ch&A`, `Ch&Cl`)
+  5. Wheels (`Ch&A`)
+  6. Steering Control (`Ch`)
+  7. Hydraulics (`Ch&A`, `Ch&Cl`, `Ch`)
+  8. Standing & Seating Platform (`Ch&A`, `Ch`, `Ch&Cl`)
+  9. Mast Assembly (`Ch&L`, `Ch&A`)
+  10. Electrical System (`Ch`)
+  11. Functional Test (`Td`)
+  12. Charger Battery (`Ch&Cl`)
+- **Tindakan Lapangan**: Setiap item menampilkan kode tindakan standar (`In` = Interview, `Cl` = Clean, `W` = Write, `Td` = Test Drive, `A` = Adjust, `Ch` = Check, `L` = Lubricant).
+- **Opsi Kondisi & Temuan Kerusakan**:
+  - Tombol pilihan kondisi: `Baik (V)`, `Rusak (X)`, `Repair (R)`, dan `Tidak Ada (T)`.
+  - Khusus item Rusak / Repair: Wajib bukti foto kamera ber-watermark, penanggung jawab (Internal BES / Vendor Eksternal), dan dokumen tindak lanjut (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, atau `Repair Tanpa Biaya`).
+- **Sinkronisasi Dokumen & PDF**:
+  - Ekspor PDF menyertakan NRA resmi `NRA : SAT/FRM/TS/029_Rev : 02_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, galeri bukti foto dokumentasi lapangan, dan 3 kolom tanda tangan bertingkat.
 
 ### Form FRM_TSM_006: Checklist Hydrant (SAT/FRM/TSM/006_Rev_000_261022)
 - **Dasar Kebijakan**: SAT/KEB/TSM/002 Kebijakan Perawatan Hydrant.

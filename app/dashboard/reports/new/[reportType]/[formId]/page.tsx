@@ -7,6 +7,7 @@ import { FrmTsm007Form } from "@/components/es-dashboard/frm-tsm-007-form"
 import { FrmTs062Form } from "@/components/es-dashboard/frm-ts-062-form"
 import { FrmTs043Form } from "@/components/es-dashboard/frm-ts-043-form"
 import { FrmTs045Form } from "@/components/es-dashboard/frm-ts-045-form"
+import { FrmTs029Form } from "@/components/es-dashboard/frm-ts-029-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
@@ -419,6 +420,20 @@ export default async function DynamicFormPage({
         />
       ) : formId === "frm-ts-045" ? (
         <FrmTs045Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-ts-029" ? (
+        <FrmTs029Form
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}

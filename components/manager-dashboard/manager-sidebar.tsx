@@ -8,9 +8,11 @@ import {
   ChevronRight,
   LayoutDashboard,
   ListChecks,
+  LogOut,
   X,
 } from "lucide-react"
 
+import { logoutAction } from "@/app/login/actions"
 import { cn } from "@/lib/utils"
 
 interface ManagerSidebarProps {
@@ -195,7 +197,7 @@ export function ManagerSidebar({
             {initials}
           </div>
 
-          {!isCollapsed && (
+          {!isCollapsed ? (
             <>
               <div className="min-w-0 flex-1 leading-tight">
                 <span className="block truncate text-xs font-bold text-white">
@@ -205,8 +207,26 @@ export function ManagerSidebar({
                   {userEmail}
                 </span>
               </div>
-              <ChevronRight className="size-4 text-slate-500 shrink-0" />
+              <form action={logoutAction} className="shrink-0">
+                <button
+                  type="submit"
+                  title="Logout dari SPARTA"
+                  className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
+                >
+                  <LogOut className="size-4" />
+                </button>
+              </form>
             </>
+          ) : (
+            <form action={logoutAction} className="mt-2 flex justify-center">
+              <button
+                type="submit"
+                title="Logout dari SPARTA"
+                className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
+              >
+                <LogOut className="size-4" />
+              </button>
+            </form>
           )}
         </div>
       </div>

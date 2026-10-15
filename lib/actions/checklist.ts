@@ -38,6 +38,7 @@ export async function submitChecklistAction(input: {
     baseFormId === "FRM_TSM_003" ||
     baseFormId === "FRM_TSM_005" ||
     baseFormId === "FRM_TS_016" ||
+    baseFormId === "FRM_TS_029" ||
     baseFormId === "FRM_TSM_006" ||
     baseFormId === "FRM_TS_062" ||
     baseFormId === "FRM_TSM_007" ||

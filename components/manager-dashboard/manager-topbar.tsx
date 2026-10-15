@@ -4,6 +4,7 @@ import * as React from "react"
 import { Bell, ChevronDown, Menu, PanelLeft } from "lucide-react"
 
 import type { AreaFilter } from "./mock-data"
+import { ProfileMenu } from "@/components/auth/profile-menu"
 import { cn } from "@/lib/utils"
 
 interface ManagerTopbarProps {
@@ -128,13 +129,8 @@ export function ManagerTopbar({
           <span className="absolute right-2 top-2 size-2 rounded-full bg-[#e11d48] ring-2 ring-white" />
         </button>
 
-        {/* User Initials Avatar Circle */}
-        <div
-          className="flex size-9 items-center justify-center rounded-full bg-slate-100 border border-slate-300 text-xs font-bold text-slate-800"
-          title={`${userRole} (${userEmail})`}
-        >
-          {initials}
-        </div>
+        {/* User Profile Menu with Logout */}
+        <ProfileMenu initials={initials} email={userEmail} />
       </div>
     </header>
   )

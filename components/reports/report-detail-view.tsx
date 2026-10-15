@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils"
 import { triggerReportPdfUploadAction } from "@/lib/actions/checklist"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
 import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
+import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
 import { getChecklistConfig } from "@/lib/checklists/registry"
 
 export interface ReportDetailViewProps {
@@ -110,6 +111,16 @@ function getDefaultItemsForForm(formCode: string): ChecklistPayloadItem[] {
   const code = (formCode || "").toUpperCase()
   if (code.includes("FRM_TS_016")) {
     return PALLET_MOVER_CATEGORIES.flatMap((cat) =>
+      cat.items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        condition: "BAIK" as const,
+        photos: [],
+      }))
+    )
+  }
+  if (code.includes("FRM_TS_029")) {
+    return FORKLIFT_MONTHLY_CATEGORIES.flatMap((cat) =>
       cat.items.map((item) => ({
         id: item.id,
         label: item.label,
@@ -206,10 +217,33 @@ export function ReportDetailView({ report, userRole = "MANAGER" }: ReportDetailV
 
   // Category grouping
   const isPalletMover = (report.formCode || "").toUpperCase().includes("FRM_TS_016")
+  const isForkliftMonthly = (report.formCode || "").toUpperCase().includes("FRM_TS_029")
 
   const groupedCategories = React.useMemo(() => {
     if (isPalletMover) {
       return PALLET_MOVER_CATEGORIES.map((cat) => {
+        const itemIds = new Set(cat.items.map((i) => i.id))
+        const categoryItems = filteredItems.filter((it) => itemIds.has(it.id))
+        const issuesInCat = categoryItems.filter((it) => {
+          const c = (it.condition || "").toUpperCase()
+          return c.includes("RUSAK") || c.includes("REPAIR") || c.includes("URGENT")
+        }).length
+        const photosInCat = categoryItems.reduce(
+          (acc, it) => acc + (Array.isArray(it.photos) ? it.photos.length : 0),
+          0
+        )
+        return {
+          id: cat.id,
+          title: cat.title,
+          items: categoryItems,
+          issuesCount: issuesInCat,
+          photosCount: photosInCat,
+        }
+      }).filter((g) => g.items.length > 0)
+    }
+
+    if (isForkliftMonthly) {
+      return FORKLIFT_MONTHLY_CATEGORIES.map((cat) => {
         const itemIds = new Set(cat.items.map((i) => i.id))
         const categoryItems = filteredItems.filter((it) => itemIds.has(it.id))
         const issuesInCat = categoryItems.filter((it) => {
@@ -243,7 +277,7 @@ export function ReportDetailView({ report, userRole = "MANAGER" }: ReportDetailV
         photosCount: totalPhotosCount,
       },
     ]
-  }, [isPalletMover, filteredItems, itemsWithIssues.length, totalPhotosCount, payload.formName, report.formCode])
+  }, [isPalletMover, isForkliftMonthly, filteredItems, itemsWithIssues.length, totalPhotosCount, payload.formName, report.formCode])
 
   // Handle PDF Sync Action
   async function handleSyncPdf() {

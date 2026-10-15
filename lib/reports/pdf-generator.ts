@@ -49,6 +49,12 @@ export function getNraForForm(formCode: string): { nra: string; refNra: string }
       refNra: "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH",
     }
   }
+  if (code.includes("FRM_TS_029")) {
+    return {
+      nra: "SAT/FRM/TS/029_Rev : 02_161020",
+      refNra: "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH",
+    }
+  }
   if (code.includes("FRM_TSM_002")) {
     return {
       nra: "SAT/FRM/TSM/002_Rev: 01_150821",
