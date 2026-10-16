@@ -5,6 +5,7 @@ import { FRM_TS_016_CONFIG } from "./frm-ts-016"
 import { FRM_TS_022_CONFIG } from "./frm-ts-022"
 import { FRM_TS_029_CONFIG } from "./frm-ts-029"
 import { FRM_TSM_013_CONFIG } from "./frm-tsm-013"
+import { FRM_TS_064_CONFIG } from "./frm-ts-064"
 import type { ChecklistConfig } from "@/components/es-dashboard/shared-checklist-form"
 
 export function getChecklistItem(formCode: string, itemId: string) {
@@ -22,6 +23,7 @@ export function getChecklistConfig(formCode: string): ChecklistConfig | null {
   if (formCode === "FRM_TS_022") return FRM_TS_022_CONFIG
   if (formCode === "FRM_TS_029") return FRM_TS_029_CONFIG
   if (formCode === "FRM_TSM_013") return FRM_TSM_013_CONFIG
+  if (formCode === "FRM_TS_064") return FRM_TS_064_CONFIG
 
   if (formCode === "FRM_TSM_002_REPAIR") {
     return {
@@ -75,6 +77,14 @@ export function getChecklistConfig(formCode: string): ChecklistConfig | null {
     return {
       ...FRM_TSM_013_CONFIG,
       formCode: "FRM_TSM_013_REPAIR",
+      conditionOptions: [...REPAIR_CONDITION_OPTIONS],
+      allowPartial: true,
+    }
+  }
+  if (formCode === "FRM_TS_064_REPAIR") {
+    return {
+      ...FRM_TS_064_CONFIG,
+      formCode: "FRM_TS_064_REPAIR",
       conditionOptions: [...REPAIR_CONDITION_OPTIONS],
       allowPartial: true,
     }

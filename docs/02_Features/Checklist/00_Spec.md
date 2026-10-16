@@ -258,6 +258,57 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Diperiksa oleh: Br Engineering Coord
   - Disetujui oleh: Br Building & Maintenance Mgr
 
+### Form FRM_TS_064: Checklist Table Lifter Monthly (SAT/FRM/TS/064_Rev : 00_161020)
+- **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
+- **Identitas & Metadata**:
+  - `Lokasi`: Area/Lokasi penempatan unit Table Lifter di warehouse.
+  - `No. Unit / Serial`: Nomor identifikasi atau nomor seri unit Table Lifter (misal `TL-01`).
+  - `Merk Unit`: Merk unit Table Lifter (misal `Bishamon`, `OPK`, `Noblelift`).
+  - `Tanggal Pengecekan`: Tanggal pelaksanaan inspeksi.
+  - `Periode / Bulan`: Periode bulanan pelaksanaan (Januari s/d Desember).
+  - `Catatan Umum`: Catatan operasional keseluruhan unit.
+- **Struktur 6 Kategori & 19 Item Pemeriksaan**:
+  1. **1. NOMOR IDENTITY UNIT (1 item)**:
+     - `Nomor Identity Unit` (Tindakan: `Ch & Cl` — Check & Clean)
+  2. **2. PAINTING CONDITION (1 item)**:
+     - `Painting Condition` (Tindakan: `Ch & Cl` — Check & Clean)
+  3. **3. BODY & STRUCTURE (6 item)**:
+     - `A. Bolted Connection & mounting secure` (Tindakan: `Ch & Cl`)
+     - `B. Table Load Condition` (Tindakan: `Ch` — Check)
+     - `C. Vertical Pantograph` (Tindakan: `Ch` — Check)
+     - `D. Shaft pantograph` (Tindakan: `Ch` — Check)
+     - `E. Bushing & Bearing Pantograph` (Tindakan: `Ch & L` — Check & Lubricant)
+     - `F. Gutter / Housing condition` (Tindakan: `Ch & Cl`)
+  4. **4. ELECTRICAL CONDITION (4 item)**:
+     - `A. Panel condition` (Tindakan: `Ch & Cl`)
+     - `B. Electrical connection` (Tindakan: `Ch` — Check)
+     - `C. Switch button` (Tindakan: `Ch` — Check)
+     - `D. Electric motor pump condition` (Tindakan: `Ch & Cl`)
+  5. **5. HYDRAULICS (7 item)**:
+     - `A. Oil Level Reservoir` (Tindakan: `Ch` — Check)
+     - `B. Oil leaks` (Tindakan: `Ch` — Check)
+     - `C. Seal & piston RAM` (Tindakan: `Ch` — Check)
+     - `D. Seal Shaft Hydraulic Pump` (Tindakan: `Ch` — Check)
+     - `E. Shaft & Coupling Connection` (Tindakan: `Ch` — Check)
+     - `F. Hose hydraulic Connection` (Tindakan: `Ch` — Check)
+     - `G. Cylinder RAM condition` (Tindakan: `Ch` — Check)
+  6. **6. FUNCTIONAL TEST (1 item)**:
+     - `A. Operational Test Onload` (Tindakan: `Tr` — Test Running)
+- **Tindakan Lapangan**:
+  - `Ch`: Check
+  - `Cl`: Clean
+  - `L`: Lubricant
+  - `Tr`: Test Running
+- **Opsi Kondisi & Temuan Kerusakan (Standar Equipment)**:
+  - Pilihan kondisi: `Baik (V)` (OK) dan `Rusak (X)` (NOK).
+  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark otomatis `(Table Lifter - {No. Unit})`, penanggung jawab (`BES` / `Eksternal`), catatan kerusakan, dan dropdown form tindak lanjut (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, `REPAIR_TANPA_BIAYA`).
+- **Approval & Verifikasi**:
+  - Dibuat oleh: Branch Maintenance Support
+  - Diperiksa oleh: Branch Maintenance Coordinator
+  - Disetujui oleh: Branch Building & Maintenance Manager
+- **Sinkronisasi Dokumen & PDF**:
+  - Menyertakan NRA `SAT/FRM/TS/064_Rev : 00_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
+
 ### Form FRM_TSM_007: Checklist Pemeliharaan PLTS
 - **Dasar Kebijakan**: SAT/KEB/TSM/003 Kebijakan Perawatan PLTS di HO/Branch/Depo.
 - **Identitas & Metadata**:

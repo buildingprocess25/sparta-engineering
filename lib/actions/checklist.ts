@@ -45,7 +45,8 @@ export async function submitChecklistAction(input: {
     baseFormId === "FRM_TS_043" ||
     baseFormId === "FRM_TS_045" ||
     baseFormId === "FRM_TS_022" ||
-    baseFormId === "FRM_TSM_013"
+    baseFormId === "FRM_TSM_013" ||
+    baseFormId === "FRM_TS_064"
   ) {
     validationResult = validateChecklistPayload(input.payload)
     isSafe = calculateChecklistIsSafe(input.payload)
