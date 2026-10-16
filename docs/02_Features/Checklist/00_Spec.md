@@ -175,6 +175,45 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 - **Sinkronisasi Dokumen & PDF**:
   - Menyertakan NRA `SAT/FRM/TS/022_Rev : 01_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, 12 kategori pemeriksaan, galeri foto temuan, dan 3 kolom approval berjenjang (Dibuat Oleh: Branch Engineering Support, Diketahui oleh: Branch Engineering Coordinator, Diperiksa Oleh: Branch Building & Maintenance Manager).
 
+### Form FRM_TSM_013: Checklist Perawatan Peralatan Water Recycle (SAT/FRM/TSM/013_Rev_000_100123)
+- **Dasar Kebijakan**: SAT/KEB/TSM/007 Kebijakan Perawatan Peralatan Water Recycle Branch/Depo/Bulky.
+- **Identitas & Metadata**:
+  - `Lokasi`: Branch / Depo / Bulky.
+  - `Kode Lokasi`: Kode lokasi fasilitas (misal `JZ01`).
+  - `Tahun & Bulan`: Periode kalender pelaksanaan inspeksi (Januari s/d Desember).
+  - `Tgl Pengecekan`: Tanggal pelaksanaan inspeksi.
+  - `Catatan Standar Dosis Kimia`: Panduan pemakaian bahan kimia tercantum pada header (`Pemakaian Tawas 1 kg / 1 m³` & `Pemakaian Kaporit 1 kg / 1 m³`).
+- **3 Kategori Komponen & 15 Item Pemeriksaan**:
+  1. **Konstruksi / Sipil & Filtrasi (10 Item)**:
+     - `Ruang Filterisasi` (Kondisi: bersih/tidak bocor, Kegiatan: Cek/Kuras).
+     - `Material Filter Ijuk` (Kondisi: bersih/tidak berlumut/tidak tersumbat, Kegiatan: Cek/Ganti).
+     - `Material Filter Arang` (Kondisi: bersih/tidak berlumut/tidak tersumbat, Kegiatan: Cek/Ganti).
+     - `Material Filter Batu Koral` (Kondisi: bersih/tidak berlumut/tidak tersumbat, Kegiatan: Cek/Ganti).
+     - `Ground Tank` (Kondisi: bersih/tidak berlumut/tidak bocor, Kegiatan: Cek/Kuras).
+     - `Toren / Tandon Air` (Kondisi: bersih/tidak berlumut/tidak bocor, Kegiatan: Cek/Kuras).
+     - `Rangka Dudukan Toren / Tandon` (Kondisi: tidak berkarat/tidak patah, Kegiatan: Cek).
+     - `Instalasi Pipa` (Kondisi: tidak bocor/tidak pecah/tidak tersumbat, Kegiatan: Cek).
+     - `Stop Kran` (Kondisi: tidak patah/tidak pecah/tidak tersumbat, Kegiatan: Cek).
+     - `Selang + Jet Shower + Kran` (Kondisi: tidak bocor/tidak patah/tidak tersumbat, Kegiatan: Cek).
+  2. **Mekanikal & Elektrikal (4 Item)**:
+     - `Pompa Air` (Kondisi: hidup dan berfungsi, Kegiatan: Tes).
+     - `Automatis Pompa / Radar` (Kondisi: tidak pecah/tidak patah/tidak terbakar, Kegiatan: Tes).
+     - `Instalasi Listrik` (Kondisi: tidak terbakar/tidak putus/tidak konslet, Kegiatan: Cek).
+     - `Meteran Air` (Kondisi: berfungsi + angka terbaca, Kegiatan: Catat; dilengkapi input angka pembacaan meter / m³).
+  3. **Chemical Treatment (1 Item)**:
+     - `Tawas + Kaporite (Ratio 1:1)` (Kondisi: Pada keranjang jangan sampai habis, tambah bila perlu; Kegiatan: Cek/Ganti).
+- **Opsi Kondisi & Kode Evaluasi**:
+  - `V` : OK (Baik).
+  - `X` : Nok / Rusak (Wajib mengisi section tindak lanjut temuan kerusakan).
+  - Opsi tindakan spesifik perawatan: `Kuras` (pada tangki & ruang filter), `Ganti` (pada media filter & chemical), `Tes` (pada pompa & radar), `Catat` (pada meteran air).
+- **Standar Penanganan Temuan Kerusakan (saat Nok/X dipilih)**:
+  - Penanggung Jawab (AKAN DIHANDLE): Segmented button `BES` (Internal) vs `Eksternal`.
+  - Foto Bukti: Kamera ber-watermark otomatis `(Water Recycle - {Area})` + thumbnail 80x80 dengan floating delete & lightbox preview modal.
+  - Dokumen Tindak Lanjut: Dropdown Select standar (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, `Repair Tanpa Biaya`).
+  - Catatan Kerusakan & Gejala: Textarea terstruktur.
+- **Sinkronisasi Dokumen & PDF**:
+  - Menyertakan NRA `SAT/FRM/TSM/013_Rev_000_100123`, REF NRA `SAT/KEB/TSM/007 Kebijakan Perawatan Peralatan Water Recycle Branch/Depo/Bulky`, 15 item inspeksi, catatan dosis kimia, foto temuan ber-watermark, dan 3 kolom approval bertingkat (Pelaksana: Branch ES, Diketahui: Branch ES Coord, Disetujui: Branch B&M Mgr).
+
 ### Form FRM_TSM_006: Checklist Hydrant (SAT/FRM/TSM/006_Rev_000_261022)
 - **Dasar Kebijakan**: SAT/KEB/TSM/002 Kebijakan Perawatan Hydrant.
 - **Identitas & Metadata**:

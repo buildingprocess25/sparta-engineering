@@ -9,6 +9,7 @@ import { FrmTs043Form } from "@/components/es-dashboard/frm-ts-043-form"
 import { FrmTs045Form } from "@/components/es-dashboard/frm-ts-045-form"
 import { FrmTs029Form } from "@/components/es-dashboard/frm-ts-029-form"
 import { FrmTs022Form } from "@/components/es-dashboard/frm-ts-022-form"
+import { FrmTsm013Form } from "@/components/es-dashboard/frm-tsm-013-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
@@ -115,6 +116,11 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
     eyebrow: "FRM_TS_029",
     title: "Checklist Forklift Monthly",
     description: "Inspeksi bulanan unit forklift.",
+  },
+  "frm-tsm-013": {
+    eyebrow: "FRM_TSM_013",
+    title: "Checklist Water Recycle",
+    description: "Inspeksi pemeliharaan peralatan instalasi daur ulang air (water recycle).",
   },
 }
 
@@ -449,6 +455,20 @@ export default async function DynamicFormPage({
         />
       ) : formId === "frm-ts-022" ? (
         <FrmTs022Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-tsm-013" ? (
+        <FrmTsm013Form
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
