@@ -26,6 +26,7 @@ export type ChecklistPayloadItem = {
   repairFormName?: string
   value?: string
   unitNo?: string
+  followUpCode?: string
 }
 
 export type ChecklistPayload = {
@@ -38,6 +39,9 @@ export type ChecklistPayload = {
 
   unitNo?: string
   unitBrand?: string
+  unitModel?: string
+  capacityKva?: string
+  inspectionDate?: string
   hourMeter?: string
   generalNotes?: string
   jenisHydrant?: string

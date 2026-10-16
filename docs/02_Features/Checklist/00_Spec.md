@@ -142,6 +142,39 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 - **Sinkronisasi Dokumen & PDF**:
   - Ekspor PDF menyertakan NRA resmi `NRA : SAT/FRM/TS/029_Rev : 02_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, galeri bukti foto dokumentasi lapangan, dan 3 kolom tanda tangan bertingkat.
 
+### Form FRM_TS_022: Checklist Genset (SAT/FRM/TS/022_Rev : 01_161020)
+- **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
+- **Identitas & Metadata**:
+  - `Branch / Area`: Lokasi branch atau area penempatan unit genset.
+  - `Tgl Pengecekan`: Tanggal pelaksanaan inspeksi genset.
+  - `Merk`: Merk unit mesin genset (misal `Cummins`, `Perkins`, `Yanmar`, `CAT`).
+  - `Model`: Model unit genset (misal `Silent Type 150 kVA`, `Open Type`).
+  - `kVa`: Kapasitas daya genset (misal `150 kVa`, `250 kVa`).
+  - `Catatan Umum`: Catatan kondisi mesin dan operasional genset saat inspeksi.
+- **12 Kategori Komponen & Pemeriksaan**:
+  1. `OIL LEVEL`: A. Check level oli, B. Check kekentalan oli.
+  2. `FUEL SYSTEM`: A. Check level tangki bahan bakar, B. Check leaks (selang/pipa).
+  3. `AIR CLEANER INDICATOR`: A. Check air cleaner indicator.
+  4. `BELTS`: A. Check keretakan & tegangan tali kipas.
+  5. `COOLING SYSTEM`: A. Check coolant level.
+  6. `BATTERIES`: A. Check level air accu, B. Check PH air accu, C. Clean terminal battery, D. Check voltage.
+  7. `GENERATOR`: A. Check & clean.
+  8. `CONTROL PANEL`: A. Check meter reading (Amp, Voltage, etc) & wiring.
+  9. `WARMING UP GENSET`: A. Time duration 10 minute.
+  10. `CHECK VOLTAGE BATTERY / ONLOAD`: A. 24 Volt (Min 20 Volt) / 12 Volt (Min 10 Volt).
+  11. `TEST ATS SYSTEM`: A. Simulasi listrik PLN Padam.
+  12. `AROUND INSPECTION`: A. Inspect engine, radiator, etc.
+- **Opsi Kondisi & Kode Tindak Lanjut**:
+  - Pilihan kondisi: `Baik (V)` (Ok) dan `Rusak (X)` (Not good), serta `Tidak Ada (T)`.
+  - Khusus item Rusak (`X`):
+    - **Kode Tindak Lanjut (SOP TS/011)**: Pilihan tombol `A` (Adjust or Add), `C` (Clean), `R` (Repair), `U` (Urgent).
+    - **Penanggung Jawab (AKAN DIHANDLE)**: Segmented control konsisten `BES` (Internal) atau `Eksternal` (Vendor).
+    - **Dokumen Tindak Lanjut**: Pilihan Select standar (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, atau `Repair Tanpa Biaya`).
+    - **Keterangan / Catatan**: Textarea catatan temuan kerusakan & gejala.
+    - **Foto Bukti**: Upload foto kamera ber-watermark dengan thumbnail galeri 80x80, tombol hapus, dan modal lightbox preview.
+- **Sinkronisasi Dokumen & PDF**:
+  - Menyertakan NRA `SAT/FRM/TS/022_Rev : 01_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, 12 kategori pemeriksaan, galeri foto temuan, dan 3 kolom approval berjenjang (Dibuat Oleh: Branch Engineering Support, Diketahui oleh: Branch Engineering Coordinator, Diperiksa Oleh: Branch Building & Maintenance Manager).
+
 ### Form FRM_TSM_006: Checklist Hydrant (SAT/FRM/TSM/006_Rev_000_261022)
 - **Dasar Kebijakan**: SAT/KEB/TSM/002 Kebijakan Perawatan Hydrant.
 - **Identitas & Metadata**:

@@ -48,7 +48,7 @@ export const FORM_CODE_TO_CONFIG: Record<string, ChecklistFormConfig> = {
   FRM_TS_022: {
     id: "frm-ts-022",
     title: "Checklist Genset",
-    description: "SAT/FRM/TS/022",
+    description: "SAT/FRM/TS/022_Rev : 01_161020",
   },
   FRM_TSM_001: {
     id: "frm-tsm-001",

@@ -4,22 +4,53 @@ import * as React from "react"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react"
 
-export function WorkPermitCard() {
+type WorkPermitCardProps = {
+  userNik?: string
+}
+
+export function WorkPermitCard({ userNik }: WorkPermitCardProps = {}) {
   const [hasWorkPermit, setHasWorkPermit] = React.useState(false)
 
   React.useEffect(() => {
     try {
       if (typeof window !== "undefined") {
-        const permit = window.sessionStorage.getItem("sparta_work_permit")
-        const params = new URLSearchParams(window.location.search)
-        if (permit || params.get("permit") === "done" || params.get("workPermit") === "fill") {
-          setHasWorkPermit(true)
+        const permitRaw = userNik
+          ? window.sessionStorage.getItem(`sparta_work_permit_${userNik}`)
+          : window.sessionStorage.getItem("sparta_work_permit")
+
+        if (permitRaw) {
+          try {
+            const parsed = JSON.parse(permitRaw)
+            if (!userNik || !parsed.userNik || parsed.userNik === userNik) {
+              setHasWorkPermit(true)
+              return
+            }
+          } catch {
+            // ignore
+          }
         }
+
+        if (userNik) {
+          const fallback = window.sessionStorage.getItem("sparta_work_permit")
+          if (fallback) {
+            try {
+              const parsed = JSON.parse(fallback)
+              if (parsed.userNik === userNik) {
+                setHasWorkPermit(true)
+                return
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        setHasWorkPermit(false)
       }
     } catch {
       // ignore
     }
-  }, [])
+  }, [userNik])
 
   return (
     <section id="work-permit-section" className="mt-8 scroll-mt-20">

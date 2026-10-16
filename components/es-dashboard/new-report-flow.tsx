@@ -6,22 +6,59 @@ import { CheckCircle2, ClipboardCheck, ShieldAlert, Wrench } from "lucide-react"
 
 import { ReportChoiceCard } from "@/components/es-dashboard/report-choice-card"
 
-export function NewReportFlow() {
+type NewReportFlowProps = {
+  userNik?: string
+}
+
+export function NewReportFlow({ userNik }: NewReportFlowProps = {}) {
   const [hasWorkPermit, setHasWorkPermit] = React.useState(false)
 
   React.useEffect(() => {
     try {
       if (typeof window !== "undefined") {
-        const permit = window.sessionStorage.getItem("sparta_work_permit")
-        const params = new URLSearchParams(window.location.search)
-        if (permit || params.get("permit") === "done" || params.get("workPermit") === "fill") {
-          setHasWorkPermit(true)
+        const permitRaw = userNik
+          ? window.sessionStorage.getItem(`sparta_work_permit_${userNik}`)
+          : window.sessionStorage.getItem("sparta_work_permit")
+
+        if (permitRaw) {
+          try {
+            const parsed = JSON.parse(permitRaw)
+            if (!userNik || !parsed.userNik || parsed.userNik === userNik) {
+              setHasWorkPermit(true)
+              return
+            }
+          } catch {
+            // ignore
+          }
         }
+
+        if (userNik) {
+          const fallback = window.sessionStorage.getItem("sparta_work_permit")
+          if (fallback) {
+            try {
+              const parsed = JSON.parse(fallback)
+              if (parsed.userNik === userNik) {
+                setHasWorkPermit(true)
+                return
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        const params = new URLSearchParams(window.location.search)
+        if (params.get("permit") === "done") {
+          setHasWorkPermit(true)
+          return
+        }
+
+        setHasWorkPermit(false)
       }
     } catch {
       // ignore
     }
-  }, [])
+  }, [userNik])
 
   return (
     <div className="flex flex-col gap-5 rounded-2xl border border-[#dedede] bg-white p-4 shadow-sm">

@@ -17,12 +17,14 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type FrmMed003FormProps = {
+  userNik?: string
   defaultUserName?: string
   defaultUserBranch?: string
   nextPath?: string
 }
 
 export function FrmMed003Form({
+  userNik = "",
   defaultUserName = "",
   defaultUserBranch = "",
   nextPath,
@@ -127,6 +129,7 @@ export function FrmMed003Form({
 
     // Save permit to sessionStorage for report binding
     const permitData = {
+      userNik,
       formNo: "SAT/FRM/MED/003_Rev:000_180225",
       kegiatan,
       lokasi,
@@ -150,6 +153,9 @@ export function FrmMed003Form({
     try {
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem("sparta_work_permit", JSON.stringify(permitData))
+        if (userNik) {
+          window.sessionStorage.setItem(`sparta_work_permit_${userNik}`, JSON.stringify(permitData))
+        }
       }
     } catch {
       // ignore session storage error

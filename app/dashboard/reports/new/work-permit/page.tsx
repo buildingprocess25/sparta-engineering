@@ -40,6 +40,7 @@ export default async function WorkPermitPage({
     >
       <Suspense fallback={<div className="p-4 text-center text-sm text-gray-500">Memuat formulir...</div>}>
         <FrmMed003Form
+          userNik={typeof session?.userId === "string" ? session.userId : undefined}
           defaultUserName={userName}
           defaultUserBranch={branchName}
           nextPath={params.next}

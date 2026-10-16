@@ -33,6 +33,7 @@ import { triggerReportPdfUploadAction } from "@/lib/actions/checklist"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
 import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
 import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
+import { GENSET_CATEGORIES } from "@/lib/checklists/frm-ts-022"
 import { getChecklistConfig } from "@/lib/checklists/registry"
 
 export interface ReportDetailViewProps {
@@ -121,6 +122,16 @@ function getDefaultItemsForForm(formCode: string): ChecklistPayloadItem[] {
   }
   if (code.includes("FRM_TS_029")) {
     return FORKLIFT_MONTHLY_CATEGORIES.flatMap((cat) =>
+      cat.items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        condition: "BAIK" as const,
+        photos: [],
+      }))
+    )
+  }
+  if (code.includes("FRM_TS_022")) {
+    return GENSET_CATEGORIES.flatMap((cat) =>
       cat.items.map((item) => ({
         id: item.id,
         label: item.label,
@@ -218,6 +229,7 @@ export function ReportDetailView({ report, userRole = "MANAGER" }: ReportDetailV
   // Category grouping
   const isPalletMover = (report.formCode || "").toUpperCase().includes("FRM_TS_016")
   const isForkliftMonthly = (report.formCode || "").toUpperCase().includes("FRM_TS_029")
+  const isGenset = (report.formCode || "").toUpperCase().includes("FRM_TS_022")
 
   const groupedCategories = React.useMemo(() => {
     if (isPalletMover) {
@@ -264,6 +276,28 @@ export function ReportDetailView({ report, userRole = "MANAGER" }: ReportDetailV
       }).filter((g) => g.items.length > 0)
     }
 
+    if (isGenset) {
+      return GENSET_CATEGORIES.map((cat) => {
+        const itemIds = new Set(cat.items.map((i) => i.id))
+        const categoryItems = filteredItems.filter((it) => itemIds.has(it.id))
+        const issuesInCat = categoryItems.filter((it) => {
+          const c = (it.condition || "").toUpperCase()
+          return c.includes("RUSAK") || c.includes("REPAIR") || c.includes("URGENT")
+        }).length
+        const photosInCat = categoryItems.reduce(
+          (acc, it) => acc + (Array.isArray(it.photos) ? it.photos.length : 0),
+          0
+        )
+        return {
+          id: cat.id,
+          title: cat.title,
+          items: categoryItems,
+          issuesCount: issuesInCat,
+          photosCount: photosInCat,
+        }
+      }).filter((g) => g.items.length > 0)
+    }
+
     // Default grouping for general forms
     const formConfig = getChecklistConfig(report.formCode || "")
     const formTitle = formConfig?.formName || payload.formName || `FORM PEMERIKSAAN ${report.formCode || ""}`
@@ -277,7 +311,7 @@ export function ReportDetailView({ report, userRole = "MANAGER" }: ReportDetailV
         photosCount: totalPhotosCount,
       },
     ]
-  }, [isPalletMover, isForkliftMonthly, filteredItems, itemsWithIssues.length, totalPhotosCount, payload.formName, report.formCode])
+  }, [isPalletMover, isForkliftMonthly, isGenset, filteredItems, itemsWithIssues.length, totalPhotosCount, payload.formName, report.formCode])
 
   // Handle PDF Sync Action
   async function handleSyncPdf() {

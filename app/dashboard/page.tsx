@@ -56,8 +56,8 @@ export default async function DashboardPage(props: DashboardPageProps) {
         <DashboardShell>
           <DashboardHeader email={session?.email as string} role={role} />
           <WelcomePanel user={userContext} />
-          <WorkPermitCard />
-          <TodoListPanel todoData={todoData} />
+          <WorkPermitCard userNik={session?.userId as string} />
+          <TodoListPanel todoData={todoData} userNik={session?.userId as string} />
           <ReportFlow />
           <ProgressSummary
             total={todoData.total}

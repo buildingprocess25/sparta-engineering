@@ -25,9 +25,10 @@ type ObjectTypeFilter = "EQUIPMENT" | "ROOM"
 
 interface TodoListPanelProps {
   todoData: UserTodoSummary
+  userNik?: string
 }
 
-export function TodoListPanel({ todoData }: TodoListPanelProps) {
+export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
   const [activeTab, setActiveTab] = React.useState<FilterTab>("PENDING")
   const [selectedObjectType, setSelectedObjectType] = React.useState<ObjectTypeFilter>("EQUIPMENT")
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -36,16 +37,43 @@ export function TodoListPanel({ todoData }: TodoListPanelProps) {
   React.useEffect(() => {
     try {
       if (typeof window !== "undefined") {
-        const permit = window.sessionStorage.getItem("sparta_work_permit")
-        const params = new URLSearchParams(window.location.search)
-        if (permit || params.get("permit") === "done" || params.get("workPermit") === "fill") {
-          setHasWorkPermit(true)
+        const permitRaw = userNik
+          ? window.sessionStorage.getItem(`sparta_work_permit_${userNik}`)
+          : window.sessionStorage.getItem("sparta_work_permit")
+
+        if (permitRaw) {
+          try {
+            const parsed = JSON.parse(permitRaw)
+            if (!userNik || !parsed.userNik || parsed.userNik === userNik) {
+              setHasWorkPermit(true)
+              return
+            }
+          } catch {
+            // ignore
+          }
         }
+
+        if (userNik) {
+          const fallback = window.sessionStorage.getItem("sparta_work_permit")
+          if (fallback) {
+            try {
+              const parsed = JSON.parse(fallback)
+              if (parsed.userNik === userNik) {
+                setHasWorkPermit(true)
+                return
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        setHasWorkPermit(false)
       }
     } catch {
       // ignore
     }
-  }, [])
+  }, [userNik])
 
   const { total, pending, completed, overdue, tasks } = todoData
 

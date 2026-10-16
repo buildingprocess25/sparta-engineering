@@ -60,6 +60,15 @@ export function ProfileMenu({ initials, email }: ProfileMenuProps) {
           <form action={logoutAction} className="border-t border-[#eeeeee]">
             <button
               type="submit"
+              onClick={() => {
+                try {
+                  if (typeof window !== "undefined") {
+                    window.sessionStorage.clear()
+                  }
+                } catch {
+                  // ignore
+                }
+              }}
               className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
             >
               <LogOut className="size-4" />

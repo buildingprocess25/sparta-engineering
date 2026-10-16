@@ -18,7 +18,19 @@ export function LocalLoginForm() {
   )
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form
+      action={formAction}
+      onSubmit={() => {
+        try {
+          if (typeof window !== "undefined") {
+            window.sessionStorage.clear()
+          }
+        } catch {
+          // ignore
+        }
+      }}
+      className="flex flex-col gap-5"
+    >
       <div className="flex flex-col gap-2">
         <label
           htmlFor="email"
