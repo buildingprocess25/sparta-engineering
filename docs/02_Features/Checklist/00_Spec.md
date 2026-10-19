@@ -352,6 +352,109 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 - **Sinkronisasi Dokumen & PDF**:
   - Menyertakan NRA `SAT/FRM/TS/063_Rev : 00_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
 
+### Form FRM_TS_041: Checklist Conveyor (SAT/FRM/TS/041_Rev:01_161020)
+- **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
+- **Divisi & Departemen**: Division : Property & Small Business Development | Departemen : Building & Maintenance.
+- **Identitas & Metadata**:
+  - `Warehouse`: Nama gudang / area penempatan unit conveyor (misal `WH Balaraja`).
+  - `Tgl Pengecekan`: Tanggal mulai pelaksanaan inspeksi conveyor.
+  - `Tgl Selesai`: Tanggal selesai checklist conveyor.
+  - `Periode / Bulan`: Periode checklist bulanan (`MONTHLY`).
+  - `Catatan Tambahan (Note)`: Catatan umum hasil pemeriksaan operasional conveyor.
+- **Struktur 11 Kategori & 66 Item Pemeriksaan**:
+  1. **1. MOTOR AC ( TANGENTIAL CHAIN) (5 item)**:
+     - `A. Bolted connection - Check & mounting Secure`
+     - `B. Gear & chain - Condition`
+     - `B. Gear & chain - Clean & lubricate`
+     - `C. Roller active & free roller`
+     - `D. Main switch - Operation & condition`
+  2. **2. MOTOR AC ( TEETHBELT) (4 item)**:
+     - `A. Bolted connection - Check & mounting Secure`
+     - `B. Pulley & teethbelt condition`
+     - `C. Rolleractive - Check & Cleaning`
+     - `D. Main switch - Operation & condition`
+  3. **3. MOTOR DC (8 item)**:
+     - `A. Operation & function - Check & clean`
+     - `B. Bolted connection - Check & mounting Secure`
+     - `C. Driver card - Check & mounting Secure`
+     - `C. Driver card - Operation & function`
+     - `C. Driver card - Check & clean`
+     - `D. Jungtion box panel - Power suply condition`
+     - `D. Jungtion box panel - Check & Cleaning`
+     - `D. Jungtion box panel - Cooling fan check & clean`
+  4. **4. EMPTY CASE CONVEYOR (6 item)**:
+     - `A. Driveunit (Motor AC) - Check & mounting Secure`
+     - `B. Plain chain - Check & clean`
+     - `C. Guiderail - Check & mounting Secure`
+     - `D. Mainswitch - Operation & condition`
+     - `E. Push Button Switch Condition`
+     - `F. Emergency Switch Condition`
+  5. **5. BELT INCLINE/BELTSPIRAL (4 item)**:
+     - `A. Motor AC - Operation & condition`
+     - `A. Motor AC - Check & clean`
+     - `B. Belt - Operation & condition`
+     - `B. Belt - Check & clean`
+  6. **6. DECLINESPIRAL (3 item)**:
+     - `A. Guiderail - Check & mounting Secure`
+     - `B. Sliderail - Check & mounting Secure`
+     - `C. Roller gravity - Check & mounting Secure`
+  7. **7. MAIN PANEL (11 item)**:
+     - `A. Contactor, Circuit Breaker, Relay - Operation & condition`
+     - `B. Inverter - Operation & condition`
+     - `C. Power Suply condition`
+     - `D. PLC condition`
+     - `E. Condition, connection - Powercable`
+     - `E. Condition, connection - All wiring cable`
+     - `E. Condition, connection - All wiring connectors`
+     - `F. Cooling fan`
+     - `G. Push Button Switch Condition`
+     - `H. Emergency Switch Condition`
+     - `I. Interactive Display - Operation & condition`
+  8. **8. SORTINGSYSTEM (11 item)**:
+     - `A. Stopper - Bolted connection`
+     - `A. Stopper - Mounting secure`
+     - `B. Chaintransfer / popup - Operation & condition`
+     - `B. Chaintransfer / popup - Mounting secure`
+     - `C. Motor chain transfer / motor pop up - Operation & condition`
+     - `C. Motor chain transfer / motor pop up - Mounting secure`
+     - `D. Solenoid valve - Operation & condition`
+     - `D. Solenoid valve - Check & clean`
+     - `D. Solenoid valve - Mounting secure`
+     - `E. Foto Cell - Operation & function`
+     - `F. Magnetic Switch - Operation & function`
+  9. **9. DISTANCESYSTEM (4 item)**:
+     - `A. Sensor & reflector - Operation & condition`
+     - `A. Sensor & reflector - Mounting secure`
+     - `B. Barcode scanner - Operation & condition`
+     - `B. Barcode scanner - Mounting secure`
+  10. **10. LIFTUPGATE (4 item)**:
+      - `A. Bolted connection - Check & mounting Secure`
+      - `B. Polycord Condition`
+      - `C. Foto Cell - Operation & function`
+      - `D. Roller active - Check & clean`
+  11. **11. AIRCOMPRESOR (6 item)**:
+      - `A. Check Oil Leak`
+      - `B. Check Air Leak`
+      - `C. Check Motor Condition`
+      - `D. Check Vbelt Condition`
+      - `E. Water parging`
+      - `F. Check Air Pressure`
+- **Keterangan Kondisi & Opsi Tindakan**:
+  - `V`: OK (Kondisi Baik)
+  - `X`: Not Good (Rusak / NOK)
+  - `A`: Adjust (Penyetelan)
+  - `R`: Repair (Perbaikan)
+  - `U`: Urgent (Mendesak)
+  - `N`: None (Tidak Ada)
+- **Penanganan Kondisi Rusak / Not Good (X)**:
+  - Pelaporan temuan kerusakan wajib menyertakan foto bukti kamera ber-watermark otomatis `({Warehouse} - Conveyor)`, penanggung jawab (`BES` / `Eksternal`), catatan kerusakan, dan formulir tindak lanjut (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, atau `REPAIR_TANPA_BIAYA`).
+- **Approval & Verifikasi**:
+  - Dibuat oleh: Br. Technical Support
+  - Diperiksa oleh: Br. Coord TS
+  - Disetujui oleh: Br. B&M Mgr
+- **Sinkronisasi Dokumen & PDF**:
+  - Menyertakan NRA `SAT/FRM/TS/041_Rev:01_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
+
 ### Form FRM_TSM_008: Checklist Perawatan Peralatan Unit Sewa di Warehouse/Depo/Bulky (SAT/FRM/TSM/008_Rev_000_111122)
 - **Dasar Kebijakan**: SAT/KEB/TSM/004 Kebijakan Pemeliharaan Peralatan Unit Sewa di Warehouse/Depo/Bulky.
 - **Identitas & Metadata**:
