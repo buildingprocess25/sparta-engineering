@@ -309,6 +309,49 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 - **Sinkronisasi Dokumen & PDF**:
   - Menyertakan NRA `SAT/FRM/TS/064_Rev : 00_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
 
+### Form FRM_TS_063: Checklist Exhaust Fan (SAT/FRM/TS/063_Rev : 00_161020)
+- **Dasar Kebijakan**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
+- **Identitas & Metadata**:
+  - `Lokasi`: Area/Ruangan tempat unit Exhaust Fan terpasang (misal: `Area Charger Battery`, `Gudang Bulky`).
+  - `No. Unit / Serial`: Nomor registrasi/unit unit exhaust fan (misal: `EF-01`).
+  - `Merk Unit`: Brand/pabrikan unit exhaust fan (misal: `KDK`, `CKE`, `Kruger`).
+  - `Tahun`: Tahun pelaksanaan inspeksi berkala (misal `2026`).
+  - `Periode / Bulan`: Periode bulanan pelaksanaan (`Januari` s/d `Desember`).
+- **Struktur 4 Kategori & 14 Item Pemeriksaan**:
+  1. **1. NOMOR IDENTITY UNIT (1 item)**:
+     - `1. Nomor Identity Unit` (Tindakan: `Ch` — Check)
+  2. **2. PAINTING CONDITION (1 item)**:
+     - `2. Painting Condition` (Tindakan: `Ch` — Check)
+  3. **3. ALL CONDITION (11 item)**:
+     - `A. Electrical & Conection` (Tindakan: `Ch` — Check)
+     - `B. Mounting & Frame Motor` (Tindakan: `Ch&Cl` — Check & Clean)
+     - `C. Motor Electric` (Tindakan: `Ch&Cl` — Check & Clean)
+     - `D. Fan Blade & shaft` (Tindakan: `Ch&Cl` — Check & Clean)
+     - `E. Bearing & Lubricant` (Tindakan: `Ch` — Check)
+     - `F. Fan Belt Conection ( optional )` (Tindakan: `Adj` — Adjust)
+     - `G. Pully Conection` (Tindakan: `Ch` — Check)
+     - `H. Lubricant` (Tindakan: `Ch` — Check)
+     - `I. Speed Condition` (Tindakan: `Ch` — Check)
+     - `J. Front Grill Protection` (Tindakan: `Ch&Cl` — Check & Clean)
+     - `K. Back swing protection` (Tindakan: `Ch&Cl` — Check & Clean)
+  4. **4. OPERATIONAL TEST (1 item)**:
+     - `A. Operational Test Runing` (Tindakan: `Tr` — Test Running)
+- **Tindakan Lapangan**:
+  - `Ch`: Check (Pemeriksaan fisik/visual)
+  - `Cl`: Clean (Pembersihan)
+  - `Ch&Cl`: Check & Clean (Pemeriksaan dan Pembersihan)
+  - `Adj`: Adjust (Penyetelan)
+  - `Tr`: Test Running (Uji coba operasional putaran kipas)
+- **Opsi Kondisi & Temuan Kerusakan (Standar Equipment)**:
+  - Pilihan kondisi: `Baik (V)` dan `Rusak (X)`.
+  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark otomatis `({Lokasi} - Exhaust Fan {No. Unit})`, penanggung jawab (`BES` / `Eksternal`), catatan temuan kerusakan, dan dropdown form tindak lanjut (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, `REPAIR_TANPA_BIAYA`).
+- **Approval & Verifikasi**:
+  - Dibuat oleh: Branch Maintenance Support
+  - Diperiksa oleh: Branch Maintenance Coordinator
+  - Disetujui oleh: Branch Building & Maintenance Manager
+- **Sinkronisasi Dokumen & PDF**:
+  - Menyertakan NRA `SAT/FRM/TS/063_Rev : 00_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
+
 ### Form FRM_TSM_008: Checklist Perawatan Peralatan Unit Sewa di Warehouse/Depo/Bulky (SAT/FRM/TSM/008_Rev_000_111122)
 - **Dasar Kebijakan**: SAT/KEB/TSM/004 Kebijakan Pemeliharaan Peralatan Unit Sewa di Warehouse/Depo/Bulky.
 - **Identitas & Metadata**:

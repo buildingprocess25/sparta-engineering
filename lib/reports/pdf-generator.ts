@@ -103,6 +103,12 @@ export function getNraForForm(formCode: string): { nra: string; refNra: string }
       refNra: "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Hand Pallet",
     }
   }
+  if (code.includes("FRM_TS_063")) {
+    return {
+      nra: "SAT/FRM/TS/063_Rev : 00_161020",
+      refNra: "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH",
+    }
+  }
   return {
     nra: `SAT/FRM/${code || "ENG"}_Rev: 01`,
     refNra: "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment",
