@@ -20,7 +20,8 @@ import {
 import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service"
 import { cn } from "@/lib/utils"
 
-type FilterTab = "ALL" | "PENDING" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMESTER" | "COMPLETED"
+type StatusFilter = "ALL" | "PENDING" | "OVERDUE" | "COMPLETED"
+type PeriodFilter = "WEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMESTER"
 type ObjectTypeFilter = "EQUIPMENT" | "ROOM"
 
 interface TodoListPanelProps {
@@ -29,7 +30,8 @@ interface TodoListPanelProps {
 }
 
 export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
-  const [activeTab, setActiveTab] = React.useState<FilterTab>("PENDING")
+  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("PENDING")
+  const [selectedPeriod, setSelectedPeriod] = React.useState<PeriodFilter | null>(null)
   const [selectedObjectType, setSelectedObjectType] = React.useState<ObjectTypeFilter>("EQUIPMENT")
   const [searchQuery, setSearchQuery] = React.useState("")
   const [hasWorkPermit, setHasWorkPermit] = React.useState(false)
@@ -93,25 +95,24 @@ export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
     [tasks],
   )
 
-  // Filter tasks based on selectedObjectType, activeTab and searchQuery
+  // Filter tasks based on selectedObjectType, statusFilter, selectedPeriod and searchQuery
   const filteredTasks = React.useMemo(() => {
     return tasks.filter((task) => {
       // Object type filter (Equipment vs Room)
       if (task.objectType !== selectedObjectType) return false
 
-      // Tab filter
-      if (activeTab === "PENDING") {
+      // Status filter (from top metric cards)
+      if (statusFilter === "PENDING") {
         if (task.status === "COMPLETED") return false
-      } else if (activeTab === "COMPLETED") {
+      } else if (statusFilter === "COMPLETED") {
         if (task.status !== "COMPLETED") return false
-      } else if (activeTab === "WEEKLY") {
-        if (task.period !== "WEEKLY") return false
-      } else if (activeTab === "MONTHLY") {
-        if (task.period !== "MONTHLY") return false
-      } else if (activeTab === "QUARTERLY") {
-        if (task.period !== "QUARTERLY") return false
-      } else if (activeTab === "SEMESTER") {
-        if (task.period !== "SEMESTER") return false
+      } else if (statusFilter === "OVERDUE") {
+        if (task.status !== "OVERDUE") return false
+      }
+
+      // Period filter (from period pill buttons)
+      if (selectedPeriod) {
+        if (task.period !== selectedPeriod) return false
       }
 
       // Search query filter
@@ -125,7 +126,7 @@ export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
 
       return true
     })
-  }, [tasks, selectedObjectType, activeTab, searchQuery])
+  }, [tasks, selectedObjectType, statusFilter, selectedPeriod, searchQuery])
 
   const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
@@ -150,39 +151,75 @@ export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
             </p>
           </div>
 
-          {/* Quick Metrics Cards */}
+          {/* Quick Metrics Cards (Clickable filters) */}
           <div className="mt-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="flex items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("ALL")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-left transition-all cursor-pointer",
+                statusFilter === "ALL"
+                  ? "bg-white/20 border-white/50 ring-1 ring-white/40 shadow-xs"
+                  : "bg-white/5 border-white/10 hover:bg-white/10"
+              )}
+            >
               <Layers className="size-3.5 text-slate-400 shrink-0" />
               <div className="min-w-0">
                 <p className="text-[10px] font-medium text-slate-300 leading-tight whitespace-nowrap">Total</p>
                 <p className="text-xs font-bold text-white leading-tight">{total}</p>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-2.5 py-1.5 border border-amber-500/20">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("PENDING")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-left transition-all cursor-pointer",
+                statusFilter === "PENDING"
+                  ? "bg-amber-500/25 border-amber-400 ring-1 ring-amber-400/50 shadow-xs"
+                  : "bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/15"
+              )}
+            >
               <Clock className="size-3.5 text-amber-400 shrink-0" />
               <div className="min-w-0">
                 <p className="text-[10px] font-medium text-amber-300 leading-tight whitespace-nowrap">Pending</p>
                 <p className="text-xs font-bold text-amber-400 leading-tight">{pending}</p>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-2 rounded-lg bg-rose-500/10 px-2.5 py-1.5 border border-rose-500/20">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("OVERDUE")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-left transition-all cursor-pointer",
+                statusFilter === "OVERDUE"
+                  ? "bg-rose-500/25 border-rose-400 ring-1 ring-rose-400/50 shadow-xs"
+                  : "bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/15"
+              )}
+            >
               <AlertCircle className="size-3.5 text-rose-400 shrink-0" />
               <div className="min-w-0">
                 <p className="text-[10px] font-medium text-rose-300 leading-tight whitespace-nowrap">Terlewat</p>
                 <p className="text-xs font-bold text-rose-400 leading-tight">{overdue}</p>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 border border-emerald-500/20">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("COMPLETED")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-left transition-all cursor-pointer",
+                statusFilter === "COMPLETED"
+                  ? "bg-emerald-500/25 border-emerald-400 ring-1 ring-emerald-400/50 shadow-xs"
+                  : "bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/15"
+              )}
+            >
               <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
               <div className="min-w-0">
                 <p className="text-[10px] font-medium text-emerald-300 leading-tight whitespace-nowrap">Selesai</p>
                 <p className="text-xs font-bold text-emerald-400 leading-tight">{completed}</p>
               </div>
-            </div>
+            </button>
           </div>
 
           {/* Progress Bar (Placed below the 4 metric cards) */}
@@ -205,113 +242,86 @@ export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
 
         {/* Filter Tabs & Search Bar */}
         <div className="border-b border-slate-100 bg-slate-50/50 p-4 space-y-3">
-          {/* Row 1: Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("PENDING")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
-                activeTab === "PENDING"
-                  ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 shadow-xs"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium",
+          {/* Row 1: Filter Periode (Mingguan, Bulanan, 3 Bulanan, 6 Bulanan) */}
+          {(weeklyCount > 0 || monthlyCount > 0 || quarterlyCount > 0 || semesterCount > 0) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {weeklyCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedPeriod((prev) =>
+                      prev === "WEEKLY" ? null : "WEEKLY"
+                    )
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
+                    selectedPeriod === "WEEKLY"
+                      ? "bg-slate-900 text-white font-bold shadow-xs"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium"
+                  )}
+                >
+                  Mingguan ({weeklyCount})
+                </button>
               )}
-            >
-              <Clock className="size-3.5" />
-              Pending ({pending + overdue})
-            </button>
 
-            {/* Tab Mingguan */}
-            {weeklyCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("WEEKLY")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
-                  activeTab === "WEEKLY"
-                    ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 shadow-xs"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium",
-                )}
-              >
-                Mingguan ({weeklyCount})
-              </button>
-            )}
-
-            {/* Tab Bulanan */}
-            {monthlyCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("MONTHLY")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
-                  activeTab === "MONTHLY"
-                    ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 shadow-xs"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium",
-                )}
-              >
-                Bulanan ({monthlyCount})
-              </button>
-            )}
-
-            {/* Tab 3 Bulanan jika user punya penugasan 3 bulanan */}
-            {quarterlyCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("QUARTERLY")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
-                  activeTab === "QUARTERLY"
-                    ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 shadow-xs"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium",
-                )}
-              >
-                3 Bulanan ({quarterlyCount})
-              </button>
-            )}
-
-            {/* Tab 6 Bulanan jika user punya penugasan 6 bulanan */}
-            {semesterCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("SEMESTER")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
-                  activeTab === "SEMESTER"
-                    ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 shadow-xs"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium",
-                )}
-              >
-                6 Bulanan ({semesterCount})
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("COMPLETED")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
-                activeTab === "COMPLETED"
-                  ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 shadow-xs"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium",
+              {monthlyCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedPeriod((prev) =>
+                      prev === "MONTHLY" ? null : "MONTHLY"
+                    )
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
+                    selectedPeriod === "MONTHLY"
+                      ? "bg-slate-900 text-white font-bold shadow-xs"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium"
+                  )}
+                >
+                  Bulanan ({monthlyCount})
+                </button>
               )}
-            >
-              <CheckCircle2 className="size-3.5" />
-              Selesai ({completed})
-            </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("ALL")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
-                activeTab === "ALL"
-                  ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 shadow-xs"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium",
+              {quarterlyCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedPeriod((prev) =>
+                      prev === "QUARTERLY" ? null : "QUARTERLY"
+                    )
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
+                    selectedPeriod === "QUARTERLY"
+                      ? "bg-slate-900 text-white font-bold shadow-xs"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium"
+                  )}
+                >
+                  3 Bulanan ({quarterlyCount})
+                </button>
               )}
-            >
-              Semua ({total})
-            </button>
-          </div>
+
+              {semesterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedPeriod((prev) =>
+                      prev === "SEMESTER" ? null : "SEMESTER"
+                    )
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
+                    selectedPeriod === "SEMESTER"
+                      ? "bg-slate-900 text-white font-bold shadow-xs"
+                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:text-slate-900 font-medium"
+                  )}
+                >
+                  6 Bulanan ({semesterCount})
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Row 2: Segmented Control (Equipment vs Ruangan) */}
           <div className="flex rounded-xl bg-slate-200/70 p-1 border border-slate-200">
@@ -397,12 +407,12 @@ export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
               <CheckCircle2 className="size-10 text-emerald-500/50" />
               <h4 className="mt-3 text-sm font-semibold text-slate-800">
-                {activeTab === "PENDING"
+                {statusFilter === "PENDING"
                   ? "Semua Tugas Sudah Selesai!"
                   : "Tidak ada tugas checklist yang sesuai"}
               </h4>
               <p className="mt-1 max-w-sm text-xs text-slate-500">
-                {activeTab === "PENDING"
+                {statusFilter === "PENDING"
                   ? "Kerja bagus! Tidak ada checklist pending yang perlu Anda kerjakan saat ini."
                   : "Coba ubah filter atau kata kunci pencarian Anda."}
               </p>
