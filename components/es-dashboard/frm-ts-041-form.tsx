@@ -624,12 +624,12 @@ export function FrmTs041Form({
       <section className="rounded-xl border border-[#f0eee9] bg-[#fbfbfa] p-3 text-xs text-[#707784]">
         <div className="flex flex-wrap items-center gap-y-1">
           <span className="font-bold text-[#111111] mr-1">Ket Kondisi:</span>
-          <span className="inline-block mx-1 font-semibold text-emerald-700">V</span>=OK •
-          <span className="inline-block mx-1 font-semibold text-rose-600">X</span>=Not Good •
-          <span className="inline-block mx-1 font-semibold text-amber-700">A</span>=Adjust •
-          <span className="inline-block mx-1 font-semibold text-blue-700">R</span>=Repair •
-          <span className="inline-block mx-1 font-semibold text-red-700">U</span>=Urgent •
-          <span className="inline-block mx-1 font-semibold text-gray-600">N</span>=None
+          <span className="inline-block mx-1 font-semibold text-[#111111]">V</span>=OK •
+          <span className="inline-block mx-1 font-semibold text-[#111111]">X</span>=Not Good •
+          <span className="inline-block mx-1 font-semibold text-[#111111]">A</span>=Adjust •
+          <span className="inline-block mx-1 font-semibold text-[#111111]">R</span>=Repair •
+          <span className="inline-block mx-1 font-semibold text-[#111111]">U</span>=Urgent •
+          <span className="inline-block mx-1 font-semibold text-[#111111]">N</span>=None
         </div>
       </section>
 
