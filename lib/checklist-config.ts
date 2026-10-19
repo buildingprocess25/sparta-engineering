@@ -42,8 +42,8 @@ export const FORM_CODE_TO_CONFIG: Record<string, ChecklistFormConfig> = {
   },
   FRM_TSM_008: {
     id: "frm-tsm-008",
-    title: "Checklist Perawatan Unit Sewa WH",
-    description: "SAT/FRM/TSM/008",
+    title: "Checklist Perawatan Unit Sewa",
+    description: "SAT/FRM/TSM/008_Rev_000_111122",
   },
   FRM_TS_022: {
     id: "frm-ts-022",
@@ -165,6 +165,7 @@ export const CHECKLIST_FORMS: Record<
       FORM_CODE_TO_CONFIG.FRM_TSM_013,
       FORM_CODE_TO_CONFIG.FRM_TS_041,
       FORM_CODE_TO_CONFIG.FRM_TS_064,
+      FORM_CODE_TO_CONFIG.FRM_TSM_008,
     ],
     WEEKLY: [
       FORM_CODE_TO_CONFIG.FRM_TS_043,

@@ -45,6 +45,7 @@ export type ChecklistPayload = {
   hourMeter?: string
   generalNotes?: string
   locationCode?: string
+  inspectionYear?: string
   jenisHydrant?: string
   jenisPerawatan?: string
   subPeriod?: string

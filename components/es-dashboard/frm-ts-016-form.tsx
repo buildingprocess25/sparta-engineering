@@ -476,34 +476,14 @@ export function FrmTs016Form({
           </div>
         </div>
 
-        {/* Kolom Bulan Jan s/d Des sesuai format Excel */}
-        <div className="mt-4 border-t border-[#f0eee9] pt-3.5">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-xs font-bold text-[#111111]">
-              Kolom Periode Inspeksi (Januari - Desember)
-            </span>
-            <span className="rounded-md bg-[#fff0e3] border border-[#ffc9a3] px-2 py-0.5 text-[11px] font-bold text-[#c75f00]">
-              Bulan Ini: {activeMonthLabel} ({periodKey})
-            </span>
-          </div>
-          <div className="grid grid-cols-6 gap-2">
-            {MONTH_LIST.map((m, idx) => {
-              const isCurrent = idx === currentMonthIdx
-              return (
-                <div
-                  key={m}
-                  className={cn(
-                    "flex items-center justify-center rounded-lg border py-2 px-1 text-center transition-all",
-                    isCurrent
-                      ? "border-[#ff8a2a] bg-[#fff0e3] text-[#c75f00] font-bold shadow-sm ring-1 ring-[#ff8a2a]"
-                      : "border-[#e6e2de] bg-[#fbfbfa] text-[#8a8a8a] opacity-60"
-                  )}
-                >
-                  <span className="text-xs font-semibold">{m}</span>
-                </div>
-              )
-            })}
-          </div>
+        {/* Periode Inspeksi Text */}
+        <div className="mt-3.5 flex items-center justify-between border-t border-[#f0eee9] pt-3 text-xs">
+          <span className="text-[#707784]">
+            Periode: <strong className="font-semibold text-[#111111]">Bulanan (Jan - Des)</strong>
+          </span>
+          <span className="rounded-md bg-[#fff0e3] border border-[#ffc9a3] px-2.5 py-0.5 text-xs font-bold text-[#c75f00]">
+            Bulan: {activeMonthLabel} ({periodKey})
+          </span>
         </div>
       </section>
 

@@ -44,6 +44,18 @@ export default async function ReportDetailPage({
   const userEmail = (session.email as string) || "admin@admin.com"
   const userRole = (session.role as string) || "MANAGER"
 
+  const user = await getPrisma().user.findUnique({
+    where: { NIK: session.userId as string },
+    select: { name: true, NIK: true, role: true, email: true },
+  })
+
+  const currentUserData = {
+    name: user?.name || userEmail.split("@")[0].toUpperCase(),
+    NIK: user?.NIK || (session.userId as string) || "-",
+    role: userRole,
+    email: userEmail,
+  }
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#ff8a2a]/20 selection:text-slate-950">
       {/* Sidebar Navigation matching Sparta Maintenance layout */}
@@ -52,7 +64,11 @@ export default async function ReportDetailPage({
       {/* Main Content Layout Wrapper */}
       <div className="flex min-h-screen flex-col lg:pl-60 transition-all duration-200">
         <main className="flex-1 pb-10">
-          <ReportDetailView report={serializedReport} userRole={userRole} />
+          <ReportDetailView
+            report={serializedReport}
+            userRole={userRole}
+            currentUser={currentUserData}
+          />
         </main>
       </div>
     </div>

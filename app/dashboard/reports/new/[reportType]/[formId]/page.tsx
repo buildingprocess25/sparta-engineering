@@ -11,6 +11,7 @@ import { FrmTs029Form } from "@/components/es-dashboard/frm-ts-029-form"
 import { FrmTs022Form } from "@/components/es-dashboard/frm-ts-022-form"
 import { FrmTsm013Form } from "@/components/es-dashboard/frm-tsm-013-form"
 import { FrmTs064Form } from "@/components/es-dashboard/frm-ts-064-form"
+import { FrmTsm008Form } from "@/components/es-dashboard/frm-tsm-008-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
@@ -103,11 +104,6 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
     title: "Checklist Exhaust Fan",
     description: "Inspeksi pemeliharaan rutin unit exhaust fan.",
   },
-  "frm-ts-064": {
-    eyebrow: "FRM_TS_064",
-    title: "Checklist Table Lifter",
-    description: "Inspeksi pemeliharaan rutin table lifter / dock leveler.",
-  },
   "frm-ts-022": {
     eyebrow: "FRM_TS_022",
     title: "Checklist Genset",
@@ -127,6 +123,11 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
     eyebrow: "FRM_TS_064",
     title: "Checklist Table Lifter Monthly",
     description: "Inspeksi bulanan unit table lifter gudang.",
+  },
+  "frm-tsm-008": {
+    eyebrow: "FRM_TSM_008",
+    title: "Checklist Perawatan Unit Sewa",
+    description: "Inspeksi pemeliharaan rutin peralatan unit sewa di warehouse/depo/bulky.",
   },
 }
 
@@ -489,6 +490,20 @@ export default async function DynamicFormPage({
         />
       ) : formId === "frm-ts-064" ? (
         <FrmTs064Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-tsm-008" ? (
+        <FrmTsm008Form
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}

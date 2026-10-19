@@ -95,6 +95,11 @@ const COLUMN_FORM_MAPPING = {
     formId: "frm-ts-064",
     periods: ["MONTHLY"],
   },
+  "CHECKLIST UNIT SEWA": {
+    formCode: "FRM_TSM_008",
+    formId: "frm-tsm-008",
+    periods: ["MONTHLY"],
+  },
   "CHECKLIST RUANGAN": {
     formCode: "FRM_TSM_003",
     formId: "frm-tsm-003",

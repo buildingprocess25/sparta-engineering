@@ -60,6 +60,9 @@ function normalizeEquipment(raw: string): {
   if (s.includes("PLTS")) {
     return { name: "PLTS", formCode: "SAT/FRM/TSM/007", period: ChecklistPeriod.MONTHLY }
   }
+  if (s.includes("SEWA")) {
+    return { name: "UNIT SEWA", formCode: "SAT/FRM/TSM/008_Rev_000_111122", period: ChecklistPeriod.MONTHLY }
+  }
   if (s.includes("WAREH")) {
     return { name: "WAREHOUSE", formCode: "SAT/FRM/TSM/002_REV_000_211022", period: ChecklistPeriod.MONTHLY }
   }

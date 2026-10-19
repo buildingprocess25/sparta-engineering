@@ -309,6 +309,62 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 - **Sinkronisasi Dokumen & PDF**:
   - Menyertakan NRA `SAT/FRM/TS/064_Rev : 00_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
 
+### Form FRM_TSM_008: Checklist Perawatan Peralatan Unit Sewa di Warehouse/Depo/Bulky (SAT/FRM/TSM/008_Rev_000_111122)
+- **Dasar Kebijakan**: SAT/KEB/TSM/004 Kebijakan Pemeliharaan Peralatan Unit Sewa di Warehouse/Depo/Bulky.
+- **Identitas & Metadata**:
+  - `Lokasi`: Area/Lokasi penempatan peralatan unit sewa di warehouse/depo/bulky (misal `Balaraja / Area Charger Battery`).
+  - `Nama dan jenis unit`: Nama & jenis unit peralatan sewa (default: `Forklift / Reach truck`).
+  - `Tahun`: Tahun pelaksanaan inspeksi berkala (misal `2026`).
+  - `Periode / Bulan`: Periode bulanan pelaksanaan (`Januari` s/d `Desember`).
+  - `Catatan Temuan`: Catatan kerusakan dicatat per-item pada rincian temuan kerusakan (misal: *Point 2.A: Lapisan roda mengelupas*).
+- **Struktur 9 Kategori & 23 Item Pemeriksaan**:
+  1. **1. LOAD WHEEL (3 item)**:
+     - `A. Cek kondisi Permukaan lapisan roda` (Tindakan: `CH` — Check)
+     - `B. Cek dan bersihkan AS roda dari tali plastik dan sampah` (Tindakan: `CL` — Clean)
+     - `C. Cek kondisi bearing pada roda` (Tindakan: `CH` — Check)
+  2. **2. DRIVE WHEEL (3 item)**:
+     - `A. Cek kondisi Permukaan lapisan roda` (Tindakan: `CH` — Check)
+     - `B. Cek dan bersihkan AS roda dari tali plastik dan sampah` (Tindakan: `CL` — Clean)
+     - `C. Cek kondisi bearing pada roda` (Tindakan: `CH` — Check)
+  3. **3. CASTER WHEEL (3 item)**:
+     - `A. Cek kondisi Permukaan lapisan roda` (Tindakan: `CH` — Check)
+     - `B. Cek dan bersihkan AS roda dari tali plastik dan sampah` (Tindakan: `CL` — Clean)
+     - `C. Cek kondisi bearing pada roda` (Tindakan: `CH` — Check)
+  4. **4. SUPPORTING WHEEL (3 item)**:
+     - `A. Cek kondisi Permukaan lapisan roda` (Tindakan: `CH` — Check)
+     - `B. Cek dan bersihkan AS roda dari tali plastik dan sampah` (Tindakan: `CL` — Clean)
+     - `C. Cek kondisi bearing pada roda` (Tindakan: `CH` — Check)
+  5. **5. RUANG KEMUDI (3 item)**:
+     - `A. Cek kebersihan ruang kemudi` (Tindakan: `CH` — Check)
+     - `B. Cek kebersihan panel monitor` (Tindakan: `CH` — Check)
+     - `C. Cek kondisi system keamanan dan pengendali` (Tindakan: `CH` — Check)
+  6. **6. SYSTEM HYDRAULIC (2 item)**:
+     - `A. Test semua fungsi hydraulic` (Tindakan: `DO IT` — Lakukan)
+     - `B. Cek secara visual kebocoran oli hydraulic` (Tindakan: `CH` — Check)
+  7. **7. DISPLAY MONITOR (3 item)**:
+     - `A. Cek Tampilan display monitor` (Tindakan: `CH` — Check)
+     - `B. Cek kode error pada display monitor` (Tindakan: `CH` — Check)
+     - `C. Test performa semua fungsi unit` (Tindakan: `DO IT` — Lakukan)
+  8. **8. BATTERY (2 item)**:
+     - `A. Cek kebersihan kondisi battery` (Tindakan: `CH` — Check)
+     - `B. Cek kondisi dan performa battery` (Tindakan: `CH` — Check)
+  9. **9. CHARGER BATTERY (2 item)**:
+     - `A. Cek kebersihan dan kondisi charger battery` (Tindakan: `CH` — Check)
+     - `B. Cek fungsi dan performa charger battery` (Tindakan: `CH` — Check)
+- **Tindakan Lapangan**:
+  - `CH`: Check (Pemeriksaan fisik dan visual)
+  - `CL`: Clean (Pembersihan as roda dari kotoran/tali plastik)
+  - `DO IT`: Lakukan (Uji coba performa / fungsi hydraulic dan unit)
+- **Opsi Kondisi & Temuan Kerusakan (Unit Sewa)**:
+  - Pilihan kondisi: `Baik (V)` dan `Rusak (X)`.
+  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark otomatis `({Nama Unit} - {Kategori/Item})`, penanggung jawab (`Eksternal` / Vendor Sewa atau `BES`), catatan kerusakan (misal: *Point 2.A: Lapisan roda mengelupas, unit down sudah info dept terkait untuk diteruskan ke vendor*), dan pilihan tindak lanjut.
+- **Approval & Verifikasi**:
+  - Dibuat oleh: Branch Engineering Support
+  - Diperiksa oleh: Branch Engineering Coordinator
+  - Diketahui oleh: Branch B&M Manager
+- **Sinkronisasi Dokumen & PDF**:
+  - Menyertakan NRA `SAT/FRM/TSM/008_Rev_000_111122`, REF NRA `SAT/KEB/TSM/004 Kebijakan Pemeliharaan Peralatan Unit Sewa di Warehouse/Depo/Bulky`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
+
 ### Form FRM_TSM_007: Checklist Pemeliharaan PLTS
 - **Dasar Kebijakan**: SAT/KEB/TSM/003 Kebijakan Perawatan PLTS di HO/Branch/Depo.
 - **Identitas & Metadata**:

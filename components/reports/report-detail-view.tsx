@@ -77,6 +77,12 @@ export interface ReportDetailViewProps {
     checklistPayload: unknown
   }
   userRole?: string
+  currentUser?: {
+    name: string
+    NIK: string
+    role: string
+    email: string
+  }
 }
 
 type TabKey = "checklist" | "pekerjaan" | "dokumentasi" | "riwayat" | "aksi"
@@ -152,7 +158,11 @@ function getDefaultItemsForForm(formCode: string): ChecklistPayloadItem[] {
   return []
 }
 
-export function ReportDetailView({ report, userRole = "MANAGER" }: ReportDetailViewProps) {
+export function ReportDetailView({
+  report,
+  userRole = "MANAGER",
+  currentUser,
+}: ReportDetailViewProps) {
   const [activeTab, setActiveTab] = React.useState<TabKey>("checklist")
   const [checklistFilter, setChecklistFilter] = React.useState<ChecklistFilter>("semua")
   const [searchItem, setSearchItem] = React.useState("")
@@ -370,12 +380,14 @@ export function ReportDetailView({ report, userRole = "MANAGER" }: ReportDetailV
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="grid size-8 place-items-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs border border-slate-200">
-              {report.author.name.slice(0, 2).toUpperCase()}
+            <div className="grid size-8 place-items-center rounded-lg bg-orange-100 text-[#ff8a2a] font-bold text-xs border border-orange-200">
+              {(currentUser?.name || userRole || "US").slice(0, 2).toUpperCase()}
             </div>
             <div className="hidden sm:block text-left text-xs leading-tight">
-              <p className="font-bold text-slate-900">{report.author.name}</p>
-              <p className="text-[10px] text-slate-500 font-mono">{report.author.NIK}</p>
+              <p className="font-bold text-slate-900">{currentUser?.name || userRole}</p>
+              <p className="text-[10px] text-slate-500 font-mono">
+                {currentUser?.NIK ? `${currentUser.NIK} • ${currentUser.role}` : currentUser?.email || userRole}
+              </p>
             </div>
           </div>
         </div>
