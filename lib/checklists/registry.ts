@@ -9,6 +9,7 @@ import { FRM_TS_064_CONFIG } from "./frm-ts-064"
 import { FRM_TSM_008_CONFIG } from "./frm-tsm-008"
 import { FRM_TS_063_CONFIG } from "./frm-ts-063"
 import { FRM_TS_041_CONFIG } from "./frm-ts-041"
+import { FRM_TS_028_CONFIG } from "./frm-ts-028"
 import type { ChecklistConfig } from "@/components/es-dashboard/shared-checklist-form"
 
 export function getChecklistItem(formCode: string, itemId: string) {
@@ -30,6 +31,7 @@ export function getChecklistConfig(formCode: string): ChecklistConfig | null {
   if (formCode === "FRM_TSM_008") return FRM_TSM_008_CONFIG
   if (formCode === "FRM_TS_063") return FRM_TS_063_CONFIG
   if (formCode === "FRM_TS_041") return FRM_TS_041_CONFIG
+  if (formCode === "FRM_TS_028" || formCode === "FRM_TS_068") return FRM_TS_028_CONFIG
 
   if (formCode === "FRM_TSM_002_REPAIR") {
     return {

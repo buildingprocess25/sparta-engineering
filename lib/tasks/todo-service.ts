@@ -44,7 +44,7 @@ export function formCodeToSlug(formCode: string): string {
   if (clean.includes("TS/063")) return "frm-ts-063"
   if (clean.includes("TS/064")) return "frm-ts-064"
   if (clean.includes("TS/022")) return "frm-tsm-001"
-  if (clean.includes("TS/028") || clean.includes("TS/068")) return "frm-ts-016"
+  if (clean.includes("TS/028") || clean.includes("TS/068")) return "frm-ts-028"
 
   return "frm-tsm-003"
 }

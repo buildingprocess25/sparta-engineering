@@ -75,7 +75,10 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 10. **FRM_TS_043** (Checklist Forklift Weekly - SAT/FRM/TS/043_Rev : 01_161020)
 11. **FRM_TS_045** (Checklist Pallet Mover Weekly - SAT/FRM/TS/045_Rev : 01_161020)
 12. **FRM_TS_029** (Checklist Forklift Monthly - SAT/FRM/TS/029_Rev : 02_161020)
-13. **FRM_MED_003** (Form Izin Kerja - SAT/FRM/MED/003_Rev:000_180225) - **Mandatory**
+13. **FRM_TS_041** (Checklist Conveyor - SAT/FRM/TS/041_Rev:01_161020)
+14. **FRM_TS_063** (Checklist Exhaust Fan - SAT/FRM/TS/063_Rev:00_161020)
+15. **FRM_TS_028** (Checklist Baterai Forklift & Pallet Mover - SAT/FRM/TS/028_Rev:002_161020)
+16. **FRM_MED_003** (Form Izin Kerja - SAT/FRM/MED/003_Rev:000_180225) - **Mandatory**
 
 
 ### Form FRM_TSM_001: Pemantauan Penggunaan Genset dan Test Fungsi ATS
@@ -695,4 +698,44 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
   - Pemohon: Branch Engineering Support (BES)
   - Menyetujui: Branch Building & Maintenance Manager, P2K3/Delegate, Sekretaris P2K3
   - Catatan hasil pemeriksaan pasca pekerjaan
+
+### Form FRM_TS_028: Monthly Checklist Battery (Baterai Forklift & Pallet Mover)
+- **NRA**: `SAT/FRM/TS/028_Rev:002_161020`
+- **Tujuan**: Form universal bulanan untuk memeriksa kondisi fisik dan parameter elektrikal/kimiawi baterai traksi (*traction battery*), baik untuk unit **Forklift** maupun **Pallet Mover**.
+- **Metadata Header**:
+  - `WH`: Lokasi gudang/warehouse.
+  - `Unit`: Dropdown pilihan (`Forklift` atau `Pallet Mover`).
+  - `No. Unit`: Nomor unit alat (misal: Unit 1, Unit 2).
+  - `Volt`: Voltase baterai (otomatis/input: `24V` untuk Pallet Mover, `48V` untuk Forklift).
+  - `Merk`: Dropdown merk unit/baterai (`Jungheinrich` atau `Crown`).
+  - `Kondisi`: Kondisi umum unit baterai.
+- **Tabel 1: Pemeriksaan Bagian/Komponen (14 Item Fisik)**:
+  1. Cleaning permukaan battery
+  2. Check short body
+  3. Cleaning conector intercell
+  4. Check & Cleaning pole +/-
+  5. Check skun/pin socet
+  6. Check kabel
+  7. Check soket +/-
+  8. Check end conector +/-
+  9. Pelumasan pd intercell & pole +/-
+  10. Check keasaman air accu
+  11. Check tegangan tiap cell
+  12. Check tegangan akumulasi semua cell
+  13. Check volume air accu
+  14. Check kondisi tray / housing battery
+  - Pilihan Kondisi: `V` (OK), `X` (Not Good), `R` (Repair), `U` (Urgent), `N` (None / uncolored).
+- **Tabel 2: Data Point 10 & 11 (Pengukuran Cell Baterai)**:
+  - Jumlah Cell Dinamis:
+    - `Pallet Mover`: 12 Cell (No. 1 s/d 12)
+    - `Forklift`: 24 Cell (No. 1 s/d 24)
+  - Parameter per Cell:
+    - `B.J` (Berat Jenis air accu, misal `1.28`)
+    - `Teg. Static (V)` (Tegangan per cell, misal `2.12`)
+  - Baris Total: `Total Tegangan (V)` dihitung secara otomatis dari akumulasi tegangan seluruh cell.
+- **Tanda Tangan Pengesahan**:
+  - Dibuat Oleh: Branch Technical Support (BES)
+  - Diperiksa: Branch Coordinator TS
+  - Disetujui: Branch Building & Maintenance Manager
+
 

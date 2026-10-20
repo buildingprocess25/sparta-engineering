@@ -14,6 +14,7 @@ import { FrmTs064Form } from "@/components/es-dashboard/frm-ts-064-form"
 import { FrmTsm008Form } from "@/components/es-dashboard/frm-tsm-008-form"
 import { FrmTs063Form } from "@/components/es-dashboard/frm-ts-063-form"
 import { FrmTs041Form } from "@/components/es-dashboard/frm-ts-041-form"
+import { FrmTs028Form } from "@/components/es-dashboard/frm-ts-028-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
@@ -130,6 +131,16 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
     eyebrow: "FRM_TSM_008",
     title: "Checklist Perawatan Unit Sewa",
     description: "Inspeksi pemeliharaan rutin peralatan unit sewa di warehouse/depo/bulky.",
+  },
+  "frm-ts-028": {
+    eyebrow: "FRM_TS_028",
+    title: "Checklist Baterai Bulanan",
+    description: "Inspeksi bulanan baterai forklift & pallet mover: 14 item inspeksi fisik dan pengukuran B.J serta tegangan statis per sel.",
+  },
+  "frm-ts-068": {
+    eyebrow: "FRM_TS_028",
+    title: "Checklist Baterai Bulanan",
+    description: "Inspeksi bulanan baterai forklift & pallet mover: 14 item inspeksi fisik dan pengukuran B.J serta tegangan statis per sel.",
   },
 }
 
@@ -534,6 +545,20 @@ export default async function DynamicFormPage({
         />
       ) : formId === "frm-ts-041" ? (
         <FrmTs041Form
+          reportCode={draft.reportCode}
+          areaCode={area.code}
+          areaName={roomName ? `${area.name} - ${roomName}` : area.name}
+          periodKey={periodKey}
+          watermarkUserLabel={
+            user ? `${user.name} (${user.NIK})` : session.userId
+          }
+          watermarkUserRole={user?.role ?? session.role}
+          formCode={formCode}
+          isRepairMode={isRepair}
+          submitAction={submitChecklistAction}
+        />
+      ) : formId === "frm-ts-028" || formId === "frm-ts-068" ? (
+        <FrmTs028Form
           reportCode={draft.reportCode}
           areaCode={area.code}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}

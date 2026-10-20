@@ -13,14 +13,14 @@ export type WorkPermitInput = {
   workDate?: string
   duration?: string
   workers: string[]
-  adminReqs?: string[]
+  adminReqs?: Record<string, boolean> | string[]
   adminLainnyaText?: string
-  hotWork?: { active: boolean; items: string[]; lainnya?: string }
-  workHeight?: { active: boolean; items: string[]; lainnya?: string }
-  confinedSpace?: { active: boolean; items: string[]; lainnya?: string }
-  electrical?: { active: boolean; items: string[]; lainnya?: string }
-  apd?: { items: string[]; lainnya?: string }
-  fireProtection?: { items: string[]; lainnya?: string }
+  hotWork?: { active: boolean; items: Record<string, boolean> | string[]; lainnya?: string }
+  workHeight?: { active: boolean; items: Record<string, boolean> | string[]; lainnya?: string }
+  confinedSpace?: { active: boolean; items: Record<string, boolean> | string[]; lainnya?: string }
+  electrical?: { active: boolean; items: Record<string, boolean> | string[]; lainnya?: string }
+  apd?: { items: Record<string, boolean> | string[]; lainnya?: string }
+  fireProtection?: { items: Record<string, boolean> | string[]; lainnya?: string }
   catatanPasca?: string
 }
 
@@ -34,7 +34,7 @@ export async function submitWorkPermitAction(data: WorkPermitInput) {
 
   // Ambil user pemohon
   const user = await prisma.user.findUnique({
-    where: { NIK: session.userId },
+    where: { NIK: String(session.userId) },
     select: { NIK: true, branchName: true },
   })
 
