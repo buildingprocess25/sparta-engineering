@@ -4,11 +4,14 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
+  Bell,
   CheckCircle2,
   Clock,
+  Download,
   ExternalLink,
   Flame,
   HardHat,
+  PanelLeft,
   Search,
   ShieldAlert,
   ShieldCheck,
@@ -17,6 +20,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react"
+import * as XLSX from "xlsx"
 
 import { approveWorkPermitAction, rejectWorkPermitAction } from "@/lib/actions/work-permit"
 import { cn } from "@/lib/utils"
@@ -56,6 +60,7 @@ interface WorkPermitsViewProps {
   initialPermits: WorkPermitItem[]
   viewerRole?: string
   userEmail?: string
+  onToggleSidebar?: () => void
 }
 
 type QuickFilter = "ALL" | "PENDING_MANAGER" | "APPROVED" | "REJECTED"
@@ -79,6 +84,7 @@ export function WorkPermitsView({
   initialPermits,
   viewerRole = "MANAGER",
   userEmail = "manager@admin.com",
+  onToggleSidebar,
 }: WorkPermitsViewProps) {
   const router = useRouter()
   const [permits, setPermits] = React.useState<WorkPermitItem[]>(initialPermits)
@@ -120,6 +126,33 @@ export function WorkPermitsView({
       return true
     })
   }, [permits, filter, search])
+
+  const userInitials = React.useMemo(() => {
+    return viewerRole
+      .split(/[\s_-]+/)
+      .map((part) => part.at(0))
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "MG"
+  }, [viewerRole])
+
+  const handleExportXLSX = () => {
+    const exportRows = filteredPermits.map((p) => ({
+      "No. Izin Kerja": p.permitCode,
+      "Tanggal": new Date(p.workDate).toLocaleDateString("id-ID"),
+      "Durasi": p.duration,
+      "Pemohon": p.applicant?.name || p.applicantNik,
+      "Pekerjaan": p.kegiatan,
+      "Lokasi": p.lokasi,
+      "Kontraktor": p.kontraktor || "INTERNAL",
+      "Status": p.status,
+      "Catatan Manager": p.managerNotes || "-",
+    }))
+    const worksheet = XLSX.utils.json_to_sheet(exportRows)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Izin Kerja K3")
+    XLSX.writeFile(workbook, `izin-kerja-k3-${new Date().toISOString().slice(0, 10)}.xlsx`)
+  }
 
   const handleApprove = async () => {
     if (!selectedPermit) return
@@ -184,7 +217,55 @@ export function WorkPermitsView({
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="space-y-5">
+      {/* Top Bar matching Laporan Maintenance */}
+      <div className="flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
+        {/* Left: Sidebar toggle + Page Title */}
+        <div className="flex items-center gap-3">
+          {onToggleSidebar && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+              title="Toggle sidebar"
+            >
+              <PanelLeft className="size-4.5" />
+            </button>
+          )}
+          <h1 className="text-base font-bold text-slate-900 tracking-tight">
+            Izin Kerja K3
+          </h1>
+        </div>
+
+        {/* Right: Ekspor XLSX + Bell + User Avatar */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleExportXLSX}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0b1728] hover:bg-[#1e293b] px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-all active:scale-[0.98] border border-slate-800 cursor-pointer"
+          >
+            <Download className="size-3.5 text-[#ff8a2a]" />
+            <span>Ekspor XLSX</span>
+          </button>
+
+          {/* Bell Icon with badge for pending permits */}
+          <div className="relative flex size-8 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+            <Bell className="size-4" />
+            {pendingCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#ff8a2a] text-[9px] font-black text-slate-950">
+                {pendingCount}
+              </span>
+            )}
+          </div>
+
+          {/* User Avatar circle */}
+          <div className="flex size-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
+            {userInitials}
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 sm:px-6 space-y-6">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
@@ -705,6 +786,7 @@ export function WorkPermitsView({
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
