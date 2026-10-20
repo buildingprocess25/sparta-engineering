@@ -60,6 +60,21 @@ interface WorkPermitsViewProps {
 
 type QuickFilter = "ALL" | "PENDING_MANAGER" | "APPROVED" | "REJECTED"
 
+function formatItemsList(items: unknown): string {
+  if (!items) return "-"
+  if (Array.isArray(items)) {
+    const valid = items.filter(Boolean)
+    return valid.length > 0 ? valid.join(", ") : "-"
+  }
+  if (typeof items === "object") {
+    const keys = Object.entries(items as Record<string, unknown>)
+      .filter(([_, val]) => Boolean(val))
+      .map(([key]) => key.replace(/_/g, " "))
+    return keys.length > 0 ? keys.join(", ") : "-"
+  }
+  return String(items) || "-"
+}
+
 export function WorkPermitsView({
   initialPermits,
   viewerRole = "MANAGER",
@@ -570,7 +585,7 @@ export function WorkPermitsView({
                     </div>
                     {selectedPermit.safetyPayload?.hotWork?.active && (
                       <div className="text-[11px] text-slate-600">
-                        Item: {selectedPermit.safetyPayload?.hotWork?.items?.join(", ") || "-"}
+                        Item: {formatItemsList(selectedPermit.safetyPayload?.hotWork?.items)}
                       </div>
                     )}
                   </div>
@@ -593,7 +608,7 @@ export function WorkPermitsView({
                     </div>
                     {selectedPermit.safetyPayload?.workHeight?.active && (
                       <div className="text-[11px] text-slate-600">
-                        Item: {selectedPermit.safetyPayload?.workHeight?.items?.join(", ") || "-"}
+                        Item: {formatItemsList(selectedPermit.safetyPayload?.workHeight?.items)}
                       </div>
                     )}
                   </div>
@@ -616,7 +631,7 @@ export function WorkPermitsView({
                     </div>
                     {selectedPermit.safetyPayload?.electrical?.active && (
                       <div className="text-[11px] text-slate-600">
-                        Item: {selectedPermit.safetyPayload?.electrical?.items?.join(", ") || "-"}
+                        Item: {formatItemsList(selectedPermit.safetyPayload?.electrical?.items)}
                       </div>
                     )}
                   </div>
@@ -628,7 +643,9 @@ export function WorkPermitsView({
                       <span>APD yang Disiapkan:</span>
                     </div>
                     <div className="text-[11px] text-slate-600">
-                      {selectedPermit.safetyPayload?.apd?.items?.join(", ") || "Standar Helm & Sepatu Safety"}
+                      {formatItemsList(selectedPermit.safetyPayload?.apd?.items) !== "-"
+                        ? formatItemsList(selectedPermit.safetyPayload?.apd?.items)
+                        : "Standar Helm & Sepatu Safety"}
                     </div>
                   </div>
                 </div>
