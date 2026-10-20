@@ -20,6 +20,8 @@ model User {
   updatedAt          DateTime          @updatedAt @db.Timestamptz(3)
   reports            ChecklistReport[] @relation("ReportAuthor")
   assignments        PicAssignment[]
+  appliedWorkPermits WorkPermit[]      @relation("WorkPermitApplicant")
+  approvedWorkPermits WorkPermit[]     @relation("WorkPermitManager")
 }
 
 model Area {
@@ -96,12 +98,15 @@ model ChecklistReport {
   task              ChecklistTask?   @relation(fields: [taskId], references: [id])
   equipmentId       String?
   equipment         Equipment?       @relation(fields: [equipmentId], references: [id])
+  workPermitId      String?
+  workPermit        WorkPermit?      @relation(fields: [workPermitId], references: [id])
 
   @@unique([areaId, roomId, period, periodKey, formCode])
   @@index([authorId])
   @@index([areaId])
   @@index([roomId])
   @@index([equipmentId])
+  @@index([workPermitId])
   @@index([status])
   @@index([reportCode])
 }
@@ -241,3 +246,42 @@ model ChecklistTask {
   @@index([status])
   @@index([periodKey])
 }
+
+model WorkPermit {
+  id                String            @id @default(cuid())
+  permitCode        String            @unique
+  formCode          String            @default("SAT/FRM/MED/003_Rev:000_180225")
+  kegiatan          String
+  lokasi            String
+  picSat            String
+  kontraktor        String?
+  workDate          DateTime          @db.Date
+  duration          String
+  workers           Json              @default("[]")
+  safetyPayload     Json              @default("{}")
+  catatanPasca      String?
+  status            WorkPermitStatus  @default(PENDING_MANAGER)
+  applicantNik      String
+  applicant         User              @relation("WorkPermitApplicant", fields: [applicantNik], references: [NIK])
+  applicantSignedAt DateTime          @default(now()) @db.Timestamptz(3)
+  managerNik        String?
+  manager           User?             @relation("WorkPermitManager", fields: [managerNik], references: [NIK])
+  managerSignedAt   DateTime?         @db.Timestamptz(3)
+  managerNotes      String?
+  reports           ChecklistReport[]
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
+
+  @@index([applicantNik])
+  @@index([managerNik])
+  @@index([workDate])
+  @@index([status])
+}
+
+enum WorkPermitStatus {
+  PENDING_MANAGER
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+

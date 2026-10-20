@@ -162,6 +162,34 @@ Relasi: `belongsTo User`, `belongsTo Equipment`, `belongsTo Room`, `hasMany Chec
 | createdAt | DateTime | Timestamp pembuatan task |
 | updatedAt | DateTime | Timestamp update terakhir |
 
-Relasi: `belongsTo PicAssignment`, `belongsTo ChecklistReport`.
-Constraint: `@@unique([assignmentId, periodKey])` untuk mencegah generate duplikat tugas.
+
+### WorkPermit (Form Izin Kerja FRM_MED_003)
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| permitCode | String | Unique nomor izin kerja (e.g. "WP-CKL-20261019-0001") |
+| formCode | String | Default: `SAT/FRM/MED/003_Rev:000_180225` |
+| kegiatan | String | Nama/deskripsi pekerjaan yang akan dilakukan |
+| lokasi | String | Lokasi pekerjaan (Office, Warehouse, Depo, dll) |
+| picSat | String | PIC Pengawas SAT / Alfamart |
+| kontraktor | String? | Nama kontraktor/rekanan atau "INTERNAL" |
+| workDate | DateTime (@db.Date) | Tanggal berlaku izin kerja |
+| duration | String | Estimasi lama pekerjaan (e.g. "1 Hari", "8 Jam") |
+| workers | Json | Daftar nama pekerja (Array string) |
+| safetyPayload | Json | Payload K3: administrasi, hot work, ketinggian, ruang terbatas, listrik, APD, fire protection |
+| catatanPasca | String? | Catatan hasil pemeriksaan pasca pekerjaan |
+| status | WorkPermitStatus | Enum (PENDING_MANAGER, APPROVED, REJECTED, COMPLETED) |
+| applicantNik | String | Relasi ke User (Pemohon - BES) |
+| applicantSignedAt | DateTime | Timestamp pengajuan oleh pemohon |
+| managerNik | String? | Relasi opsional ke User (Approver - Manager) |
+| managerSignedAt | DateTime? | Timestamp persetujuan Manager |
+| managerNotes | String? | Catatan pengesahan / alasan penolakan Manager |
+| createdAt | DateTime | Timestamp pembuatan |
+| updatedAt | DateTime | Timestamp update terakhir |
+
+Relasi:
+- `belongsTo User` sebagai `applicant` (`applicantNik`)
+- `belongsTo User` sebagai `manager` (`managerNik`)
+- `hasMany ChecklistReport` via `workPermitId` (opsional)
+
 

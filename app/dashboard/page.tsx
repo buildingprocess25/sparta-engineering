@@ -13,6 +13,7 @@ import {
   getEsDashboardUserContext,
 } from "@/lib/es-dashboard-data"
 import { getUserTodoTasks } from "@/lib/tasks/todo-service"
+import { getTodayWorkPermitStatus } from "@/lib/actions/work-permit"
 import { getSession } from "@/lib/session"
 import { getRealDashboardStats, getRealAdminReports } from "@/lib/manager-dashboard"
 import { ManagerDashboardView } from "@/components/manager-dashboard/manager-dashboard-view"
@@ -45,10 +46,11 @@ export default async function DashboardPage(props: DashboardPageProps) {
   }
 
   if (role === "ES") {
-    const [userContext, stats, todoData] = await Promise.all([
+    const [userContext, stats, todoData, workPermitStatus] = await Promise.all([
       getEsDashboardUserContext(session?.userId as string),
       getEsDashboardStats(),
       getUserTodoTasks(session?.userId as string),
+      getTodayWorkPermitStatus(session?.userId as string),
     ])
 
     return (
@@ -56,8 +58,12 @@ export default async function DashboardPage(props: DashboardPageProps) {
         <DashboardShell>
           <DashboardHeader email={session?.email as string} role={role} />
           <WelcomePanel user={userContext} />
-          <WorkPermitCard userNik={session?.userId as string} />
-          <TodoListPanel todoData={todoData} userNik={session?.userId as string} />
+          <WorkPermitCard userNik={session?.userId as string} initialStatus={workPermitStatus} />
+          <TodoListPanel
+            todoData={todoData}
+            userNik={session?.userId as string}
+            workPermitStatus={workPermitStatus}
+          />
           <ReportFlow />
           <ProgressSummary
             total={todoData.total}

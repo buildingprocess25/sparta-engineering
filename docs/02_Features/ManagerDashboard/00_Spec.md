@@ -19,8 +19,13 @@
      - Total & Distribusi Status Laporan (`PENDING_COORD`, `PENDING_MANAGER`, `PENDING_REQUESTER`, `COMPLETED`, `DRAFT`, `REJECTED`).
 2. **Navigasi Sidebar Terintegrasi**:
    - Kategori Utama: `Dashboard`
-   - Kategori `OPERASIONAL & REKAPAN`: `Laporan Maintenance` (`/dashboard/reports`)
-3. **Halaman Laporan Maintenance (`/dashboard/reports`) Berstandar Sparta Engineering**:
+   - Kategori `OPERASIONAL & REKAPAN`:
+     - `Laporan Maintenance` (`/dashboard/reports`) - Approval checklist & laporan temuan
+     - `Izin Kerja K3` (`/dashboard/work-permits`) - Approval form izin kerja (FRM_MED_003)
+3. **Halaman Izin Kerja K3 (`/dashboard/work-permits`)**:
+   - Menampilkan antrean persetujuan izin kerja diajukan oleh teknisi BES.
+   - Memberikan badge status, indikator risiko tinggi (Hot Work, Ketinggian, Listrik), serta aksi Setujui / Tolak.
+4. **Halaman Laporan Maintenance (`/dashboard/reports`) Berstandar Sparta Engineering**:
    - Palette identitas SPARTA Engineering (kepatuhan `/frontend-design`): Bebas dari aksen biru ritel generic, menggunakan oranye signature SPARTA (`#ff8a2a`), deep navy (`#0b1728`), serta slate pekat.
    - Header bar atas: Tombol toggle sidebar, breadcrumb `Laporan Maintenance`, tombol aksi `Ekspor XLSX` (dark deep navy `#0b1728` profesional), lonceng notifikasi (badge oranye SPARTA `3`), serta avatar profil user.
    - Counter summary dinamis: `Total {n} laporan sesuai filter` dengan angka tebal.
@@ -65,7 +70,7 @@
    - Header widget: Judul "Laporan Menunggu Review", Subtitle "Estimasi dan penyelesaian pekerjaan yang perlu segera ditinjau", serta tombol aksi "Buka tabel ↗" menuju `/dashboard/reports`.
    - Kolom tabel ringkas: Laporan (nomor & tanggal), Lokasi & Target (area, ruangan/equipment, teknisi ES), Status badge (`Review Coord`, `Review Manager`), serta Umur laporan (dihitung sejak tanggal submit). Kolom biaya ditiadakan agar proporsional dan fokus pada validasi teknis.
    - Layout grid: Berdampingan dengan panel "Batas SLA per status" dengan ketinggian serasi (h-full).
-   - Dashboard utama bersih dan fokus: seluruh alur persetujuan terpusat pada Laporan Maintenance (`/dashboard/reports`). Modul izin kerja ditiadakan dari sistem navigasi dan dashboard.
+   - Dashboard utama bersih dan fokus: alur persetujuan terpusat pada Laporan Maintenance (`/dashboard/reports`) dan Izin Kerja K3 (`/dashboard/work-permits`).
 
 **Luar scope:**
 - Modifikasi skema tabel Prisma yang telah ada.

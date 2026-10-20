@@ -15,6 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { submitWorkPermitAction } from "@/lib/actions/work-permit"
 
 type FrmMed003FormProps = {
   userNik?: string
@@ -123,20 +124,18 @@ export function FrmMed003Form({
   const [catatanPasca, setCatatanPasca] = React.useState("")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Save permit to sessionStorage for report binding
-    const permitData = {
-      userNik,
-      formNo: "SAT/FRM/MED/003_Rev:000_180225",
+    // Save permit to database
+    const result = await submitWorkPermitAction({
       kegiatan,
       lokasi,
       picSat,
       kontraktor,
-      tanggal,
-      lamaPekerjaan,
+      workDate: tanggal,
+      duration: lamaPekerjaan,
       workers: workers.filter((w) => w.trim().length > 0),
       adminReqs,
       adminLainnyaText,
@@ -147,6 +146,21 @@ export function FrmMed003Form({
       apd: { items: apdItems, lainnya: apdLainnya },
       fireProtection: { items: fireProtectionItems, lainnya: fireLainnya },
       catatanPasca,
+    })
+
+    // Also sync permit to sessionStorage for immediate client availability
+    const permitData = {
+      userNik,
+      permitCode: result.ok ? result.workPermit?.permitCode : undefined,
+      formNo: "SAT/FRM/MED/003_Rev:000_180225",
+      kegiatan,
+      lokasi,
+      picSat,
+      kontraktor,
+      tanggal,
+      lamaPekerjaan,
+      workers: workers.filter((w) => w.trim().length > 0),
+      status: result.ok ? result.workPermit?.status : "PENDING_MANAGER",
       submittedAt: new Date().toISOString(),
     }
 
@@ -161,16 +175,8 @@ export function FrmMed003Form({
       // ignore session storage error
     }
 
-    // Redirect to the chosen destination (checklist, repair, select flow, or dashboard)
-    if (targetNext === "repair") {
-      router.push("/dashboard/reports/new/repair/area?workPermit=fill")
-    } else if (targetNext === "select" || targetNext === "new") {
-      router.push("/dashboard/reports/new?permit=done")
-    } else if (targetNext === "dashboard") {
-      router.push("/dashboard")
-    } else {
-      router.push("/dashboard/reports/new/checklist/area?workPermit=fill")
-    }
+    // Redirect back to dashboard to see status
+    router.push("/dashboard?permitSubmitted=true")
   }
 
   // Standard input class with subtle light grey border

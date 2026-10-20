@@ -19,6 +19,7 @@ import {
 
 import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service"
 import { cn } from "@/lib/utils"
+import type { WorkPermitStatusData } from "@/components/es-dashboard/work-permit-card"
 
 type StatusFilter = "ALL" | "PENDING" | "OVERDUE" | "COMPLETED"
 type PeriodFilter = "WEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMESTER"
@@ -27,16 +28,24 @@ type ObjectTypeFilter = "EQUIPMENT" | "ROOM"
 interface TodoListPanelProps {
   todoData: UserTodoSummary
   userNik?: string
+  workPermitStatus?: WorkPermitStatusData
 }
 
-export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
+export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListPanelProps) {
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("PENDING")
   const [selectedPeriod, setSelectedPeriod] = React.useState<PeriodFilter | null>(null)
   const [selectedObjectType, setSelectedObjectType] = React.useState<ObjectTypeFilter>("EQUIPMENT")
   const [searchQuery, setSearchQuery] = React.useState("")
-  const [hasWorkPermit, setHasWorkPermit] = React.useState(false)
+  const [hasWorkPermit, setHasWorkPermit] = React.useState(
+    workPermitStatus?.status === "APPROVED"
+  )
 
   React.useEffect(() => {
+    if (workPermitStatus) {
+      setHasWorkPermit(workPermitStatus.status === "APPROVED")
+      return
+    }
+
     try {
       if (typeof window !== "undefined") {
         const permitRaw = userNik
@@ -47,35 +56,23 @@ export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
           try {
             const parsed = JSON.parse(permitRaw)
             if (!userNik || !parsed.userNik || parsed.userNik === userNik) {
-              setHasWorkPermit(true)
+              if (parsed.status) {
+                setHasWorkPermit(parsed.status === "APPROVED")
+              } else {
+                setHasWorkPermit(true)
+              }
               return
             }
           } catch {
             // ignore
           }
         }
-
-        if (userNik) {
-          const fallback = window.sessionStorage.getItem("sparta_work_permit")
-          if (fallback) {
-            try {
-              const parsed = JSON.parse(fallback)
-              if (parsed.userNik === userNik) {
-                setHasWorkPermit(true)
-                return
-              }
-            } catch {
-              // ignore
-            }
-          }
-        }
-
         setHasWorkPermit(false)
       }
     } catch {
       // ignore
     }
-  }, [userNik])
+  }, [userNik, workPermitStatus])
 
   const { total, pending, completed, overdue, tasks } = todoData
 
@@ -386,11 +383,18 @@ export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
                 </div>
                 <div className="min-w-0 text-xs">
                   <p className="font-bold text-amber-950">
-                    Daftar Tugas Terkunci (Perlu Form Izin Kerja)
+                    {workPermitStatus?.status === "PENDING_MANAGER"
+                      ? "Daftar Tugas Terkunci (Menunggu Persetujuan Manager)"
+                      : workPermitStatus?.status === "REJECTED"
+                      ? "Daftar Tugas Terkunci (Izin Kerja Perlu Revisi)"
+                      : "Daftar Tugas Terkunci (Perlu Form Izin Kerja)"}
                   </p>
                   <p className="mt-0.5 text-amber-800 leading-relaxed">
-                    Sesuai prosedur K3/SMK3, Anda harus melengkapi{" "}
-                    <strong>Form Izin Kerja (SAT/FRM/MED/003)</strong> di atas sebelum dapat memulai checklist tugas rutin.
+                    {workPermitStatus?.status === "PENDING_MANAGER"
+                      ? "Pengajuan Form Izin Kerja (SAT/FRM/MED/003) sedang ditinjau Manager. Kartu checklist akan otomatis terbuka setelah disetujui."
+                      : workPermitStatus?.status === "REJECTED"
+                      ? "Pengajuan izin kerja ditolak oleh Manager. Silakan periksa catatan revisi dan ajukan kembali."
+                      : "Sesuai prosedur K3/SMK3, Anda harus melengkapi Form Izin Kerja (SAT/FRM/MED/003) dan disetujui Manager sebelum dapat memulai tugas rutin."}
                   </p>
                 </div>
               </div>
@@ -398,7 +402,11 @@ export function TodoListPanel({ todoData, userNik }: TodoListPanelProps) {
                 href="#work-permit-section"
                 className="shrink-0 self-start sm:self-center rounded-lg bg-amber-500/20 border border-amber-300/80 px-2.5 py-1.5 text-xs font-bold text-amber-900 transition-colors hover:bg-amber-500/30 whitespace-nowrap"
               >
-                Isi Izin Kerja &uarr;
+                {workPermitStatus?.status === "PENDING_MANAGER"
+                  ? "Lihat Status &uarr;"
+                  : workPermitStatus?.status === "REJECTED"
+                  ? "Revisi Izin Kerja &uarr;"
+                  : "Isi Izin Kerja &uarr;"}
               </a>
             </div>
           )}

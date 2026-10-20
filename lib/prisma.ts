@@ -19,7 +19,7 @@ function createPrismaClient() {
 }
 
 export function getPrisma() {
-  if (!globalForPrisma.prisma) {
+  if (!globalForPrisma.prisma || !(globalForPrisma.prisma as any).workPermit) {
     globalForPrisma.prisma = createPrismaClient()
   }
 
