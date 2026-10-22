@@ -52,11 +52,34 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
       const prefix = `ENG-${compactAreaCode(input.areaCode)}-${compactPeriodKey(
         input.periodKey
       )}`
-      const existingCount = await getPrisma().checklistReport.count({
+      const existingReports = await getPrisma().checklistReport.findMany({
         where: { reportCode: { startsWith: prefix } },
+        select: { reportCode: true },
       })
 
-      return `${prefix}-${String(existingCount + 1).padStart(3, "0")}`
+      const validReports = existingReports.filter(
+        (r): r is { reportCode: string } => typeof r.reportCode === "string" && r.reportCode.length > 0
+      )
+      const existingCodes = new Set(validReports.map((r) => r.reportCode))
+
+      let maxSeq = 0
+      for (const r of validReports) {
+        const parts = r.reportCode.split("-")
+        const lastPart = parts[parts.length - 1]
+        const seq = parseInt(lastPart, 10)
+        if (!isNaN(seq) && seq > maxSeq) {
+          maxSeq = seq
+        }
+      }
+
+      let candidateSeq = Math.max(maxSeq + 1, existingReports.length + 1)
+      let candidate = `${prefix}-${String(candidateSeq).padStart(3, "0")}`
+      while (existingCodes.has(candidate)) {
+        candidateSeq++
+        candidate = `${prefix}-${String(candidateSeq).padStart(3, "0")}`
+      }
+
+      return candidate
     },
 
     async createDraft(input: CreateChecklistDraftInput) {

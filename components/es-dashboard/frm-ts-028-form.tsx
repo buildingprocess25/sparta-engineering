@@ -3,15 +3,22 @@
 import * as React from "react"
 import Image from "next/image"
 import {
+  Activity,
   AlertCircle,
   Battery,
   BatteryCharging,
+  Building2,
+  Camera,
   Check,
   ChevronDown,
   ChevronUp,
   ClipboardCheck,
+  FileCheck,
   Gauge,
+  Hash,
+  Layers,
   Loader2,
+  MapPin,
   Plus,
   Search,
   Send,
@@ -67,14 +74,31 @@ export type FrmTs028FormProps = {
   onSuccess?(data: { isSafe: boolean }): void
 }
 
-type FollowUpActionType = "014" | "065" | "REPAIR_TANPA_BIAYA"
+export const FOLLOW_UP_OPTIONS = [
+  {
+    id: "SAT/FRM/TS/065_REV:00_161020",
+    label: "Form Penggantian Spare Part (065)",
+    badge: "065",
+  },
+  {
+    id: "SAT/FRM/TSM/014_REV:000_060423",
+    label: "Form Estimasi Biaya Sipil & ME (014)",
+    badge: "014",
+  },
+  {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+    badge: "Tanpa Biaya",
+  },
+]
 
 type ItemState = {
   condition: ChecklistCondition | ""
   notes: string
   photos: ChecklistPhoto[]
-  followUpAction?: FollowUpActionType
-  problemDescription?: string
+  handler?: "BES" | "EKSTERNAL"
+  repairForm?: string
+  uploading?: boolean
 }
 
 export function FrmTs028Form({
@@ -87,24 +111,24 @@ export function FrmTs028Form({
   formCode = FRM_TS_028_FORM_CODE,
   isRepairMode = false,
   defaultUnitName = "",
-  defaultUnitNo = 1,
+  defaultUnitNo,
   submitAction,
   onSuccess,
 }: FrmTs028FormProps) {
   // Determine initial Unit Type from equipment name if available
   const initialUnitType =
     defaultUnitName.toUpperCase().includes("PALLET") ||
-    defaultUnitName.toUpperCase().includes("MOVER")
+      defaultUnitName.toUpperCase().includes("MOVER")
       ? "Pallet Mover"
       : "Forklift"
 
   // 1. Header Metadata State
   const [warehouse, setWarehouse] = React.useState(areaName || "Warehouse")
   const [unitType, setUnitType] = React.useState<"Forklift" | "Pallet Mover">(initialUnitType)
-  const [unitNo, setUnitNo] = React.useState(String(defaultUnitNo || 1))
-  const [volt, setVolt] = React.useState(initialUnitType === "Pallet Mover" ? "24V" : "48V")
+  const [unitNo, setUnitNo] = React.useState(defaultUnitNo ? String(defaultUnitNo) : "")
+  const [volt, setVolt] = React.useState("")
   const [brand, setBrand] = React.useState<"Jungheinrich" | "Crown">("Jungheinrich")
-  const [generalCondition, setGeneralCondition] = React.useState("Baik")
+  const [generalCondition, setGeneralCondition] = React.useState("")
 
   // 2. Cell Measurements State (12 cells for Pallet Mover, 24 for Forklift)
   const initialCellCount = unitType === "Pallet Mover" ? 12 : 24
@@ -117,14 +141,12 @@ export function FrmTs028Form({
     }))
   )
 
-  // Sync volt & cell count when unitType changes
+  // Sync cell count when unitType changes
   const handleUnitTypeChange = (val: "Forklift" | "Pallet Mover") => {
     setUnitType(val)
     if (val === "Pallet Mover") {
-      setVolt("24V")
       setCellCount(12)
     } else {
-      setVolt("48V")
       setCellCount(24)
     }
   }
@@ -142,10 +164,10 @@ export function FrmTs028Form({
       prev.map((c) =>
         c.cellNo <= cellCount
           ? {
-              ...c,
-              bj: c.bj || "1.28",
-              voltage: c.voltage || "2.10",
-            }
+            ...c,
+            bj: c.bj || "1.28",
+            voltage: c.voltage || "2.10",
+          }
           : c
       )
     )
@@ -178,16 +200,51 @@ export function FrmTs028Form({
     return initial
   })
 
-  // Follow-up modal state
-  const [activeFollowUpItem, setActiveFollowUpItem] = React.useState<BatteryInspectionItem | null>(null)
-  const [followUpAction, setFollowUpAction] = React.useState<FollowUpActionType>("065")
-  const [problemDescription, setProblemDescription] = React.useState("")
-  const [pendingPhotos, setPendingPhotos] = React.useState<ChecklistPhoto[]>([])
-  const [isUploadingPhoto, setIsUploadingPhoto] = React.useState(false)
+  const evaluatedCount = React.useMemo(
+    () => BATTERY_INSPECTION_ITEMS.filter((it) => Boolean(items[it.id]?.condition)).length,
+    [items]
+  )
 
-  const handleCapturePhoto = async (file: File) => {
-    if (!activeFollowUpItem) return
-    setIsUploadingPhoto(true)
+  // Photo preview lightbox state
+  const [previewPhoto, setPreviewPhoto] = React.useState<{ itemLabel: string; url: string } | null>(null)
+
+  // Submission state
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
+  const [searchFilter, setSearchFilter] = React.useState("")
+
+  // Update item helper
+  const updateItem = (itemId: string, partial: Partial<ItemState>) => {
+    setItems((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        ...partial,
+      },
+    }))
+  }
+
+  // Set condition handler
+  const setCondition = (itemId: string, cond: ChecklistCondition) => {
+    setItems((prev) => {
+      const isDefect = cond === "RUSAK" || cond === "REPAIR" || cond === "URGENT"
+      return {
+        ...prev,
+        [itemId]: {
+          ...prev[itemId],
+          condition: cond,
+          handler: isDefect ? prev[itemId]?.handler || "BES" : prev[itemId]?.handler,
+          repairForm: isDefect
+            ? prev[itemId]?.repairForm || "SAT/FRM/TS/065_REV:00_161020"
+            : prev[itemId]?.repairForm,
+        },
+      }
+    })
+  }
+
+  // Photo upload handler
+  const uploadPhoto = async (itemId: string, file: File) => {
+    updateItem(itemId, { uploading: true })
     try {
       const formData = new FormData()
       formData.set("file", file)
@@ -197,8 +254,8 @@ export function FrmTs028Form({
           kind: "CHECKLIST_ITEM",
           reportCode,
           formCode,
-          itemId: activeFollowUpItem.id,
-          sequence: pendingPhotos.length + 1,
+          itemId,
+          sequence: (items[itemId]?.photos?.length || 0) + 1,
         })
       )
 
@@ -212,71 +269,30 @@ export function FrmTs028Form({
         throw new Error("error" in payload ? payload.error : "Upload foto gagal.")
       }
 
-      setPendingPhotos((prev) => [...prev, payload])
-    } catch (err: any) {
-      alert(err.message || "Gagal mengunggah foto.")
-    } finally {
-      setIsUploadingPhoto(false)
+      setItems((prev) => ({
+        ...prev,
+        [itemId]: {
+          ...prev[itemId],
+          uploading: false,
+          photos: [...(prev[itemId]?.photos || []), payload],
+        },
+      }))
+    } catch (err: unknown) {
+      updateItem(itemId, { uploading: false })
+      const msg = err instanceof Error ? err.message : "Gagal mengupload foto."
+      setSubmitError(msg)
     }
   }
 
-  // Submission state
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [submitError, setSubmitError] = React.useState<string | null>(null)
-  const [searchFilter, setSearchFilter] = React.useState("")
-
-  // Set condition handler
-  const setCondition = (itemId: string, cond: ChecklistCondition) => {
+  // Photo delete handler
+  const deletePhoto = (itemId: string, fileId: string) => {
     setItems((prev) => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        condition: cond,
+        photos: (prev[itemId]?.photos || []).filter((p) => p.fileId !== fileId),
       },
     }))
-
-    // If marked defective, prompt follow up modal
-    if (cond === "RUSAK" || cond === "REPAIR" || cond === "URGENT") {
-      const item = BATTERY_INSPECTION_ITEMS.find((it) => it.id === itemId)
-      if (item) {
-        const cur = items[itemId]
-        setFollowUpAction(cur?.followUpAction || "065")
-        setProblemDescription(cur?.problemDescription || cur?.notes || "")
-        setPendingPhotos(cur?.photos || [])
-        setActiveFollowUpItem(item)
-      }
-    }
-  }
-
-  // Mark all 14 items as OK (V)
-  const markAllGood = () => {
-    setItems((prev) => {
-      const updated = { ...prev }
-      BATTERY_INSPECTION_ITEMS.forEach((it) => {
-        updated[it.id] = {
-          ...updated[it.id],
-          condition: "BAIK",
-        }
-      })
-      return updated
-    })
-  }
-
-  // Save follow up modal
-  const saveFollowUp = () => {
-    if (!activeFollowUpItem) return
-    const id = activeFollowUpItem.id
-    setItems((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        followUpAction,
-        problemDescription,
-        notes: problemDescription,
-        photos: pendingPhotos,
-      },
-    }))
-    setActiveFollowUpItem(null)
   }
 
   // Submit Handler
@@ -291,31 +307,55 @@ export function FrmTs028Form({
       return
     }
 
+    if (!unitNo.trim()) {
+      setSubmitError("Nomor Unit wajib diisi.")
+      return
+    }
+
+    if (!volt.trim()) {
+      setSubmitError("Tegangan (Volt) wajib diisi.")
+      return
+    }
+
+    if (!generalCondition.trim()) {
+      setSubmitError("Kondisi wajib diisi.")
+      return
+    }
+
+    // Validate defect items require photos and notes
+    for (const it of BATTERY_INSPECTION_ITEMS) {
+      const st = items[it.id]
+      const cond = st?.condition
+      if (cond === "RUSAK" || cond === "REPAIR" || cond === "URGENT") {
+        if (!st?.photos || st.photos.length === 0) {
+          setSubmitError(`Foto bukti wajib diupload untuk ${it.label}.`)
+          return
+        }
+        if (!st?.notes?.trim()) {
+          setSubmitError(`Keterangan wajib diisi untuk ${it.label}.`)
+          return
+        }
+      }
+    }
+
     setIsSubmitting(true)
 
     // Build items payload
     const payloadItems: ChecklistPayloadItem[] = BATTERY_INSPECTION_ITEMS.map((it) => {
       const st = items[it.id]
       const cond = (st?.condition || "BAIK") as ChecklistCondition
+      const isDefect = cond === "RUSAK" || cond === "REPAIR" || cond === "URGENT"
+      const followUp = FOLLOW_UP_OPTIONS.find((f) => f.id === st?.repairForm)
+
       return {
         id: it.id,
         label: it.label,
         condition: cond,
-        notes: st?.notes || st?.problemDescription || "",
+        notes: st?.notes || (isDefect ? followUp?.label : undefined),
         photos: st?.photos || [],
-        followUpCode: st?.followUpAction,
-        repairForm:
-          st?.followUpAction === "014"
-            ? "SAT/FRM/TSM/014_REV:000_060423"
-            : st?.followUpAction === "065"
-            ? "SAT/FRM/TS/065_REV:00_161020"
-            : undefined,
-        repairFormName:
-          st?.followUpAction === "014"
-            ? "Form Estimasi Biaya Sipil & ME (014)"
-            : st?.followUpAction === "065"
-            ? "Form Penggantian Spare Part (065)"
-            : undefined,
+        handler: isDefect ? st?.handler || "BES" : undefined,
+        repairForm: isDefect && st?.repairForm !== "REPAIR_TANPA_BIAYA" ? st?.repairForm : undefined,
+        repairFormName: isDefect && st?.repairForm !== "REPAIR_TANPA_BIAYA" ? followUp?.label : undefined,
       }
     })
 
@@ -354,7 +394,11 @@ export function FrmTs028Form({
       const res = await submitAction({ reportCode, payload })
       if (!res.ok) {
         setIsSubmitting(false)
-        setSubmitError(res.errors.join(", "))
+        setSubmitError(
+          Array.isArray((res as any).errors)
+            ? (res as any).errors.join(", ")
+            : "Terjadi kesalahan saat menyimpan checklist."
+        )
         return
       }
 
@@ -362,7 +406,9 @@ export function FrmTs028Form({
         onSuccess({ isSafe: res.isSafe ?? true })
       } else {
         const needsFollowUp = payloadItems.some(
-          (item) => item.followUpCode === "014" || item.followUpCode === "065"
+          (item) =>
+            item.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ||
+            item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
         )
         if (needsFollowUp) {
           window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
@@ -377,46 +423,60 @@ export function FrmTs028Form({
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 pb-20">
-      {/* Official Form Header Banner */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold tracking-widest text-[#ff8a2a] uppercase">
+    <div className="w-full space-y-4">
+      {/* 1. KARTU IDENTITAS UNIT & SPESIFIKASI BATERAI */}
+      <div className="rounded-2xl border border-[#dedede] bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#f0f0f0] pb-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-[#fff0e3] text-[#ff8a2a]">
+              <BatteryCharging className="size-5" />
+            </span>
+            <div>
+              <h2 className="text-base font-bold text-[#111111]">
+                Identitas Unit & Baterai
+              </h2>
+              <p className="text-xs text-[#707784]">
+                Spesifikasi forklift & pallet mover
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="rounded-md border border-[#e5e5e5] bg-[#fbfbfa] px-2 py-0.5 font-mono text-[10px] font-semibold text-[#555555]">
               {FRM_TS_028_NRA}
             </span>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              FORM MONTHLY CHECKLIST BATTERY
-            </h1>
-            <p className="text-xs text-slate-500 max-w-xl">
-              Pemeriksaan bulanan kondisi fisik baterai serta pengukuran parameter keasaman air accu (B.J) dan tegangan statik per cell (Forklift & Pallet Mover).
-            </p>
-          </div>
-          <div className="flex items-center gap-2 self-start rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-right">
-            <BatteryCharging className="size-4 text-[#ff8a2a]" />
-            <span className="font-mono text-xs font-bold text-slate-700">Periode: {periodKey}</span>
+            <span className="text-[10px] text-[#707784] font-medium">
+              Periode: {periodKey}
+            </span>
           </div>
         </div>
 
-        {/* Form Metadata Inputs (WH, Unit, No. Unit, Volt, Merk, Kondisi) */}
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 text-xs">
-          {/* WH */}
+        {/* 2-Column Mobile Grid for Metadata Inputs */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* WH / Lokasi */}
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-              WH / Lokasi
+            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              WH / Lokasi <span className="text-red-500">*</span>
             </label>
             <Input
-              value={warehouse}
+              type="text"
+              readOnly={Boolean(areaName)}
+              value={warehouse || areaName}
               onChange={(e) => setWarehouse(e.target.value)}
-              placeholder="Warehouse"
-              className="h-8 text-xs font-semibold"
+              placeholder="Contoh: WH DC / Area Charger"
+              className={cn(
+                "h-11 rounded-xl border-[#dedede] text-sm font-medium",
+                areaName
+                  ? "bg-gray-100 text-[#444444]"
+                  : "bg-[#fbfbfb] text-[#111111] focus:border-[#ff8a2a]"
+              )}
             />
           </div>
 
-          {/* Unit Dropdown: Forklift / Pallet Mover */}
+          {/* Tipe Unit */}
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-              Unit
+            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              Tipe Unit <span className="text-red-500">*</span>
             </label>
             <Select
               value={unitType}
@@ -424,46 +484,66 @@ export function FrmTs028Form({
                 if (val) handleUnitTypeChange(val as "Forklift" | "Pallet Mover")
               }}
             >
-              <SelectTrigger className="h-8 text-xs font-semibold">
-                <SelectValue placeholder="Pilih Unit" />
+              <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#dedede] bg-[#fbfbfb] px-3.5 text-sm font-medium text-[#111111] shadow-none focus:border-[#ff8a2a] focus:ring-1 focus:ring-[#ff8a2a]">
+                <SelectValue placeholder="Pilih Tipe Unit" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Forklift">Forklift (48V / 24 Cell)</SelectItem>
-                <SelectItem value="Pallet Mover">Pallet Mover (24V / 12 Cell)</SelectItem>
+              <SelectContent
+                alignItemWithTrigger={false}
+                className="rounded-xl border border-[#dedede] bg-white p-1 shadow-lg ring-1 ring-black/5"
+              >
+                <SelectItem
+                  value="Forklift"
+                  className="rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium text-[#111111] cursor-pointer hover:bg-[#fff0e3] hover:text-[#ff8a2a] focus:bg-[#fff0e3] focus:text-[#ff8a2a] data-[state=checked]:bg-[#fff0e3] data-[state=checked]:text-[#ff8a2a] data-[state=checked]:font-semibold"
+                >
+                  Forklift (48V / 24 Sel)
+                </SelectItem>
+                <SelectItem
+                  value="Pallet Mover"
+                  className="rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium text-[#111111] cursor-pointer hover:bg-[#fff0e3] hover:text-[#ff8a2a] focus:bg-[#fff0e3] focus:text-[#ff8a2a] data-[state=checked]:bg-[#fff0e3] data-[state=checked]:text-[#ff8a2a] data-[state=checked]:font-semibold"
+                >
+                  Pallet Mover (24V / 12 Sel)
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* No. Unit */}
+          {/* Nomor Unit */}
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-              No. Unit
+            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              Nomor Unit <span className="text-red-500">*</span>
             </label>
             <Input
+              type="text"
               value={unitNo}
               onChange={(e) => setUnitNo(e.target.value)}
-              placeholder="Unit 1"
-              className="h-8 text-xs font-semibold"
+              placeholder="mis. FL-01 / 1"
+              className="h-11 rounded-xl border-[#dedede] bg-[#fbfbfb] text-sm font-medium text-[#111111] focus:border-[#ff8a2a]"
             />
           </div>
 
-          {/* Volt */}
+          {/* Tegangan */}
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-              Voltase
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-[#111111]">
+                Tegangan (Volt) <span className="text-red-500">*</span>
+              </label>
+              <span className="text-[11px] font-medium text-[#ff8a2a]">
+                {unitType === "Pallet Mover" ? "24V (12 Sel)" : "48V (24 Sel)"}
+              </span>
+            </div>
             <Input
+              type="text"
               value={volt}
               onChange={(e) => setVolt(e.target.value)}
-              placeholder="48V"
-              className="h-8 text-xs font-semibold"
+              placeholder="Contoh: 48V"
+              className="h-11 rounded-xl border-[#dedede] bg-[#fbfbfb] text-sm font-medium text-[#111111] focus:border-[#ff8a2a]"
             />
           </div>
 
-          {/* Merk Dropdown: Jungheinrich / Crown */}
+          {/* Merk Baterai */}
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-              Merk
+            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              Merk <span className="text-red-500">*</span>
             </label>
             <Select
               value={brand}
@@ -471,256 +551,515 @@ export function FrmTs028Form({
                 if (val) setBrand(val as "Jungheinrich" | "Crown")
               }}
             >
-              <SelectTrigger className="h-8 text-xs font-semibold">
-                <SelectValue placeholder="Pilih Merk" />
+              <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#dedede] bg-[#fbfbfb] px-3.5 text-sm font-medium text-[#111111] shadow-none focus:border-[#ff8a2a] focus:ring-1 focus:ring-[#ff8a2a]">
+                <SelectValue placeholder="Pilih Merk Baterai" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Jungheinrich">Jungheinrich</SelectItem>
-                <SelectItem value="Crown">Crown</SelectItem>
+              <SelectContent
+                alignItemWithTrigger={false}
+                className="rounded-xl border border-[#dedede] bg-white p-1 shadow-lg ring-1 ring-black/5"
+              >
+                <SelectItem
+                  value="Jungheinrich"
+                  className="rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium text-[#111111] cursor-pointer hover:bg-[#fff0e3] hover:text-[#ff8a2a] focus:bg-[#fff0e3] focus:text-[#ff8a2a] data-[state=checked]:bg-[#fff0e3] data-[state=checked]:text-[#ff8a2a] data-[state=checked]:font-semibold"
+                >
+                  Jungheinrich
+                </SelectItem>
+                <SelectItem
+                  value="Crown"
+                  className="rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium text-[#111111] cursor-pointer hover:bg-[#fff0e3] hover:text-[#ff8a2a] focus:bg-[#fff0e3] focus:text-[#ff8a2a] data-[state=checked]:bg-[#fff0e3] data-[state=checked]:text-[#ff8a2a] data-[state=checked]:font-semibold"
+                >
+                  Crown
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Kondisi */}
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-              Kondisi Umum
+            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              Kondisi <span className="text-red-500">*</span>
             </label>
-            <Select
+            <Input
+              type="text"
               value={generalCondition}
-              onValueChange={(val) => {
-                if (val) setGeneralCondition(val)
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs font-semibold">
-                <SelectValue placeholder="Kondisi" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Baik">Baik</SelectItem>
-                <SelectItem value="Cukup">Cukup</SelectItem>
-                <SelectItem value="Kurang">Kurang</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(e) => setGeneralCondition(e.target.value)}
+              placeholder="mis. Baik / Siap Operasi"
+              className="h-11 rounded-xl border-[#dedede] bg-[#fbfbfb] text-sm font-medium text-[#111111] focus:border-[#ff8a2a]"
+            />
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Left (14 Inspection Items) & Right (Cell Measurements) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN (14 Bagian/Komponen): 7 Cols on desktop */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  Tabel Bagian / Komponen Fisik
-                </h2>
-                <p className="text-[11px] text-slate-500">14 item inspeksi fisik baterai</p>
-              </div>
-
-              {/* Action Button: Tandai Semua Baik */}
-              <button
-                type="button"
-                onClick={markAllGood}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#ff8a2a] px-3 py-1.5 text-xs font-bold text-slate-950 shadow-2xs transition-colors hover:bg-[#e0751d]"
-              >
-                <Check className="size-3.5" />
-                <span>Tandai Semua Baik</span>
-              </button>
+      {/* 2. TABEL BAGIAN / KOMPONEN FISIK (14 ITEM) */}
+      <div className="rounded-2xl border border-[#dedede] bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#f0f0f0] pb-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-[#fff0e3] text-[#ff8a2a]">
+              <Wrench className="size-5" />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+                1. Pemeriksaan Komponen Fisik
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                14 item pemeriksaan fisik baterai & kabel
+              </p>
             </div>
+          </div>
 
-            {/* Items List */}
-            <div className="mt-3 divide-y divide-slate-100">
-              {BATTERY_INSPECTION_ITEMS.map((item) => {
-                const current = items[item.id]?.condition || ""
-                const isDefect = current === "RUSAK" || current === "REPAIR" || current === "URGENT"
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-600">
+            {evaluatedCount} / {BATTERY_INSPECTION_ITEMS.length} Terisi
+          </span>
+        </div>
 
-                return (
-                  <div key={item.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-100 font-mono text-[10px] font-bold text-slate-600">
-                        {item.number}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-900 leading-snug">
-                          {item.label}
-                        </p>
-                        <span className="text-[10px] text-slate-400">{item.category}</span>
+        {/* List of 14 Inspection Items with Mobile Optimized 5-Column Buttons */}
+        <div className="mt-3 divide-y divide-slate-100">
+          {BATTERY_INSPECTION_ITEMS.map((item) => {
+            const current = items[item.id]?.condition || ""
+            const isDefect = current === "RUSAK" || current === "REPAIR" || current === "URGENT"
+
+            return (
+              <div
+                key={item.id}
+                className="py-3 px-1 rounded-xl transition-colors space-y-2.5"
+              >
+                <div className="flex items-start gap-2.5">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-slate-100 font-mono text-xs font-bold text-slate-700">
+                    {item.number}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-slate-900 leading-snug">
+                      {item.label}
+                    </p>
+                    <span className="text-[10px] text-slate-400">
+                      {item.category}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4-Column Button Grid for Touch Targets on Mobile */}
+                <div className="grid grid-cols-4 gap-2 pt-0.5">
+                  {(
+                    [
+                      {
+                        key: "BAIK",
+                        label: "V",
+                        title: "OK (Baik)",
+                        activeClass:
+                          "border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/30 shadow-xs",
+                        hoverClass:
+                          "hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700",
+                      },
+                      {
+                        key: "RUSAK",
+                        label: "X",
+                        title: "Not Good (Rusak)",
+                        activeClass:
+                          "border-rose-500 bg-rose-50 text-rose-700 ring-1 ring-rose-500/30 shadow-xs",
+                        hoverClass:
+                          "hover:border-rose-300 hover:bg-rose-50/50 hover:text-rose-700",
+                      },
+                      {
+                        key: "REPAIR",
+                        label: "R",
+                        title: "Repair (Perlu Perbaikan)",
+                        activeClass:
+                          "border-amber-500 bg-amber-50 text-amber-800 ring-1 ring-amber-500/30 shadow-xs",
+                        hoverClass:
+                          "hover:border-amber-300 hover:bg-amber-50/50 hover:text-amber-800",
+                      },
+                      {
+                        key: "URGENT",
+                        label: "U",
+                        title: "Urgent (Mendesak)",
+                        activeClass:
+                          "border-slate-500 bg-slate-100 text-slate-800 ring-1 ring-slate-500/30 shadow-xs",
+                        hoverClass:
+                          "hover:border-slate-400 hover:bg-slate-100/70 hover:text-slate-800",
+                      },
+                    ] as const
+                  ).map((btn) => {
+                    const isSelected = current === btn.key
+
+                    return (
+                      <button
+                        key={btn.key}
+                        type="button"
+                        title={btn.title}
+                        onClick={() => setCondition(item.id, btn.key)}
+                        className={cn(
+                          "h-9 rounded-xl border text-xs font-bold transition-all flex items-center justify-center active:scale-[0.98]",
+                          isSelected
+                            ? btn.activeClass
+                            : cn(
+                              "border-[#dedede] bg-white text-[#525252]",
+                              btn.hoverClass
+                            )
+                        )}
+                      >
+                        {btn.label}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Damage Details Panel when RUSAK / REPAIR / URGENT (Consistent with other forms) */}
+                {isDefect && (
+                  <div className="mt-3 rounded-xl border border-[#eeeeec] bg-[#fafafa] p-3.5 flex flex-col gap-3.5">
+                    {/* 1. AKAN DIHANDLE */}
+                    <div>
+                      <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
+                        AKAN DIHANDLE <span className="text-red-500">*</span>
+                      </p>
+                      <div className="flex rounded-xl bg-[#f5f5f3] p-1">
+                        <button
+                          type="button"
+                          onClick={() => updateItem(item.id, { handler: "BES" })}
+                          className={cn(
+                            "flex-1 rounded-lg py-2 text-[13px] font-semibold transition-all",
+                            (items[item.id]?.handler || "BES") === "BES"
+                              ? "bg-[#ff8a2a] text-white shadow-xs"
+                              : "text-[#707784] hover:text-[#111111]"
+                          )}
+                        >
+                          BES
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
+                          className={cn(
+                            "flex-1 rounded-lg py-2 text-[13px] font-semibold transition-all",
+                            items[item.id]?.handler === "EKSTERNAL"
+                              ? "bg-[#ff8a2a] text-white shadow-xs"
+                              : "text-[#707784] hover:text-[#111111]"
+                          )}
+                        >
+                          Eksternal
+                        </button>
                       </div>
                     </div>
 
-                    {/* Condition Selector Buttons (V, X, R, U, N) */}
-                    <div className="flex items-center gap-1 self-end sm:self-center">
-                      {(
-                        [
-                          { key: "BAIK", label: "V", title: "OK", color: "hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300" },
-                          { key: "RUSAK", label: "X", title: "Not Good", color: "hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300" },
-                          { key: "REPAIR", label: "R", title: "Repair", color: "hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300" },
-                          { key: "URGENT", label: "U", title: "Urgent", color: "hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300" },
-                          { key: "TIDAK_ADA", label: "N", title: "None", color: "hover:bg-slate-100 text-slate-600" },
-                        ] as const
-                      ).map((btn) => {
-                        const isSelected = current === btn.key
-
-                        return (
-                          <button
-                            key={btn.key}
-                            type="button"
-                            title={btn.title}
-                            onClick={() => setCondition(item.id, btn.key)}
-                            className={cn(
-                              "flex size-7 items-center justify-center rounded-md border text-xs font-bold transition-all",
-                              isSelected
-                                ? btn.key === "BAIK"
-                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
-                                  : btn.key === "RUSAK"
-                                  ? "bg-rose-600 text-white border-rose-600 shadow-2xs"
-                                  : btn.key === "REPAIR"
-                                  ? "bg-amber-500 text-white border-amber-500 shadow-2xs"
-                                  : btn.key === "URGENT"
-                                  ? "bg-purple-600 text-white border-purple-600 shadow-2xs"
-                                  : "bg-slate-200 text-slate-800 border-slate-300 font-semibold"
-                                : `border-slate-200 bg-white text-slate-600 ${btn.color}`
-                            )}
-                          >
-                            {btn.label}
-                          </button>
-                        )
-                      })}
-
-                      {/* Detail / Follow up indicator if defect */}
-                      {isDefect && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveFollowUpItem(item)
-                            setFollowUpAction(items[item.id]?.followUpAction || "065")
-                            setProblemDescription(items[item.id]?.problemDescription || items[item.id]?.notes || "")
-                            setPendingPhotos(items[item.id]?.photos || [])
-                          }}
-                          className="ml-1 rounded px-1.5 py-1 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200"
-                        >
-                          Tindak Lanjut & foto
-                        </button>
+                    {/* 2. Foto bukti */}
+                    <div className="border-t border-[#eeeeec] pt-3.5">
+                      <p className="mb-2 text-xs font-bold text-[#707784]">
+                        Foto bukti <span className="text-red-500">*</span>
+                      </p>
+                      {(!items[item.id]?.photos || items[item.id]?.photos.length === 0) && (
+                        <CameraCaptureButton
+                          disabled={items[item.id]?.uploading}
+                          uploading={items[item.id]?.uploading}
+                          watermarkLines={buildChecklistPhotoWatermarkLines({
+                            areaName: `${areaName} (Baterai ${unitType} #${unitNo || "1"})`,
+                            userLabel: watermarkUserLabel,
+                            userRole: watermarkUserRole,
+                          })}
+                          onCapture={(file) => void uploadPhoto(item.id, file)}
+                        />
+                      )}
+                      {items[item.id]?.photos && items[item.id]?.photos.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {items[item.id]?.photos.map((photo) => (
+                            <div key={photo.fileId} className="relative group">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPreviewPhoto({
+                                    itemLabel: item.label,
+                                    url: photo.url,
+                                  })
+                                }
+                                className="block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-xs"
+                              >
+                                <Image
+                                  src={photo.url}
+                                  alt={`Foto ${item.label}`}
+                                  width={80}
+                                  height={80}
+                                  className="size-20 object-cover cursor-pointer"
+                                />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deletePhoto(item.id, photo.fileId)}
+                                className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow-xs transition-transform hover:scale-110 active:scale-95"
+                                title="Hapus foto"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </div>
+                          ))}
+                          <CameraCaptureButton
+                            disabled={items[item.id]?.uploading}
+                            uploading={items[item.id]?.uploading}
+                            watermarkLines={buildChecklistPhotoWatermarkLines({
+                              areaName: `${areaName} (Baterai ${unitType} #${unitNo || "1"})`,
+                              userLabel: watermarkUserLabel,
+                              userRole: watermarkUserRole,
+                            })}
+                            onCapture={(file) => void uploadPhoto(item.id, file)}
+                          />
+                        </div>
                       )}
                     </div>
-                  </div>
-                )
-              })}
-            </div>
 
-            {/* Plain uncolored Legend per user preference */}
-            <div className="mt-4 border-t border-slate-100 pt-3 text-[11px] text-slate-500 flex items-center justify-between flex-wrap gap-2">
-              <span>
-                <strong>Ket. Kondisi:</strong> V = OK • X = Not Good • R = Repair • U = Urgent • N = None
-              </span>
-            </div>
-          </div>
+                    {/* 3. KETERANGAN */}
+                    <div className="border-t border-[#eeeeec] pt-3.5">
+                      <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
+                        KETERANGAN <span className="text-red-500">*</span>
+                      </p>
+                      <textarea
+                        value={items[item.id]?.notes || ""}
+                        onChange={(e) => updateItem(item.id, { notes: e.target.value })}
+                        placeholder="Tambahkan keterangan temuan kerusakan..."
+                        className="w-full min-h-[72px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
+                      />
+                    </div>
+
+                    {/* 4. FORM TINDAK LANJUT */}
+                    <div className="border-t border-[#eeeeec] pt-3.5">
+                      <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
+                        FORM TINDAK LANJUT <span className="text-red-500">*</span>
+                      </p>
+                      <Select
+                        value={items[item.id]?.repairForm || "SAT/FRM/TS/065_REV:00_161020"}
+                        onValueChange={(val) =>
+                          updateItem(item.id, {
+                            repairForm: val || undefined,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
+                          <SelectValue placeholder="Pilih form tindak lanjut" />
+                        </SelectTrigger>
+                        <SelectContent
+                          alignItemWithTrigger={false}
+                          className="rounded-xl border border-[#dedede] bg-white p-1 shadow-lg ring-1 ring-black/5"
+                        >
+                          {FOLLOW_UP_OPTIONS.map((opt) => (
+                            <SelectItem
+                              key={opt.id}
+                              value={opt.id}
+                              className="rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium text-[#111111] cursor-pointer hover:bg-[#fff0e3] hover:text-[#ff8a2a] focus:bg-[#fff0e3] focus:text-[#ff8a2a] data-[state=checked]:bg-[#fff0e3] data-[state=checked]:text-[#ff8a2a] data-[state=checked]:font-semibold"
+                            >
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
 
-        {/* RIGHT COLUMN (Data Point 10 & 11 - Cell Measurements): 5 Cols on desktop */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <Gauge className="size-4 text-[#ff8a2a]" />
-                  <span>Data Point 10 & 11 (Cell Battery)</span>
-                </h2>
-                <p className="text-[11px] text-slate-500">
-                  {cellCount} Cell terdaftar ({unitType} - {volt})
-                </p>
-              </div>
+        {/* Legend per user guideline (plain uncolored) */}
+        <div className="mt-3 border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
+          <strong>Ket. Kondisi :</strong> V = OK &nbsp;•&nbsp; X = Not Good &nbsp;•&nbsp; R = Repair &nbsp;•&nbsp; U = Urgent
+        </div>
+      </div>
 
-              {/* Helper button */}
-              <button
-                type="button"
-                onClick={prefillNormalCells}
-                className="text-[10px] font-semibold text-slate-500 hover:text-slate-800 underline"
-              >
-                Isi Standar (1.28 / 2.1V)
-              </button>
+      {/* 3. TABEL DATA POINT 10 & 11 (PENGUKURAN SEL BATERAI) - TARUH DI BAWAHNYA */}
+      <div className="rounded-2xl border border-[#dedede] bg-white p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-[#f0f0f0] pb-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <Gauge className="size-5" />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+                2. Pengukuran Sel Baterai
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                Data Point 10 & 11 ({cellCount} Sel • {unitType})
+              </p>
             </div>
+          </div>
 
-            {/* Cell Measurement Table */}
-            <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">
-                  <tr>
-                    <th className="py-2 px-2.5 text-center w-12">No Cell</th>
-                    <th className="py-2 px-2.5">B.J (Keasaman)</th>
-                    <th className="py-2 px-2.5">Teg. Static (V)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
-                  {cellData.slice(0, cellCount).map((cell) => (
-                    <tr key={cell.cellNo} className="hover:bg-slate-50/70">
-                      <td className="py-1 px-2.5 text-center font-bold text-slate-700 bg-slate-50/50">
-                        {cell.cellNo}
-                      </td>
-                      <td className="py-1 px-2">
-                        <Input
-                          type="text"
-                          value={cell.bj}
-                          onChange={(e) => updateCell(cell.cellNo, "bj", e.target.value)}
-                          placeholder="1.28"
-                          className="h-7 text-xs font-mono font-medium"
-                        />
-                      </td>
-                      <td className="py-1 px-2">
-                        <Input
-                          type="text"
-                          value={cell.voltage}
-                          onChange={(e) => updateCell(cell.cellNo, "voltage", e.target.value)}
-                          placeholder="2.10"
-                          className="h-7 text-xs font-mono font-medium"
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-slate-100/90 font-bold text-slate-900 border-t border-slate-200">
-                  <tr>
-                    <td colSpan={2} className="py-2 px-3 text-right text-xs">
-                      Total Tegangan (V):
-                    </td>
-                    <td className="py-2 px-2.5 font-mono text-sm text-[#0072bc]">
-                      {totalVoltage} V
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+          <button
+            type="button"
+            onClick={prefillNormalCells}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors"
+          >
+            <Zap className="size-3 text-amber-500" />
+            <span>Isi Standar</span>
+          </button>
+        </div>
+
+        {/* Cell Count Selector Toggle */}
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setCellCount(12)}
+            className={cn(
+              "rounded-lg py-1.5 text-xs font-semibold transition-all",
+              cellCount === 12
+                ? "bg-white text-slate-900 shadow-2xs font-bold"
+                : "text-slate-500 hover:text-slate-800"
+            )}
+          >
+            12 Sel (Pallet Mover)
+          </button>
+          <button
+            type="button"
+            onClick={() => setCellCount(24)}
+            className={cn(
+              "rounded-lg py-1.5 text-xs font-semibold transition-all",
+              cellCount === 24
+                ? "bg-white text-slate-900 shadow-2xs font-bold"
+                : "text-slate-500 hover:text-slate-800"
+            )}
+          >
+            24 Sel (Forklift)
+          </button>
+        </div>
+
+        {/* Tabel Sel 1 - 12 */}
+        <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="bg-slate-50/90 px-3 py-1.5 border-b border-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-between">
+            <span>Sel Baterai 01 – 12</span>
+            <span className="text-[10px] font-normal text-slate-500">Grup 1</span>
+          </div>
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-100/70 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">
+              <tr>
+                <th className="py-2 px-2.5 text-center w-14">No Cell</th>
+                <th className="py-2 px-3">B.J (Keasaman)</th>
+                <th className="py-2 px-3">Teg. Static (V)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-mono">
+              {cellData.slice(0, Math.min(12, cellCount)).map((cell) => (
+                <tr key={cell.cellNo} className="hover:bg-slate-50/70">
+                  <td className="py-1.5 px-2.5 text-center font-bold text-slate-700 bg-slate-50/50">
+                    {String(cell.cellNo).padStart(2, "0")}
+                  </td>
+                  <td className="py-1.5 px-2.5">
+                    <Input
+                      type="text"
+                      value={cell.bj}
+                      onChange={(e) => updateCell(cell.cellNo, "bj", e.target.value)}
+                      placeholder="1.28"
+                      className="h-8 text-xs font-mono font-medium rounded-lg"
+                    />
+                  </td>
+                  <td className="py-1.5 px-2.5">
+                    <Input
+                      type="text"
+                      value={cell.voltage}
+                      onChange={(e) => updateCell(cell.cellNo, "voltage", e.target.value)}
+                      placeholder="2.10"
+                      className="h-8 text-xs font-mono font-medium rounded-lg"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Tabel Sel 13 - 24 (Bawahnya Sel 12, tidak 2 kolom sejajar) */}
+        {cellCount === 24 && (
+          <div className="overflow-hidden rounded-xl border border-slate-200">
+            <div className="bg-slate-50/90 px-3 py-1.5 border-b border-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-between">
+              <span>Sel Baterai 13 – 24</span>
+              <span className="text-[10px] font-normal text-slate-500">Grup 2</span>
             </div>
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-100/70 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">
+                <tr>
+                  <th className="py-2 px-2.5 text-center w-14">No Cell</th>
+                  <th className="py-2 px-3">B.J (Keasaman)</th>
+                  <th className="py-2 px-3">Teg. Static (V)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                {cellData.slice(12, 24).map((cell) => (
+                  <tr key={cell.cellNo} className="hover:bg-slate-50/70">
+                    <td className="py-1.5 px-2.5 text-center font-bold text-slate-700 bg-slate-50/50">
+                      {String(cell.cellNo).padStart(2, "0")}
+                    </td>
+                    <td className="py-1.5 px-2.5">
+                      <Input
+                        type="text"
+                        value={cell.bj}
+                        onChange={(e) => updateCell(cell.cellNo, "bj", e.target.value)}
+                        placeholder="1.28"
+                        className="h-8 text-xs font-mono font-medium rounded-lg"
+                      />
+                    </td>
+                    <td className="py-1.5 px-2.5">
+                      <Input
+                        type="text"
+                        value={cell.voltage}
+                        onChange={(e) => updateCell(cell.cellNo, "voltage", e.target.value)}
+                        placeholder="2.10"
+                        className="h-8 text-xs font-mono font-medium rounded-lg"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-            {/* Cell Switcher (12 vs 24 cells) */}
-            <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
-              <span>Ubah slot cell:</span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setCellCount(12)}
-                  className={cn(
-                    "rounded px-2 py-0.5 text-[10px] font-bold border transition-colors",
-                    cellCount === 12
-                      ? "bg-slate-900 text-white border-slate-900"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                  )}
-                >
-                  12 Cell (Pallet Mover)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCellCount(24)}
-                  className={cn(
-                    "rounded px-2 py-0.5 text-[10px] font-bold border transition-colors",
-                    cellCount === 24
-                      ? "bg-slate-900 text-white border-slate-900"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                  )}
-                >
-                  24 Cell (Forklift)
-                </button>
-              </div>
+        {/* Total Voltage Summary Card */}
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+          <div>
+            <p className="text-xs font-bold text-slate-900">
+              Total Tegangan Statik ({cellCount} Sel)
+            </p>
+            <p className="text-[10px] text-slate-500">
+              Min: {cellCount === 12 ? "24.0V (Pallet Mover)" : "48.0V (Forklift)"}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-2xs">
+            <span className="font-mono text-base font-bold text-slate-950">
+              {totalVoltage} <span className="text-xs font-normal text-slate-500">V</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. LEMBAR PENGESAHAN & LEGALITAS (INTERNAL USE ONLY) */}
+      <div className="rounded-2xl border border-[#dedede] bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#f0f0f0] pb-3">
+          <div className="flex items-center gap-1.5">
+            <FileCheck className="size-3.5 text-slate-600" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+              3. Kolom Pengesahan Formulir
+            </h3>
+          </div>
+          <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[9px] font-bold tracking-widest text-slate-700">
+            INTERNAL USE ONLY
+          </span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-2 flex flex-col justify-between h-24">
+            <p className="text-[10px] font-bold text-slate-700">Dibuat Oleh,</p>
+            <div className="border-t border-dashed border-slate-300 pt-1">
+              <p className="text-[10px] font-semibold text-slate-900 truncate">Br. Tech Support</p>
+              <p className="text-[9px] text-slate-400">Teknisi</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-2 flex flex-col justify-between h-24">
+            <p className="text-[10px] font-bold text-slate-700">Diperiksa,</p>
+            <div className="border-t border-dashed border-slate-300 pt-1">
+              <p className="text-[10px] font-semibold text-slate-900 truncate">Br. Coord TS</p>
+              <p className="text-[9px] text-slate-400">Koordinator</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-2 flex flex-col justify-between h-24">
+            <p className="text-[10px] font-bold text-slate-700">Disetujui,</p>
+            <div className="border-t border-dashed border-slate-300 pt-1">
+              <p className="text-[10px] font-semibold text-slate-900 truncate">Br. B&M Mgr</p>
+              <p className="text-[9px] text-slate-400">Manager</p>
             </div>
           </div>
         </div>
@@ -728,23 +1067,26 @@ export function FrmTs028Form({
 
       {/* Error message if any */}
       {submitError && (
-        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800">
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
           <AlertCircle className="size-4 shrink-0 text-rose-600" />
           <span>{submitError}</span>
         </div>
       )}
 
-      {/* Submit Bottom Bar */}
-      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-        <div className="text-xs text-slate-500">
-          Form Monthly Checklist Battery • <strong>{reportCode}</strong>
+      {/* Sticky Mobile Bottom Submit Bar */}
+      <div className="sticky bottom-4 z-20 flex flex-col gap-2 rounded-2xl border border-slate-200/90 bg-white/95 p-3.5 shadow-xl backdrop-blur-md">
+        <div className="flex items-center justify-between text-xs px-1">
+          <span className="font-semibold text-slate-900">{FRM_TS_028_NRA}</span>
+          <span className="font-mono text-xs font-semibold text-slate-600">
+            {evaluatedCount} / {BATTERY_INSPECTION_ITEMS.length} Terisi
+          </span>
         </div>
 
         <button
           type="button"
           disabled={isSubmitting}
           onClick={handleSubmit}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#ff8a2a] px-6 py-2.5 text-xs font-bold text-slate-950 shadow-xs transition-all hover:bg-[#e0751d] disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#ff8a2a] py-3 text-xs font-bold text-slate-950 shadow-md transition-all hover:bg-[#e0751d] active:scale-[0.98] disabled:opacity-50"
         >
           {isSubmitting ? (
             <>
@@ -760,137 +1102,34 @@ export function FrmTs028Form({
         </button>
       </div>
 
-      {/* Follow-up & Photo Modal for Defective Items */}
-      {activeFollowUpItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs">
-          <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5 bg-slate-50">
-              <div>
-                <span className="text-[10px] font-bold text-amber-700 uppercase">
-                  Item #{activeFollowUpItem.number}
-                </span>
-                <h3 className="text-sm font-bold text-slate-900">
-                  {activeFollowUpItem.label}
-                </h3>
-              </div>
+      {/* Lightbox Photo Preview */}
+      {previewPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#eeeeec] p-4">
+              <p className="text-sm font-bold text-[#111111]">{previewPhoto.itemLabel}</p>
               <button
                 type="button"
-                onClick={() => setActiveFollowUpItem(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                onClick={() => setPreviewPhoto(null)}
+                className="grid size-8 place-items-center rounded-lg text-[#707784] hover:bg-[#f5f5f3]"
               >
-                <X className="size-4" />
+                <X className="size-5" />
               </button>
             </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs text-slate-700">
-              {/* Follow-up Action Type */}
-              <div>
-                <label className="block font-bold text-slate-900 mb-1">
-                  Pilih Form Tindak Lanjut Perbaikan
-                </label>
-                <Select
-                  value={followUpAction}
-                  onValueChange={(val) => {
-                    if (val) setFollowUpAction(val as FollowUpActionType)
-                  }}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue placeholder="Pilih Jenis Form" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="065">
-                      SAT/FRM/TS/065 (Penggantian Spare Part Baterai / Terminal)
-                    </SelectItem>
-                    <SelectItem value="014">
-                      SAT/FRM/TSM/014 (Estimasi Biaya Perbaikan Baterai)
-                    </SelectItem>
-                    <SelectItem value="REPAIR_TANPA_BIAYA">
-                      Perbaikan Mandiri / Tanpa Biaya (Internal ES)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Problem Description */}
-              <div>
-                <label className="block font-bold text-slate-900 mb-1">
-                  Keterangan Kerusakan / Analisa Masalah
-                </label>
-                <textarea
-                  rows={3}
-                  value={problemDescription}
-                  onChange={(e) => setProblemDescription(e.target.value)}
-                  placeholder="Deskripsikan kondisi kerusakan (misal: kabel terminal korosi, air aki keruh/kering)..."
-                  className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#ff8a2a] focus:outline-hidden focus:ring-1 focus:ring-[#ff8a2a]"
-                />
-              </div>
-
-              {/* Photo Evidence */}
-              <div>
-                <label className="block font-bold text-slate-900 mb-1.5">
-                  Foto Bukti Temuan (Wajib untuk item rusak)
-                </label>
-                <div className="flex items-center gap-3">
-                  <CameraCaptureButton
-                    disabled={isUploadingPhoto}
-                    uploading={isUploadingPhoto}
-                    watermarkLines={buildChecklistPhotoWatermarkLines({
-                      areaName: `${areaName} (Unit: ${unitNo || "-"})`,
-                      userLabel: watermarkUserLabel,
-                      userRole: watermarkUserRole,
-                    })}
-                    onCapture={(file) => void handleCapturePhoto(file)}
-                  />
-                  <span className="text-[11px] text-slate-500">
-                    {pendingPhotos.length} foto terlampir
-                  </span>
-                </div>
-
-                {/* Thumbnails */}
-                {pendingPhotos.length > 0 && (
-                  <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                    {pendingPhotos.map((p, idx) => (
-                      <div
-                        key={idx}
-                        className="relative size-16 rounded-lg overflow-hidden border border-slate-200"
-                      >
-                        <Image
-                          src={p.url}
-                          alt="Foto Temuan"
-                          fill
-                          className="object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPendingPhotos((prev) => prev.filter((_, i) => i !== idx))
-                          }
-                          className="absolute right-1 top-1 rounded bg-black/60 p-0.5 text-white hover:bg-black/90"
-                        >
-                          <X className="size-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
-              <button
-                type="button"
-                onClick={() => setActiveFollowUpItem(null)}
-                className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={saveFollowUp}
-                className="rounded-xl bg-[#ff8a2a] px-4 py-1.5 text-xs font-bold text-slate-950 shadow-2xs hover:bg-[#e0751d]"
-              >
-                Simpan Keterangan
-              </button>
+            <div className="p-2">
+              <Image
+                src={previewPhoto.url}
+                alt={previewPhoto.itemLabel}
+                width={600}
+                height={600}
+                className="max-h-[75vh] w-auto rounded-xl object-contain"
+              />
             </div>
           </div>
         </div>

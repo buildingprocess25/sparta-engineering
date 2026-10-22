@@ -708,7 +708,7 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
   - `No. Unit`: Nomor unit alat (misal: Unit 1, Unit 2).
   - `Volt`: Voltase baterai (otomatis/input: `24V` untuk Pallet Mover, `48V` untuk Forklift).
   - `Merk`: Dropdown merk unit/baterai (`Jungheinrich` atau `Crown`).
-  - `Kondisi`: Kondisi umum unit baterai.
+  - `Kondisi`: Kondisi umum unit baterai (input teks bebas, default kosong).
 - **Tabel 1: Pemeriksaan Bagian/Komponen (14 Item Fisik)**:
   1. Cleaning permukaan battery
   2. Check short body
@@ -724,7 +724,7 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
   12. Check tegangan akumulasi semua cell
   13. Check volume air accu
   14. Check kondisi tray / housing battery
-  - Pilihan Kondisi: `V` (OK), `X` (Not Good), `R` (Repair), `U` (Urgent), `N` (None / uncolored).
+  - Pilihan Kondisi: `V` (OK - hijau soft), `X` (Not Good - merah/rose soft), `R` (Repair - amber soft), `U` (Urgent - abu-abu/slate soft).
 - **Tabel 2: Data Point 10 & 11 (Pengukuran Cell Baterai)**:
   - Jumlah Cell Dinamis:
     - `Pallet Mover`: 12 Cell (No. 1 s/d 12)

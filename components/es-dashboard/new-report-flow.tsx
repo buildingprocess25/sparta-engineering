@@ -102,7 +102,7 @@ export function NewReportFlow({ userNik }: NewReportFlowProps = {}) {
               </span>
             </div>
             <Link
-              href="/dashboard/reports/new/work-permit?next=select"
+              href="/dashboard/reports/new/work-permit?source=non-routine&next=select"
               className={
                 hasWorkPermit
                   ? "shrink-0 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors"

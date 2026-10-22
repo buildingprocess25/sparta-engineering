@@ -14,6 +14,12 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { submitWorkPermitAction } from "@/lib/actions/work-permit"
 
@@ -21,6 +27,10 @@ type FrmMed003FormProps = {
   userNik?: string
   defaultUserName?: string
   defaultUserBranch?: string
+  defaultKegiatan?: string
+  defaultLokasi?: string
+  defaultJamMulai?: string
+  defaultJamSelesai?: string
   nextPath?: string
 }
 
@@ -28,6 +38,10 @@ export function FrmMed003Form({
   userNik = "",
   defaultUserName = "",
   defaultUserBranch = "",
+  defaultKegiatan = "",
+  defaultLokasi = "",
+  defaultJamMulai = "",
+  defaultJamSelesai = "",
   nextPath,
 }: FrmMed003FormProps) {
   const router = useRouter()
@@ -35,16 +49,65 @@ export function FrmMed003Form({
 
   const targetNext = nextPath || searchParams.get("next") || "checklist"
 
-  // 1. Data Pokok Pekerjaan (default dikosongkan)
-  const [kegiatan, setKegiatan] = React.useState("")
-  const [lokasi, setLokasi] = React.useState("")
-  const [picSat, setPicSat] = React.useState("")
-  const [kontraktor, setKontraktor] = React.useState("")
-  const [tanggal, setTanggal] = React.useState("")
-  const [lamaPekerjaan, setLamaPekerjaan] = React.useState("")
+  const searchSource = searchParams.get("source") || ""
+  const isFromTodo = searchSource === "todo" || targetNext === "dashboard"
+  const isFromNonRoutine = searchSource === "non-routine" || targetNext === "select"
 
-  // 2. Daftar Pekerja (1 s.d. 5, default dikosongkan)
-  const [workers, setWorkers] = React.useState<string[]>([""])
+  const initialKegiatan =
+    defaultKegiatan ||
+    searchParams.get("kegiatan") ||
+    (isFromTodo ? "Checklist Rutinan" : isFromNonRoutine ? "Checklist & Pemeliharaan Non-Rutin" : "")
+
+  const initialArea = searchParams.get("area") || searchParams.get("areaName") || ""
+  const initialRoom = searchParams.get("room") || searchParams.get("roomName") || ""
+  const queryLokasi = searchParams.get("lokasi") || ""
+
+  let initialLokasi = defaultLokasi || queryLokasi
+  if (!initialLokasi) {
+    const parts: string[] = []
+    if (defaultUserBranch) parts.push(defaultUserBranch)
+    if (initialArea && !parts.some((p) => p.toLowerCase().includes(initialArea.toLowerCase()))) {
+      parts.push(initialArea)
+    }
+    if (initialRoom) parts.push(initialRoom)
+    initialLokasi = parts.join(" - ") || defaultUserBranch || ""
+  }
+
+  // 1. Data Pokok Pekerjaan (default auto-fill sesuai konteks)
+  const [kegiatan, setKegiatan] = React.useState(initialKegiatan)
+  const [lokasi, setLokasi] = React.useState(initialLokasi)
+  const [picSat, setPicSat] = React.useState(defaultUserName || searchParams.get("pic") || "")
+  const [kontraktor, setKontraktor] = React.useState("Internal")
+  const [tanggal, setTanggal] = React.useState(() => new Date().toISOString().split("T")[0])
+
+  // Format jam: Jam Mulai & Jam Selesai
+  const [jamMulai, setJamMulai] = React.useState(defaultJamMulai)
+  const [jamSelesai, setJamSelesai] = React.useState(defaultJamSelesai)
+
+  // 2. Daftar Pekerja (1 s.d. 5, default diisi teknisi pemohon)
+  const [workers, setWorkers] = React.useState<string[]>([defaultUserName || ""])
+
+  // Sinkronisasi saat server props masuk setelah client hydration
+  React.useEffect(() => {
+    if (defaultUserName && !picSat) {
+      setPicSat(defaultUserName)
+    }
+    if (defaultUserName && workers.length === 1 && workers[0] === "") {
+      setWorkers([defaultUserName])
+    }
+  }, [defaultUserName])
+
+  React.useEffect(() => {
+    if (defaultKegiatan && !kegiatan) {
+      setKegiatan(defaultKegiatan)
+    }
+  }, [defaultKegiatan])
+
+  React.useEffect(() => {
+    if (defaultLokasi && !lokasi) {
+      setLokasi(defaultLokasi)
+    }
+  }, [defaultLokasi])
 
   const addWorker = () => {
     if (workers.length < 5) {
@@ -128,6 +191,9 @@ export function FrmMed003Form({
     e.preventDefault()
     setIsSubmitting(true)
 
+    const durationText =
+      jamMulai && jamSelesai ? `${jamMulai} - ${jamSelesai}` : jamMulai || jamSelesai || "1 Hari"
+
     // Save permit to database
     const result = await submitWorkPermitAction({
       kegiatan,
@@ -135,7 +201,7 @@ export function FrmMed003Form({
       picSat,
       kontraktor,
       workDate: tanggal,
-      duration: lamaPekerjaan,
+      duration: durationText,
       workers: workers.filter((w) => w.trim().length > 0),
       adminReqs,
       adminLainnyaText,
@@ -158,7 +224,10 @@ export function FrmMed003Form({
       picSat,
       kontraktor,
       tanggal,
-      lamaPekerjaan,
+      lamaPekerjaan: durationText,
+      duration: durationText,
+      jamMulai,
+      jamSelesai,
       workers: workers.filter((w) => w.trim().length > 0),
       status: result.ok ? result.workPermit?.status : "PENDING_MANAGER",
       submittedAt: new Date().toISOString(),
@@ -216,10 +285,23 @@ export function FrmMed003Form({
             </label>
             <input
               required
+              readOnly
               value={kegiatan}
-              onChange={(e) => setKegiatan(e.target.value)}
               placeholder="Contoh: Checklist & Pemeliharaan Panel Listrik"
-              className={inputClass}
+              className={cn(inputClass, "bg-[#f8fafc] text-[#475569] cursor-not-allowed select-none")}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
+              PIC / Pengawas SAT <span className="text-red-500">*</span>
+            </label>
+            <input
+              required
+              readOnly
+              value={picSat}
+              placeholder="Nama PIC SAT"
+              className={cn(inputClass, "bg-[#f8fafc] text-[#475569] cursor-not-allowed select-none")}
             />
           </div>
 
@@ -238,28 +320,35 @@ export function FrmMed003Form({
 
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
-              PIC / Pengawas SAT <span className="text-red-500">*</span>
-            </label>
-            <input
-              required
-              value={picSat}
-              onChange={(e) => setPicSat(e.target.value)}
-              placeholder="Nama PIC SAT"
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
               Internal / Rekanan / Kontraktor <span className="text-red-500">*</span>
             </label>
-            <input
-              required
+            <Select
               value={kontraktor}
-              onChange={(e) => setKontraktor(e.target.value)}
-              placeholder="Internal ES / Nama Vendor"
-              className={inputClass}
-            />
+              onValueChange={(val) => setKontraktor(val || "Internal")}
+            >
+              <SelectTrigger className="w-full !h-10 h-10 rounded-xl border border-[#e2e8f0] bg-white px-3 text-sm text-[#111111] focus:border-[#ff8a2a] focus:ring-2 focus:ring-[#ff8a2a]/20 outline-none transition-all cursor-pointer font-medium">
+                <span className="flex-1 text-left font-medium">
+                  {kontraktor || "Pilih"}
+                </span>
+              </SelectTrigger>
+              <SelectContent
+                alignItemWithTrigger={false}
+                className="rounded-xl border border-[#e2e8f0] bg-white p-1 shadow-lg"
+              >
+                <SelectItem
+                  value="Internal"
+                  className="rounded-lg text-sm font-medium text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] py-2 px-3 cursor-pointer"
+                >
+                  Internal
+                </SelectItem>
+                <SelectItem
+                  value="Eksternal"
+                  className="rounded-lg text-sm font-medium text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] py-2 px-3 cursor-pointer"
+                >
+                  Eksternal
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -279,13 +368,57 @@ export function FrmMed003Form({
             <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
               Lama Pekerjaan / Jam <span className="text-red-500">*</span>
             </label>
-            <input
-              required
-              value={lamaPekerjaan}
-              onChange={(e) => setLamaPekerjaan(e.target.value)}
-              placeholder="Contoh: 1 Hari (08.00 - 17.00)"
-              className={inputClass}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="relative">
+                <input
+                  type="time"
+                  required
+                  value={jamMulai}
+                  onChange={(e) => setJamMulai(e.target.value)}
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker?.()
+                    } catch {}
+                  }}
+                  className={cn(
+                    inputClass,
+                    "cursor-pointer font-medium",
+                    !jamMulai &&
+                      "text-transparent [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+                  )}
+                />
+                {!jamMulai && (
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#94a3b8]">
+                    Jam Mulai
+                  </span>
+                )}
+              </div>
+
+              <div className="relative">
+                <input
+                  type="time"
+                  required
+                  value={jamSelesai}
+                  onChange={(e) => setJamSelesai(e.target.value)}
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker?.()
+                    } catch {}
+                  }}
+                  className={cn(
+                    inputClass,
+                    "cursor-pointer font-medium",
+                    !jamSelesai &&
+                      "text-transparent [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+                  )}
+                />
+                {!jamSelesai && (
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#94a3b8]">
+                    Jam Selesai
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>

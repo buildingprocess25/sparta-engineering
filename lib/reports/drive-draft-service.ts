@@ -63,13 +63,25 @@ export async function reserveChecklistDraft(
     await repository.deleteDraft(existingDraft.reportCode)
   }
 
-  const reportCode = await repository.generateReportCode({
-    areaCode: input.areaCode,
-    periodKey: input.periodKey,
-  })
-  await repository.createDraft({ ...input, reportCode })
+  let attempts = 0
+  while (attempts < 5) {
+    attempts++
+    const reportCode = await repository.generateReportCode({
+      areaCode: input.areaCode,
+      periodKey: input.periodKey,
+    })
+    try {
+      await repository.createDraft({ ...input, reportCode })
+      return { reportCode }
+    } catch (err: any) {
+      if (err?.code === "P2002" || err?.message?.includes("Unique constraint")) {
+        continue
+      }
+      throw err
+    }
+  }
 
-  return { reportCode }
+  throw new Error("Gagal membuat draft checklist karena benturan kode laporan.")
 }
 
 export async function promoteChecklistDraft(

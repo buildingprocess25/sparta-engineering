@@ -15,7 +15,12 @@ Fitur ini mencakup alur pengajuan oleh PIC / Teknisi ES, penyimpanan persisten d
    - Jika belum ada atau berstatus `PENDING_MANAGER`, kartu tugas checklist rutin terkunci (`disabled`) demi kepatuhan K3.
 2. **Pengisian Form `FRM_MED_003`**:
    - Teknisi membuka form izin kerja (`/dashboard/reports/new/work-permit`).
-   - Mengisi identitas pekerjaan (Kegiatan, Lokasi, PIC SAT, Kontraktor/Internal, Estimasi Waktu, Daftar Nama Pekerja).
+   - Identitas pekerjaan terisi otomatis (auto-fill):
+     - **PIC SAT**: Otomatis terisi nama teknisi yang sedang login.
+     - **Kegiatan / Pekerjaan**: Default terisi `"Checklist Rutinan"` jika dibuka dari Todo List dashboard, atau deskripsi non-rutin jika dari alur laporan non-rutin.
+     - **Lokasi Pekerjaan**: Otomatis terisi sesuai konteks Branch, Area, dan Ruangan kerja yang dipilih.
+     - **Lama Pekerjaan / Jam**: Menggunakan format jam terstruktur (Jam Mulai & Jam Selesai via input time) dengan kalkulasi durasi otomatis.
+     - **Daftar Pekerja**: Pekerja pertama otomatis terisi teknisi pemohon.
    - Memilih checklist K3: Administrasi/JSA, APD khusus (Hot Work, Ketinggian, Ruang Terbatas, Listrik Tegangan Tinggi, APAR).
    - Menekan tombol **"Simpan & Ajukan Izin Kerja"**.
 3. **Status Pengajuan**:
