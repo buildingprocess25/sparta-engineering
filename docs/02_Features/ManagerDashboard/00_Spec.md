@@ -25,7 +25,9 @@
 3. **Halaman Izin Kerja K3 (`/dashboard/work-permits`)**:
    - Menampilkan antrean persetujuan izin kerja diajukan oleh teknisi BES.
    - Memberikan badge status, indikator risiko tinggi (Hot Work, Ketinggian, Listrik), serta aksi Setujui / Tolak.
-4. **Halaman Laporan Maintenance (`/dashboard/reports`) Berstandar Sparta Engineering**:
+4. **Halaman Laporan Maintenance (`/dashboard/reports`)**:
+   - Dikhususkan untuk role reviewer/management (`COORD`, `MANAGER`, `ADMIN_HO`, `SUPER_ADMIN`).
+   - Untuk teknisi (`ES`), rute ini menampilkan `PlaceholderScreen` ("Laporan - Under Construction") konsisten dengan menu mobile ES lainnya (Aktivitas & Preventif).
    - Palette identitas SPARTA Engineering (kepatuhan `/frontend-design`): Bebas dari aksen biru ritel generic, menggunakan oranye signature SPARTA (`#ff8a2a`), deep navy (`#0b1728`), serta slate pekat.
    - Header bar atas: Tombol toggle sidebar, breadcrumb `Laporan Maintenance`, tombol aksi `Ekspor XLSX` (dark deep navy `#0b1728` profesional), lonceng notifikasi (badge oranye SPARTA `3`), serta avatar profil user.
    - Counter summary dinamis: `Total {n} laporan sesuai filter` dengan angka tebal.

@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session"
 import { getRealAdminReports } from "@/lib/manager-dashboard"
 import { AdminReportsTable } from "@/components/manager-dashboard/admin-reports-table"
 import { ManagerSidebar } from "@/components/manager-dashboard/manager-sidebar"
+import { PlaceholderScreen } from "@/components/es-dashboard/placeholder-screen"
 
 export const dynamic = "force-dynamic"
 
@@ -12,6 +13,17 @@ export default async function ReportsPage() {
 
   if (!session) {
     redirect("/login")
+  }
+
+  // Jika yang login adalah teknisi ES, tampilkan layar mobile ES under construction (sama seperti Aktivitas & Preventif)
+  if (session.role === "ES") {
+    return (
+      <PlaceholderScreen
+        title="Laporan"
+        email={session.email as string}
+        role={session.role as string}
+      />
+    )
   }
 
   const reports = await getRealAdminReports({})
