@@ -36,10 +36,14 @@
 - **Preventive Tracker**: Dashboard menampilkan widget yang merekap persentase penyelesaian tugas preventif berdasarkan `ChecklistReport` (kategori PREVENTIVE) untuk `periodKey` minggu/bulan berjalan.
 - **Area Locking (Checklist Rutin)**: Pada flow Checklist Rutin, area yang periode preventifnya sudah lengkap di-lock (disabled dengan status ✅ Selesai).
 - **Incidental Freedom**: Flow Perbaikan/Temuan (Incidental) bebas dari locking dan dapat dipilih kapan saja.
-- **Todo & Activity Segregation (Phase 3)**:
+- **Todo & Activity Segregation (Phase 3 & UI Revamp)**:
   - Todo List Dashboard (`/dashboard`) hanya menampilkan tugas aktif (`PENDING` yang belum terlewat).
   - Tugas yang sudah `COMPLETED` (Selesai) atau `OVERDUE` (Terlewat) dialihkan ke menu Aktivitas (`/dashboard/activity`).
-  - Halaman Aktivitas menyediakan 2 Tab: `Selesai` (dengan link read-only view) dan `Terlewat` (read-only murni, tanpa pengerjaan susulan).
+  - Halaman Aktivitas dirancang mobile-first yang bersih dan ergonomis (tanpa shape/banner raksasa seperti dashboard), mengadopsi pola modern mobile list:
+    - **Header**: Terintegrasi rapi dengan `DashboardHeader` menampilkan judul "Aktivitas" dan badge/count jumlah riwayat dengan jarak/ritme spasial yang seimbang.
+    - **Search Bar**: Berada langsung di bawah header untuk pencarian cepat berdasarkan nama alat, ruangan, kode formulir, atau cabang.
+    - **Filter Controls**: Opsi tombol filter 4 kolom rata kiri-kanan (`grid grid-cols-4 w-full`) mencakup `Selesai`, `Terlewat`, `Equipment`, dan `Ruangan` tanpa counter angka, dengan visual *soft orange* (`bg-orange-50 text-orange-700 border-orange-300`) saat aktif/terpilih sesuai tema SPARTA.
+    - **Looping History Cards**: Setiap riwayat ditampilkan sebagai kartu mandiri (`rounded-xl`, white surface, border halus, soft shadow) dengan icon squircle di sisi kiri, identitas objek, kode form/periode, status badge (emerald untuk Selesai, rose untuk Terlewat), tanggal/waktu penyelesaian atau batas waktu, serta akses langsung ke detail laporan (`reportCode`).
 
 ## Aturan Bisnis
 

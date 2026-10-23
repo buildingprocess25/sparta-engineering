@@ -5,14 +5,34 @@ import { ProfileMenu } from "@/components/auth/profile-menu"
 type DashboardHeaderProps = {
   email?: string
   role?: string
+  title?: string
+  subtitle?: string
+  countBadge?: string | number
 }
 
-export function DashboardHeader({ email, role = "ES" }: DashboardHeaderProps) {
+export function DashboardHeader({
+  email,
+  role = "ES",
+  title = "Dashboard",
+  subtitle = "SPARTA",
+  countBadge,
+}: DashboardHeaderProps) {
   return (
     <header className="flex items-center justify-between gap-4">
       <div>
-        <p className="text-sm font-medium text-[#747474]">SPARTA</p>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <p className="text-xs font-semibold tracking-wider text-[#747474] uppercase">
+          {subtitle}
+        </p>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-[#111111]">
+            {title}
+          </h1>
+          {countBadge !== undefined && (
+            <span className="rounded-md bg-slate-200/80 px-1.5 py-0.5 text-xs font-semibold text-slate-700">
+              {countBadge}
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <button

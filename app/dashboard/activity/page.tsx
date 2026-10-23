@@ -6,7 +6,12 @@ import { redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
-export default async function ActivityPage() {
+interface ActivityPageProps {
+  searchParams?: Promise<{ tab?: string }>
+}
+
+export default async function ActivityPage(props: ActivityPageProps) {
+  const searchParams = await props.searchParams
   const session = await getSession()
   
   if (!session) {
@@ -22,6 +27,7 @@ export default async function ActivityPage() {
         todoData={todoData}
         userEmail={session.email as string}
         userRole={session.role as string}
+        initialTab={searchParams?.tab === "overdue" ? "overdue" : "completed"}
       />
     )
   }
