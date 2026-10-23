@@ -15,6 +15,7 @@ export type UserTodoTaskItem = {
   objectType: "EQUIPMENT" | "ROOM"
   unitNo?: number
   branchName?: string
+  reportCode?: string | null
 }
 
 export type UserTodoSummary = {
@@ -147,6 +148,11 @@ export async function getUserTodoTasks(
           room: true,
         },
       },
+      report: {
+        select: {
+          reportCode: true,
+        },
+      },
     },
     orderBy: [
       { status: "asc" },
@@ -189,6 +195,7 @@ export async function getUserTodoTasks(
       objectType,
       unitNo: equip?.unitNo,
       branchName: equip?.branchName,
+      reportCode: t.report?.reportCode || null,
     }
   })
 

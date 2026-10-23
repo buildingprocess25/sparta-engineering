@@ -32,10 +32,14 @@
 - Input PB/PJU aktual.
 - Auth role sungguhan (pengambilan ES NIK untuk tracking).
 
-## Fitur Baru (Phase 2)
+## Fitur Baru (Phase 2 & Phase 3)
 - **Preventive Tracker**: Dashboard menampilkan widget yang merekap persentase penyelesaian tugas preventif berdasarkan `ChecklistReport` (kategori PREVENTIVE) untuk `periodKey` minggu/bulan berjalan.
 - **Area Locking (Checklist Rutin)**: Pada flow Checklist Rutin, area yang periode preventifnya sudah lengkap di-lock (disabled dengan status ✅ Selesai).
 - **Incidental Freedom**: Flow Perbaikan/Temuan (Incidental) bebas dari locking dan dapat dipilih kapan saja.
+- **Todo & Activity Segregation (Phase 3)**:
+  - Todo List Dashboard (`/dashboard`) hanya menampilkan tugas aktif (`PENDING` yang belum terlewat).
+  - Tugas yang sudah `COMPLETED` (Selesai) atau `OVERDUE` (Terlewat) dialihkan ke menu Aktivitas (`/dashboard/activity`).
+  - Halaman Aktivitas menyediakan 2 Tab: `Selesai` (dengan link read-only view) dan `Terlewat` (read-only murni, tanpa pengerjaan susulan).
 
 ## Aturan Bisnis
 

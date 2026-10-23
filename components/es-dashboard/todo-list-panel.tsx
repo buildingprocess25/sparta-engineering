@@ -10,7 +10,6 @@ import {
   Search,
   Sparkles,
   ChevronRight,
-  Filter,
   X,
   Building2,
   Wrench,
@@ -21,7 +20,6 @@ import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service
 import { cn } from "@/lib/utils"
 import type { WorkPermitStatusData } from "@/components/es-dashboard/work-permit-card"
 
-type StatusFilter = "ALL" | "PENDING" | "OVERDUE" | "COMPLETED"
 type PeriodFilter = "WEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMESTER"
 type ObjectTypeFilter = "EQUIPMENT" | "ROOM"
 
@@ -32,7 +30,6 @@ interface TodoListPanelProps {
 }
 
 export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListPanelProps) {
-  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("PENDING")
   const [selectedPeriod, setSelectedPeriod] = React.useState<PeriodFilter | null>(null)
   const [selectedObjectType, setSelectedObjectType] = React.useState<ObjectTypeFilter>("EQUIPMENT")
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -76,36 +73,46 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
 
   const { total, pending, completed, overdue, tasks } = todoData
 
-  // Count per period dynamically
-  const weeklyCount = React.useMemo(() => tasks.filter((t) => t.period === "WEEKLY").length, [tasks])
-  const monthlyCount = React.useMemo(() => tasks.filter((t) => t.period === "MONTHLY").length, [tasks])
-  const quarterlyCount = React.useMemo(() => tasks.filter((t) => t.period === "QUARTERLY").length, [tasks])
-  const semesterCount = React.useMemo(() => tasks.filter((t) => t.period === "SEMESTER").length, [tasks])
+  // Di To-Do List Dashboard HANYA menampilkan tugas aktif PENDING (belum lewat batas waktu)
+  // Tugas OVERDUE (Terlewat) dan COMPLETED (Selesai) dipindahkan sepenuhnya ke menu Aktivitas
+  const actionablePendingTasks = React.useMemo(
+    () => tasks.filter((t) => t.status === "PENDING"),
+    [tasks]
+  )
 
-  // Count pending per objectType
+  // Count per period dynamically (hanya tugas PENDING aktif)
+  const weeklyCount = React.useMemo(
+    () => actionablePendingTasks.filter((t) => t.period === "WEEKLY").length,
+    [actionablePendingTasks]
+  )
+  const monthlyCount = React.useMemo(
+    () => actionablePendingTasks.filter((t) => t.period === "MONTHLY").length,
+    [actionablePendingTasks]
+  )
+  const quarterlyCount = React.useMemo(
+    () => actionablePendingTasks.filter((t) => t.period === "QUARTERLY").length,
+    [actionablePendingTasks]
+  )
+  const semesterCount = React.useMemo(
+    () => actionablePendingTasks.filter((t) => t.period === "SEMESTER").length,
+    [actionablePendingTasks]
+  )
+
+  // Count pending per objectType (hanya tugas PENDING aktif)
   const equipmentPendingCount = React.useMemo(
-    () => tasks.filter((t) => t.objectType === "EQUIPMENT" && t.status !== "COMPLETED").length,
-    [tasks],
+    () => actionablePendingTasks.filter((t) => t.objectType === "EQUIPMENT").length,
+    [actionablePendingTasks]
   )
   const roomPendingCount = React.useMemo(
-    () => tasks.filter((t) => t.objectType === "ROOM" && t.status !== "COMPLETED").length,
-    [tasks],
+    () => actionablePendingTasks.filter((t) => t.objectType === "ROOM").length,
+    [actionablePendingTasks]
   )
 
-  // Filter tasks based on selectedObjectType, statusFilter, selectedPeriod and searchQuery
+  // Filter tasks based on selectedObjectType, selectedPeriod and searchQuery (hanya tugas PENDING)
   const filteredTasks = React.useMemo(() => {
-    return tasks.filter((task) => {
+    return actionablePendingTasks.filter((task) => {
       // Object type filter (Equipment vs Room)
       if (task.objectType !== selectedObjectType) return false
-
-      // Status filter (from top metric cards)
-      if (statusFilter === "PENDING") {
-        if (task.status === "COMPLETED") return false
-      } else if (statusFilter === "COMPLETED") {
-        if (task.status !== "COMPLETED") return false
-      } else if (statusFilter === "OVERDUE") {
-        if (task.status !== "OVERDUE") return false
-      }
 
       // Period filter (from period pill buttons)
       if (selectedPeriod) {
@@ -123,7 +130,7 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
 
       return true
     })
-  }, [tasks, selectedObjectType, statusFilter, selectedPeriod, searchQuery])
+  }, [actionablePendingTasks, selectedObjectType, selectedPeriod, searchQuery])
 
   const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
@@ -144,82 +151,58 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
               </h3>
             </div>
             <p className="mt-1 text-xs text-slate-300">
-              Daftar checklist inventaris equipment & ruangan yang ditugaskan kepada Anda.
+              Daftar checklist aktif yang perlu Anda kerjakan hari ini.
             </p>
           </div>
 
-          {/* Quick Metrics Cards (Clickable filters) */}
+          {/* Quick Metrics Cards */}
           <div className="mt-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <button
-              type="button"
-              onClick={() => setStatusFilter("ALL")}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-left transition-all cursor-pointer",
-                statusFilter === "ALL"
-                  ? "bg-white/20 border-white/50 ring-1 ring-white/40 shadow-xs"
-                  : "bg-white/5 border-white/10 hover:bg-white/10"
-              )}
-            >
+            <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 border border-white/10 bg-white/5 text-left">
               <Layers className="size-3.5 text-slate-400 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-medium text-slate-300 leading-tight whitespace-nowrap">Total</p>
+                <p className="text-[10px] font-medium text-slate-300 leading-tight whitespace-nowrap">Total Target</p>
                 <p className="text-xs font-bold text-white leading-tight">{total}</p>
               </div>
-            </button>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter("PENDING")}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-left transition-all cursor-pointer",
-                statusFilter === "PENDING"
-                  ? "bg-amber-500/25 border-amber-400 ring-1 ring-amber-400/50 shadow-xs"
-                  : "bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/15"
-              )}
-            >
+            <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 border border-amber-400 ring-1 ring-amber-400/50 bg-amber-500/25 text-left shadow-xs">
               <Clock className="size-3.5 text-amber-400 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-medium text-amber-300 leading-tight whitespace-nowrap">Pending</p>
+                <p className="text-[10px] font-medium text-amber-300 leading-tight whitespace-nowrap">Tugas Aktif</p>
                 <p className="text-xs font-bold text-amber-400 leading-tight">{pending}</p>
               </div>
-            </button>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter("OVERDUE")}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-left transition-all cursor-pointer",
-                statusFilter === "OVERDUE"
-                  ? "bg-rose-500/25 border-rose-400 ring-1 ring-rose-400/50 shadow-xs"
-                  : "bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/15"
-              )}
+            <Link
+              href="/dashboard/activity?tab=overdue"
+              className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 text-left transition-all group"
             >
               <AlertCircle className="size-3.5 text-rose-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[10px] font-medium text-rose-300 leading-tight whitespace-nowrap">Terlewat</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium text-rose-300 leading-tight whitespace-nowrap">Terlewat</p>
+                  <ChevronRight className="size-3 text-rose-300/60 transition-transform group-hover:translate-x-0.5" />
+                </div>
                 <p className="text-xs font-bold text-rose-400 leading-tight">{overdue}</p>
               </div>
-            </button>
+            </Link>
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter("COMPLETED")}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-left transition-all cursor-pointer",
-                statusFilter === "COMPLETED"
-                  ? "bg-emerald-500/25 border-emerald-400 ring-1 ring-emerald-400/50 shadow-xs"
-                  : "bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/15"
-              )}
+            <Link
+              href="/dashboard/activity?tab=completed"
+              className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 text-left transition-all group"
             >
               <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[10px] font-medium text-emerald-300 leading-tight whitespace-nowrap">Selesai</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium text-emerald-300 leading-tight whitespace-nowrap">Selesai</p>
+                  <ChevronRight className="size-3 text-emerald-300/60 transition-transform group-hover:translate-x-0.5" />
+                </div>
                 <p className="text-xs font-bold text-emerald-400 leading-tight">{completed}</p>
               </div>
-            </button>
+            </Link>
           </div>
 
-          {/* Progress Bar (Placed below the 4 metric cards) */}
+          {/* Progress Bar */}
           <div className="mt-3.5 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-xs">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-slate-200">Progres Bulan Ini</span>
@@ -415,15 +398,23 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center">
               <CheckCircle2 className="size-10 text-emerald-500/50" />
               <h4 className="mt-3 text-sm font-semibold text-slate-800">
-                {statusFilter === "PENDING"
-                  ? "Semua Tugas Sudah Selesai!"
-                  : "Tidak ada tugas checklist yang sesuai"}
+                {searchQuery || selectedPeriod
+                  ? "Tidak ada tugas checklist yang sesuai filter"
+                  : "Semua Tugas Aktif Selesai!"}
               </h4>
               <p className="mt-1 max-w-sm text-xs text-slate-500">
-                {statusFilter === "PENDING"
-                  ? "Kerja bagus! Tidak ada checklist pending yang perlu Anda kerjakan saat ini."
-                  : "Coba ubah filter atau kata kunci pencarian Anda."}
+                {searchQuery || selectedPeriod
+                  ? "Coba ubah kata kunci pencarian atau reset filter periode."
+                  : "Kerja bagus! Tidak ada checklist pending yang perlu Anda kerjakan saat ini."}
               </p>
+              <div className="mt-4 flex items-center gap-2">
+                <Link
+                  href="/dashboard/activity"
+                  className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors"
+                >
+                  Lihat Riwayat & Aktivitas
+                </Link>
+              </div>
             </div>
           ) : (
             <>
