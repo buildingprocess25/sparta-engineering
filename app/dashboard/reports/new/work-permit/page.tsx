@@ -3,6 +3,7 @@ import { FrmMed003Form } from "@/components/es-dashboard/frm-med-003-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getPrisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
+import { getUserFullWorkPermit } from "@/lib/actions/work-permit"
 
 export const dynamic = "force-dynamic"
 
@@ -10,6 +11,9 @@ type WorkPermitPageProps = {
   searchParams: Promise<{
     next?: string
     source?: string
+    view?: string
+    mode?: string
+    permitCode?: string
     kegiatan?: string
     lokasi?: string
     area?: string
@@ -112,20 +116,37 @@ export default async function WorkPermitPage({
     resolvedLokasi = parts.join(" - ") || branchName || ""
   }
 
+  const userNik = typeof session?.userId === "string" ? session.userId : undefined
+  const fullPermit = await getUserFullWorkPermit(userNik, params.permitCode)
+
+  const isExplicitReadonly = params.view === "readonly"
+  const isExplicitNew = params.mode === "new"
+
+  // Tampilkan Read-Only view jika:
+  // 1. Parameter eksplisit view=readonly, ATAU
+  // 2. User sudah memiliki izin kerja APPROVED dan tidak sedang dalam mode 'new'
+  const showReadOnlyView = !isExplicitNew && (isExplicitReadonly || fullPermit?.status === "APPROVED")
+
   return (
     <ReportFlowShell
       eyebrow="SAT/FRM/MED/003"
-      title="Form Izin Kerja"
-      description="Lengkapi izin kerja (SMK3) sebelum melaksanakan checklist atau perbaikan non-rutin."
+      title={showReadOnlyView ? "Detail Izin Kerja (Read-Only)" : "Form Izin Kerja"}
+      description={
+        showReadOnlyView
+          ? "Dokumen resmi izin kerja K3 teknisi yang aktif dan terdaftar di database."
+          : "Lengkapi izin kerja (SMK3) sebelum melaksanakan checklist atau perbaikan non-rutin."
+      }
     >
       <Suspense fallback={<div className="p-4 text-center text-sm text-gray-500">Memuat formulir...</div>}>
         <FrmMed003Form
-          userNik={typeof session?.userId === "string" ? session.userId : undefined}
+          userNik={userNik}
           defaultUserName={userName}
           defaultUserBranch={branchName}
           defaultKegiatan={resolvedKegiatan}
           defaultLokasi={resolvedLokasi}
           nextPath={params.next}
+          isReadOnly={showReadOnlyView}
+          initialData={fullPermit as any}
         />
       </Suspense>
     </ReportFlowShell>

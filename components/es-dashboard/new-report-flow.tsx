@@ -5,15 +5,23 @@ import Link from "next/link"
 import { CheckCircle2, ClipboardCheck, ShieldAlert, Wrench } from "lucide-react"
 
 import { ReportChoiceCard } from "@/components/es-dashboard/report-choice-card"
+import type { WorkPermitStatusData } from "@/components/es-dashboard/work-permit-card"
 
 type NewReportFlowProps = {
   userNik?: string
+  initialWorkPermitStatus?: WorkPermitStatusData
 }
 
-export function NewReportFlow({ userNik }: NewReportFlowProps = {}) {
-  const [hasWorkPermit, setHasWorkPermit] = React.useState(false)
+export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlowProps = {}) {
+  const isInitiallyApproved = initialWorkPermitStatus?.status === "APPROVED"
+  const [hasWorkPermit, setHasWorkPermit] = React.useState(isInitiallyApproved)
 
   React.useEffect(() => {
+    if (initialWorkPermitStatus) {
+      setHasWorkPermit(initialWorkPermitStatus.status === "APPROVED")
+      return
+    }
+
     try {
       if (typeof window !== "undefined") {
         const permitRaw = userNik
@@ -24,7 +32,11 @@ export function NewReportFlow({ userNik }: NewReportFlowProps = {}) {
           try {
             const parsed = JSON.parse(permitRaw)
             if (!userNik || !parsed.userNik || parsed.userNik === userNik) {
-              setHasWorkPermit(true)
+              if (parsed.status) {
+                setHasWorkPermit(parsed.status === "APPROVED")
+              } else {
+                setHasWorkPermit(true)
+              }
               return
             }
           } catch {
@@ -38,7 +50,11 @@ export function NewReportFlow({ userNik }: NewReportFlowProps = {}) {
             try {
               const parsed = JSON.parse(fallback)
               if (parsed.userNik === userNik) {
-                setHasWorkPermit(true)
+                if (parsed.status) {
+                  setHasWorkPermit(parsed.status === "APPROVED")
+                } else {
+                  setHasWorkPermit(true)
+                }
                 return
               }
             } catch {
@@ -58,7 +74,7 @@ export function NewReportFlow({ userNik }: NewReportFlowProps = {}) {
     } catch {
       // ignore
     }
-  }, [userNik])
+  }, [userNik, initialWorkPermitStatus])
 
   return (
     <div className="flex flex-col gap-5 rounded-2xl border border-[#dedede] bg-white p-4 shadow-sm">
@@ -102,14 +118,18 @@ export function NewReportFlow({ userNik }: NewReportFlowProps = {}) {
               </span>
             </div>
             <Link
-              href="/dashboard/reports/new/work-permit?source=non-routine&next=select"
+              href={
+                hasWorkPermit
+                  ? "/dashboard/reports/new/work-permit?view=readonly&source=non-routine&next=select"
+                  : "/dashboard/reports/new/work-permit?source=non-routine&next=select"
+              }
               className={
                 hasWorkPermit
                   ? "shrink-0 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors"
                   : "shrink-0 rounded-lg bg-[#ff8a2a] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#e0751d] transition-colors"
               }
             >
-              {hasWorkPermit ? "Ubah Form" : "Buka Form"}
+              {hasWorkPermit ? "Lihat Izin Kerja" : "Buka Form"}
             </Link>
           </div>
         </div>

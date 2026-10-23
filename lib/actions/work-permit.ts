@@ -178,14 +178,14 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
   if (!userNik) return null
 
   const prisma = getPrisma()
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
 
   try {
-    const permit = await prisma.workPermit.findFirst({
+    // 1. Prioritaskan izin kerja yang sudah disetujui (APPROVED)
+    // Sesuai requirement: jika sudah di-ACC, izin kerja berlaku aktif berkelanjutan (tidak perlu upload tiap hari)
+    const approvedPermit = await prisma.workPermit.findFirst({
       where: {
         applicantNik: userNik,
-        workDate: today,
+        status: "APPROVED",
       },
       orderBy: {
         createdAt: "desc",
@@ -197,21 +197,108 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
       },
     })
 
-    if (!permit) return null
+    if (approvedPermit) {
+      return {
+        id: approvedPermit.id,
+        permitCode: approvedPermit.permitCode,
+        status: approvedPermit.status,
+        kegiatan: approvedPermit.kegiatan,
+        lokasi: approvedPermit.lokasi,
+        managerNotes: approvedPermit.managerNotes,
+        managerName: approvedPermit.manager?.name,
+        createdAt: approvedPermit.createdAt.toISOString(),
+        managerSignedAt: approvedPermit.managerSignedAt?.toISOString() || null,
+      }
+    }
+
+    // 2. Jika belum ada yang APPROVED, ambil pengajuan terakhir (PENDING_MANAGER atau REJECTED)
+    const latestPermit = await prisma.workPermit.findFirst({
+      where: {
+        applicantNik: userNik,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        manager: {
+          select: { name: true, NIK: true },
+        },
+      },
+    })
+
+    if (!latestPermit) return null
 
     return {
-      id: permit.id,
-      permitCode: permit.permitCode,
-      status: permit.status,
-      kegiatan: permit.kegiatan,
-      lokasi: permit.lokasi,
-      managerNotes: permit.managerNotes,
-      managerName: permit.manager?.name,
-      createdAt: permit.createdAt.toISOString(),
-      managerSignedAt: permit.managerSignedAt?.toISOString() || null,
+      id: latestPermit.id,
+      permitCode: latestPermit.permitCode,
+      status: latestPermit.status,
+      kegiatan: latestPermit.kegiatan,
+      lokasi: latestPermit.lokasi,
+      managerNotes: latestPermit.managerNotes,
+      managerName: latestPermit.manager?.name,
+      createdAt: latestPermit.createdAt.toISOString(),
+      managerSignedAt: latestPermit.managerSignedAt?.toISOString() || null,
     }
   } catch (err) {
     console.error("Error fetching work permit status:", err)
+    return null
+  }
+}
+
+export const getUserWorkPermitStatus = getTodayWorkPermitStatus
+
+export async function getUserFullWorkPermit(userNik?: string, permitCode?: string) {
+  if (!userNik && !permitCode) return null
+
+  const prisma = getPrisma()
+
+  try {
+    let permit = null
+
+    if (permitCode) {
+      permit = await prisma.workPermit.findUnique({
+        where: { permitCode },
+        include: {
+          applicant: { select: { name: true, NIK: true, branchName: true } },
+          manager: { select: { name: true, NIK: true } },
+        },
+      })
+    } else if (userNik) {
+      // Prioritaskan permit APPROVED
+      permit = await prisma.workPermit.findFirst({
+        where: { applicantNik: userNik, status: "APPROVED" },
+        orderBy: { createdAt: "desc" },
+        include: {
+          applicant: { select: { name: true, NIK: true, branchName: true } },
+          manager: { select: { name: true, NIK: true } },
+        },
+      })
+
+      // Jika belum ada yang APPROVED, ambil yang terakhir
+      if (!permit) {
+        permit = await prisma.workPermit.findFirst({
+          where: { applicantNik: userNik },
+          orderBy: { createdAt: "desc" },
+          include: {
+            applicant: { select: { name: true, NIK: true, branchName: true } },
+            manager: { select: { name: true, NIK: true } },
+          },
+        })
+      }
+    }
+
+    if (!permit) return null
+
+    return {
+      ...permit,
+      createdAt: permit.createdAt.toISOString(),
+      updatedAt: permit.updatedAt.toISOString(),
+      workDate: permit.workDate.toISOString(),
+      applicantSignedAt: permit.applicantSignedAt.toISOString(),
+      managerSignedAt: permit.managerSignedAt?.toISOString() || null,
+    }
+  } catch (err) {
+    console.error("Error fetching full work permit:", err)
     return null
   }
 }

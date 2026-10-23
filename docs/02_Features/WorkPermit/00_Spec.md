@@ -10,9 +10,11 @@ Fitur ini mencakup alur pengajuan oleh PIC / Teknisi ES, penyimpanan persisten d
 ## 2. Alur Pengguna (User Journey)
 
 ### A. Sisi Pemohon (Teknisi BES / PIC)
-1. **Pemeriksaan Sesi Kerja Harian**:
-   - Saat teknisi masuk ke Dashboard ES, sistem mengecek ke database apakah teknisi memiliki `WorkPermit` berstatus `APPROVED` untuk tanggal hari ini (`workDate = CURRENT_DATE`).
-   - Jika belum ada atau berstatus `PENDING_MANAGER`, kartu tugas checklist rutin terkunci (`disabled`) demi kepatuhan K3.
+1. **Pemeriksaan Status Izin Kerja**:
+   - Saat teknisi masuk ke Dashboard ES, sistem mengecek ke database apakah teknisi memiliki `WorkPermit` berstatus `APPROVED`.
+   - Izin kerja yang telah disetujui oleh Manager (`status = APPROVED`) berlaku aktif berkelanjutan sehingga teknisi tidak perlu mengunggah/mengisi ulang form setiap hari.
+   - Selama belum memiliki izin kerja yang di-ACC atau berstatus `PENDING_MANAGER` / `REJECTED`, kartu tugas checklist rutin terkunci (`disabled`) demi kepatuhan K3.
+   - Pada alur checklist non-rutin (`/dashboard/reports/new`), card/tombol Form Izin Kerja pada Langkah 1 tetap dipertahankan; jika teknisi sudah memiliki izin kerja `APPROVED`, status otomatis terdeteksi terisi dan pilihan Langkah 2 langsung terbuka.
 2. **Pengisian Form `FRM_MED_003`**:
    - Teknisi membuka form izin kerja (`/dashboard/reports/new/work-permit`).
    - Identitas pekerjaan terisi otomatis (auto-fill):
@@ -23,9 +25,11 @@ Fitur ini mencakup alur pengajuan oleh PIC / Teknisi ES, penyimpanan persisten d
      - **Daftar Pekerja**: Pekerja pertama otomatis terisi teknisi pemohon.
    - Memilih checklist K3: Administrasi/JSA, APD khusus (Hot Work, Ketinggian, Ruang Terbatas, Listrik Tegangan Tinggi, APAR).
    - Menekan tombol **"Simpan & Ajukan Izin Kerja"**.
-3. **Status Pengajuan**:
+3. **Status Pengajuan & Tampilan Detail Read-Only**:
    - Izin kerja tersimpan di database dengan status `PENDING_MANAGER`.
    - Di dashboard ES muncul banner informatif: *"Izin Kerja Menunggu Persetujuan Manager (Diajukan [Waktu])"*.
+   - Saat izin kerja sudah di-ACC (`status = APPROVED`), tombol pada card izin kerja bertuliskan **"Lihat Izin Kerja"**.
+   - Ketika teknisi mengklik **"Lihat Izin Kerja"**, sistem membuka formulir izin kerja (`FrmMed003Form`) persis sama seperti tampilan formulir pengisian aslinya namun dalam mode **Read-Only**: seluruh input, pilihan, dan checkbox terisi sesuai data pengajuan database dalam status terkunci (*disabled*), dilengkapi banner status persetujuan Manager, serta tombol navigasi "Kembali ke Dashboard" dan "Ajukan Izin Kerja Baru".
 
 ### B. Sisi Manajer (Branch Building & Maintenance Manager)
 1. **Notifikasi & Antrean Approval**:

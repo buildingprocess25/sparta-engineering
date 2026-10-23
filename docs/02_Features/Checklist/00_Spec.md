@@ -37,9 +37,9 @@
 
 - **Route(s)**: `/dashboard`, `/dashboard/reports/new`, `/dashboard/reports/new/work-permit`, `/dashboard/reports/new/[reportType]/[formId]`
 - **Alur Laporan Rutin (To-Do List)**:
-  1. PIC / ES login ke SPARTA $\rightarrow$ Dashboard utama menampilkan **Banner Form Izin Kerja (SAT/FRM/MED/003)** tepat di atas **Tugas Rutin PIC (To-Do List)** sebagai pengingat kepatuhan K3/SMK3 dengan tombol "Isi Form Izin Kerja".
-  2. **Kunci Tugas Rutin (Lock / Disabled State)**: Seluruh kartu tugas dalam To-Do List berstatus terkunci (`disabled`) dan tidak dapat diklik selama ES belum mengisi Form Izin Kerja (`sparta_work_permit` belum terisi pada sesi aktif). Panel menampilkan pesan peringatan K3 beserta indikator gembok pada kartu tugas.
-  3. Setelah Form Izin Kerja terisi dan terkonfirmasi, kunci kartu to-do otomatis terbuka.
+  1. PIC / ES login ke SPARTA $\rightarrow$ Dashboard utama menampilkan **Banner Form Izin Kerja (SAT/FRM/MED/003)** tepat di atas **Tugas Rutin PIC (To-Do List)** sebagai pengingat kepatuhan K3/SMK3. Jika sudah memiliki izin kerja yang di-ACC Manager (`status = APPROVED`), banner berstatus aktif dan teknisi tidak perlu mengisi ulang.
+  2. **Kunci Tugas Rutin (Lock / Disabled State)**: Seluruh kartu tugas dalam To-Do List berstatus terkunci (`disabled`) dan tidak dapat diklik selama ES belum memiliki Form Izin Kerja yang berstatus `APPROVED`.
+  3. Setelah Form Izin Kerja disetujui (ACC Manager), kunci kartu to-do otomatis terbuka.
   4. PIC dapat memfilter tugas: **Pending**, **Mingguan**, **Bulanan**, **Selesai**, atau **Semua**, memilih kategori **Equipment** / **Ruangan**, serta mencari berdasarkan nama alat/ruangan.
   5. PIC mengklik kartu tugas yang sudah terbuka $\rightarrow$ langsung diarahkan ke form checklist terkait tanpa perlu memilih area atau ruangan secara manual (data area, ruangan, kode form, dan nama unit sudah terisi otomatis via `taskId`).
   5. Setelah PIC melengkapi item checklist dan menekan Submit, status `ChecklistTask` otomatis diperbarui menjadi `COMPLETED`, tanggal penyelesaian tercatat, dan persentase progres dashboard bertambah secara real-time.

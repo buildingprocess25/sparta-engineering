@@ -148,7 +148,13 @@ export function WorkPermitCard({ userNik, initialStatus }: WorkPermitCardProps =
 
           <div className="shrink-0 self-start sm:self-center">
             <Link
-              href="/dashboard/reports/new/work-permit?source=todo&next=dashboard"
+              href={
+                isApproved || isPending
+                  ? `/dashboard/reports/new/work-permit?view=readonly&source=todo&next=dashboard${
+                      permitCode ? `&permitCode=${encodeURIComponent(permitCode)}` : ""
+                    }`
+                  : `/dashboard/reports/new/work-permit?source=todo&next=dashboard`
+              }
               className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all shadow-xs ${
                 isApproved
                   ? "bg-emerald-600 text-white hover:bg-emerald-700"
