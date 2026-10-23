@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session"
 import type { ChecklistPayload } from "@/lib/checklists/payload"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { FollowUpFormsEditor } from "@/components/es-dashboard/follow-up-forms-editor"
+import { ReportCompletionSuccess } from "@/components/es-dashboard/report-completion-success"
 
 export default async function FollowUpOrchestratorPage({
   params,
@@ -24,7 +25,14 @@ export default async function FollowUpOrchestratorPage({
     },
     include: {
       area: true,
+      room: true,
+      equipment: true,
       author: true,
+      task: {
+        include: {
+          assignment: true,
+        },
+      },
     },
   })
 
@@ -42,30 +50,45 @@ export default async function FollowUpOrchestratorPage({
     (item) => item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
   )
 
-  if (!needs014 && !needs065) {
+  const isRoutine = Boolean(report.taskId)
+  const targetName =
+    report.equipment?.name ||
+    report.room?.name ||
+    report.area?.name ||
+    "Objek Maintenance"
+
+  const anyPayload = payload as any
+  const isFollowUpCompleted = Boolean(anyPayload?.followUpCompleted)
+  const followUp014Summary = anyPayload?.followUp014Summary
+  const followUp065Summary = anyPayload?.followUp065Summary
+
+  if (isFollowUpCompleted || (!needs014 && !needs065)) {
     return (
       <ReportFlowShell
         eyebrow="TINDAK LANJUT"
-        title="Form Tindak Lanjut Perbaikan"
-        description="Pengecekan form lanjutan perbaikan."
+        title="Status Penyelesaian Laporan"
+        description="Konfirmasi penyelesaian checklist dan form tindak lanjut."
       >
-        <div className="rounded-2xl border border-[#dedede] bg-white p-6 text-center shadow-sm">
-          <div className="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-emerald-100 text-emerald-600 font-bold">
-            ✓
-          </div>
-          <h2 className="text-base font-bold text-[#111111]">Tidak Ada Form Lanjutan</h2>
-          <p className="mt-1 text-xs text-[#707784] leading-relaxed">
-            Semua item checklist dalam kondisi baik atau perbaikan dapat diselesaikan langsung tanpa biaya (Repair Tanpa Biaya). Laporan ini telah berhasil disimpan dan diteruskan ke antrean approval.
-          </p>
-          <div className="mt-5 flex justify-center">
-            <a
-              href="/dashboard/reports"
-              className="inline-flex h-11 items-center justify-center rounded-lg bg-[#ff8a2a] px-6 text-xs font-bold text-white shadow-sm hover:bg-[#f07b1a]"
-            >
-              Lihat Daftar Laporan
-            </a>
-          </div>
-        </div>
+        <ReportCompletionSuccess
+          reportCode={reportCode}
+          isRoutine={isRoutine}
+          targetName={targetName}
+          branchName={report.author?.branchName || "Cabang"}
+          authorName={report.author?.name || "ES"}
+          status={report.status}
+          submittedAt={report.updatedAt ? report.updatedAt.toISOString() : undefined}
+          followUpType={
+            followUp014Summary || needs014
+              ? "014"
+              : followUp065Summary || needs065
+              ? "065"
+              : "NONE"
+          }
+          followUpSummary={{
+            totalCost014: followUp014Summary?.totalCost,
+            itemsCount065: followUp065Summary?.itemCount,
+          }}
+        />
       </ReportFlowShell>
     )
   }
@@ -84,6 +107,8 @@ export default async function FollowUpOrchestratorPage({
           authorName: report.author?.name || "ES",
           areaName: report.area?.name || "Area",
           areaCode: report.area?.code || "",
+          targetName: targetName,
+          isRoutine: isRoutine,
           createdAt: report.createdAt.toISOString(),
         }}
       />

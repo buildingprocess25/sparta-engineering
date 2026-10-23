@@ -361,6 +361,7 @@ export function ReportDetailView({
   const isManager = report.status === "PENDING_MANAGER"
   const isDraft = report.status === "DRAFT"
   const isRejected = report.status === "REJECTED"
+  const isReviewer = ["COORD", "MANAGER", "ADMIN_HO", "SUPER_ADMIN"].includes(userRole || "")
 
   return (
     <div className="w-full bg-[#f8fafc] text-slate-800 antialiased">
@@ -368,11 +369,11 @@ export function ReportDetailView({
       <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200/90 bg-white/95 px-4 backdrop-blur-md sm:px-6">
         <div className="flex items-center gap-2 text-xs">
           <Link
-            href="/dashboard/reports"
+            href={isReviewer ? "/dashboard/reports" : "/dashboard"}
             className="flex items-center gap-1.5 font-semibold text-slate-600 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft className="size-3.5 text-slate-400" />
-            <span>Laporan Maintenance</span>
+            <span>{isReviewer ? "Laporan Maintenance" : "Kembali ke Dashboard"}</span>
           </Link>
           <ChevronRight className="size-3 text-slate-400" />
           <span className="font-mono font-bold text-slate-900">{report.reportCode}</span>
@@ -736,19 +737,21 @@ export function ReportDetailView({
             <span>Riwayat Aktivitas</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab("aksi")}
-            className={cn(
-              "flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
-              activeTab === "aksi"
-                ? "border-[#ff8a2a] text-[#ff8a2a]"
-                : "border-transparent text-slate-500 hover:text-slate-900"
-            )}
-          >
-            <ShieldAlert className="size-4" />
-            <span>Aksi Review</span>
-          </button>
+          {isReviewer && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("aksi")}
+              className={cn(
+                "flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
+                activeTab === "aksi"
+                  ? "border-[#ff8a2a] text-[#ff8a2a]"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              )}
+            >
+              <ShieldAlert className="size-4" />
+              <span>Aksi Review</span>
+            </button>
+          )}
         </div>
 
         {/* 5. Tab Content: Checklist */}
@@ -1091,8 +1094,8 @@ export function ReportDetailView({
           </div>
         )}
 
-        {/* 9. Tab Content: Aksi Review */}
-        {activeTab === "aksi" && (
+        {/* 9. Tab Content: Aksi Review (Hanya Reviewer) */}
+        {isReviewer && activeTab === "aksi" && (
           <div className="mt-5 space-y-4">
             <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
               <h3 className="text-xs font-black uppercase tracking-wide text-slate-900">

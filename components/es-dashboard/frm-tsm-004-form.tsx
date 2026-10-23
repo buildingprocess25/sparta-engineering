@@ -96,7 +96,7 @@ export function FrmTsm004Form({
           setErrorMsg(result.errors?.[0] ?? "Gagal menyimpan laporan.")
           return
         }
-        router.push("/dashboard/reports")
+        router.push(`/dashboard/reports/${reportCode}/follow-up`)
       } catch {
         setErrorMsg("Terjadi kesalahan sistem saat menyimpan laporan.")
       }

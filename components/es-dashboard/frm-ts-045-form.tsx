@@ -73,16 +73,6 @@ const FOLLOW_UP_OPTIONS = [
     label: "Form Penggantian Spare Part (065)",
     badge: "065",
   },
-  {
-    id: "SAT/FRM/TSM/014_REV:000_060423",
-    label: "Form Estimasi Biaya Sipil & ME (014)",
-    badge: "014",
-  },
-  {
-    id: "REPAIR_TANPA_BIAYA",
-    label: "Perbaikan Tanpa Biaya (Internal)",
-    badge: "Tanpa Biaya",
-  },
 ]
 
 type PreviewPhoto = {
@@ -330,11 +320,7 @@ export function FrmTs045Form({
           item.repairForm === "SAT/FRM/TS/065_REV:00_161020",
       )
 
-      if (needsFollowUp) {
-        router.push(`/dashboard/reports/${reportCode}/follow-up`)
-      } else {
-        router.push("/dashboard")
-      }
+      router.push(`/dashboard/reports/${reportCode}/follow-up`)
     } catch (err) {
       console.error(err)
       setSubmitErrors(["Terjadi kesalahan sistem saat menyimpan checklist."])
@@ -417,33 +403,13 @@ export function FrmTs045Form({
             />
           </div>
 
-          {/* Minggu Selector */}
-          <div className="sm:col-span-2">
-            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
-              <label className="text-xs font-semibold text-[#111111]">
-                Minggu Pelaksanaan <span className="text-red-500">*</span>
-              </label>
-              <span className="text-[11px] font-medium text-[#ff8a2a]">
-                Terkunci otomatis sesuai minggu berjalan ({WEEKS.find((w) => w.id === currentWeekId)?.label})
-              </span>
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {WEEKS.map((w) => {
-                const isCurrent = w.id === currentWeekId
-                return (
-                  <div
-                    key={w.id}
-                    className={cn(
-                      "flex flex-col items-center justify-center rounded-xl border py-2.5 text-xs font-bold transition-all select-none",
-                      isCurrent
-                        ? "border-[#ff8a2a] bg-[#fff0e3] text-[#ff8a2a] shadow-xs ring-1 ring-[#ff8a2a]"
-                        : "border-[#e5e5e5] bg-gray-50 text-[#a3a3a3] opacity-60",
-                    )}
-                  >
-                    <span>{w.label}</span>
-                  </div>
-                )
-              })}
+          {/* Minggu Pelaksanaan */}
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              Minggu Pelaksanaan <span className="text-red-500">*</span>
+            </label>
+            <div className="flex h-11 items-center justify-center rounded-xl border border-[#ff8a2a] bg-[#fff0e3] text-sm font-bold text-[#ff8a2a] shadow-xs select-none">
+              {WEEKS.find((w) => w.id === currentWeekId)?.label || "Minggu 4"} Berjalan
             </div>
           </div>
 
@@ -718,44 +684,40 @@ export function FrmTs045Form({
                                 />
                               )}
                               {state.photos && state.photos.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
+                                <div className="mt-3 flex flex-col gap-2">
                                   {state.photos.map((photo) => (
                                     <div key={photo.fileId} className="relative">
-                                      <div className="block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111]">
-                                        <Image
-                                          src={photo.url}
-                                          alt={`Foto ${item.label}`}
-                                          width={80}
-                                          height={80}
-                                          className="size-20 object-cover cursor-pointer"
-                                          onClick={() =>
-                                            setPreviewPhoto({
-                                              itemLabel: item.label,
-                                              url: photo.url,
-                                            })
-                                          }
-                                        />
-                                      </div>
                                       <button
                                         type="button"
-                                        onClick={() => deletePhoto(item.id, photo.fileId)}
-                                        className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow"
-                                        title="Hapus foto"
+                                        onClick={() =>
+                                          setPreviewPhoto({
+                                            itemLabel: item.label,
+                                            url: photo.url,
+                                          })
+                                        }
+                                        className="group w-full overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)] outline-none focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/40"
                                       >
-                                        <Trash2 className="size-3" />
+                                        <Image
+                                          src={photo.url}
+                                          alt={`Foto bukti ${item.label}`}
+                                          width={640}
+                                          height={360}
+                                          className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.01]"
+                                        />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          deletePhoto(item.id, photo.fileId)
+                                        }}
+                                        className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-red-500/90 text-white backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 shadow-md"
+                                        aria-label="Hapus foto"
+                                      >
+                                        <Trash2 className="size-4" />
                                       </button>
                                     </div>
                                   ))}
-                                  <CameraCaptureButton
-                                    disabled={state.uploading}
-                                    uploading={state.uploading}
-                                    watermarkLines={buildChecklistPhotoWatermarkLines({
-                                      areaName: `${areaName} (Pallet Mover: ${unitNo || "-"})`,
-                                      userLabel: watermarkUserLabel,
-                                      userRole: watermarkUserRole,
-                                    })}
-                                    onCapture={(file) => void uploadPhoto(item.id, file)}
-                                  />
                                 </div>
                               )}
                             </div>
@@ -895,33 +857,39 @@ export function FrmTs045Form({
       </div>
 
       {/* Fullscreen Photo Viewer */}
-      {previewPhoto && (
+      {previewPhoto ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-5"
           onClick={() => setPreviewPhoto(null)}
         >
-          <div className="relative max-h-[90vh] max-w-lg overflow-hidden rounded-2xl bg-white p-2">
-            <button
-              type="button"
-              onClick={() => setPreviewPhoto(null)}
-              className="absolute right-4 top-4 z-10 rounded-full bg-black/60 p-1.5 text-white"
-            >
-              <X className="size-4" />
-            </button>
-            <div className="relative aspect-4/3 w-full">
-              <Image
-                src={previewPhoto.url}
-                alt={previewPhoto.itemLabel}
-                fill
-                className="object-contain"
-              />
-            </div>
-            <p className="p-3 text-center text-xs font-semibold text-[#111111]">
-              {previewPhoto.itemLabel}
-            </p>
+          <button
+            type="button"
+            onClick={() => setPreviewPhoto(null)}
+            className="absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-white text-[#111111] shadow-lg outline-none transition-transform active:scale-95 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/50"
+            aria-label="Tutup preview foto"
+          >
+            <X className="size-5" />
+          </button>
+          <div
+            className="flex flex-col items-center gap-3 max-w-3xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={previewPhoto.url}
+              alt={`Preview foto bukti ${previewPhoto.itemLabel}`}
+              width={1280}
+              height={720}
+              className="max-h-[82svh] w-auto max-w-full rounded-2xl object-contain shadow-[0_24px_80px_rgba(0,0,0,0.5)] border border-white/10"
+              priority
+            />
+            {previewPhoto.itemLabel && (
+              <span className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur-md border border-white/10">
+                {previewPhoto.itemLabel}
+              </span>
+            )}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

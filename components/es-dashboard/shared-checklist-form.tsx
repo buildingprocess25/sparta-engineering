@@ -91,8 +91,6 @@ type UploadNotice = {
 
 const FOLLOW_UP_LABELS: Record<string, string> = {
   "SAT/FRM/TSM/014_REV:000_060423": "Form Estimasi Biaya Sipil & ME (014)",
-  "SAT/FRM/TS/065_REV:00_161020": "Form Penggantian Spare Part (065)",
-  "REPAIR_TANPA_BIAYA": "Repair Tanpa Biaya",
 }
 
 type PreviewPhoto = {
@@ -358,16 +356,7 @@ export function SharedChecklistForm({
           setErrors(result.errors)
           return
         }
-        const needsFollowUp = payload.items.some(
-          (item) =>
-            item.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ||
-            item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
-        )
-        if (needsFollowUp) {
-          window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
-        } else {
-          window.location.assign("/dashboard/reports")
-        }
+        window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
       } catch (error) {
         setErrors([error instanceof Error ? error.message : "Terjadi kesalahan. Coba lagi."])
       }
@@ -572,10 +561,12 @@ export function SharedChecklistForm({
                                     onValueChange={(val) => {
                                       const condition = val as ChecklistCondition
                                       const isBesOnly = ["ADJUST_OR_ADD", "CLEAN", "REPAIR"].includes(condition)
+                                      const isAction = ["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition)
                                       updateItem(item.id, index, {
                                         ...nextChecklistPhotoState(state, condition),
                                         handler: isBesOnly ? "BES" : (state.handler || "BES"),
-                                        ...(!["RUSAK", "REPAIR", "URGENT", "ADJUST_OR_ADD", "CLEAN"].includes(condition)
+                                        repairForm: isAction ? "SAT/FRM/TSM/014_REV:000_060423" : undefined,
+                                        ...(!isAction
                                           ? { handler: undefined, notes: "", repairForm: undefined }
                                           : {}),
                                       })
@@ -738,18 +729,6 @@ export function SharedChecklistForm({
                                           className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
                                         >
                                           Form Estimasi Biaya Sipil & ME (014)
-                                        </SelectItem>
-                                        <SelectItem
-                                          value="SAT/FRM/TS/065_REV:00_161020"
-                                          className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
-                                        >
-                                          Form Penggantian Spare Part (065)
-                                        </SelectItem>
-                                        <SelectItem
-                                          value="REPAIR_TANPA_BIAYA"
-                                          className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
-                                        >
-                                          Repair Tanpa Biaya
                                         </SelectItem>
                                       </SelectContent>
                                     </Select>

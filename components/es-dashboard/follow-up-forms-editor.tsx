@@ -27,6 +27,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select"
+import { ReportCompletionSuccess } from "@/components/es-dashboard/report-completion-success"
 
 interface MaterialItem {
   id: string
@@ -81,6 +82,8 @@ interface FollowUpFormsEditorProps {
     authorName: string
     areaName: string
     areaCode: string
+    targetName?: string
+    isRoutine?: boolean
     createdAt: string
   }
 }
@@ -201,6 +204,12 @@ export function FollowUpFormsEditor({
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false)
+  const [savedSummary, setSavedSummary] = useState<{
+    followUpType: "014" | "065" | "NONE"
+    totalCost014?: number
+    itemsCount065?: number
+  }>({ followUpType: "NONE" })
 
   // Current active unit
   const activeUnit = followUpUnits[currentStep]
@@ -451,7 +460,15 @@ export function FollowUpFormsEditor({
         throw new Error(err.message || "Gagal menyimpan form tindak lanjut.")
       }
 
-      window.location.assign("/dashboard/reports")
+      setSavedSummary({
+        followUpType: has014 ? "014" : has065 ? "065" : "NONE",
+        totalCost014: has014 ? grandTotal014 : undefined,
+        itemsCount065: has065 ? followUpUnits.filter((u) => u.formType === "065").length : undefined,
+      })
+      setIsSubmittedSuccess(true)
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      }
     } catch (err: any) {
       setErrorMessage(err.message || "Terjadi kesalahan saat menyimpan data.")
     } finally {
@@ -459,21 +476,35 @@ export function FollowUpFormsEditor({
     }
   }
 
+  if (isSubmittedSuccess) {
+    return (
+      <ReportCompletionSuccess
+        reportCode={reportCode}
+        isRoutine={Boolean(context.isRoutine)}
+        targetName={context.targetName || context.areaName}
+        branchName={context.branchName}
+        authorName={context.authorName}
+        status="PENDING_COORD"
+        followUpType={savedSummary.followUpType}
+        followUpSummary={{
+          totalCost014: savedSummary.totalCost014,
+          itemsCount065: savedSummary.itemsCount065,
+        }}
+      />
+    )
+  }
+
   if (totalSteps === 0) {
     return (
-      <div className="rounded-2xl border border-[#dedede] bg-white p-6 text-center shadow-sm">
-        <Info className="mx-auto mb-3 size-10 text-[#707784]" />
-        <h2 className="text-base font-bold text-[#111111]">Tidak Ada Form Lanjutan</h2>
-        <p className="mt-1 text-xs text-[#707784]">
-          Semua item checklist dalam kondisi baik atau telah selesai tanpa biaya.
-        </p>
-        <button
-          onClick={() => router.push("/dashboard/reports")}
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-lg bg-[#ff8a2a] px-6 text-xs font-bold text-white shadow-sm"
-        >
-          Kembali ke Daftar Laporan
-        </button>
-      </div>
+      <ReportCompletionSuccess
+        reportCode={reportCode}
+        isRoutine={Boolean(context.isRoutine)}
+        targetName={context.targetName || context.areaName}
+        branchName={context.branchName}
+        authorName={context.authorName}
+        status="PENDING_COORD"
+        followUpType="NONE"
+      />
     )
   }
 
@@ -1037,7 +1068,7 @@ export function FollowUpFormsEditor({
           ) : (
             <button
               type="button"
-              onClick={() => router.push("/dashboard/reports")}
+              onClick={() => router.push("/dashboard")}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dedede] bg-white px-3.5 text-xs font-bold text-zinc-500 hover:bg-zinc-50 transition-colors"
             >
               Nanti Saja

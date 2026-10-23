@@ -93,16 +93,6 @@ const FOLLOW_UP_OPTIONS = [
     label: "Form Penggantian Spare Part (065)",
     badge: "065",
   },
-  {
-    id: "SAT/FRM/TSM/014_REV:000_060423",
-    label: "Form Estimasi Biaya Sipil & ME (014)",
-    badge: "014",
-  },
-  {
-    id: "REPAIR_TANPA_BIAYA",
-    label: "Repair Tanpa Biaya (Internal)",
-    badge: "Internal",
-  },
 ] as const
 
 export function FrmTsm008Form({
@@ -420,11 +410,7 @@ export function FrmTsm008Form({
             item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
         )
 
-        if (needsFollowUp) {
-          window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
-        } else {
-          window.location.assign("/dashboard/reports")
-        }
+        window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
       } catch (err) {
         setErrors([
           err instanceof Error

@@ -91,16 +91,6 @@ const FOLLOW_UP_OPTIONS = [
     label: "Form Penggantian Spare Part (065)",
     badge: "065",
   },
-  {
-    id: "SAT/FRM/TSM/014_REV:000_060423",
-    label: "Form Estimasi Biaya ME (014)",
-    badge: "014",
-  },
-  {
-    id: "REPAIR_TANPA_BIAYA",
-    label: "Repair Tanpa Biaya (Internal)",
-    badge: "Internal",
-  },
 ]
 
 export function FrmTsm013Form({
@@ -377,7 +367,13 @@ export function FrmTsm013Form({
       }
 
       setSubmitSuccess(true)
-      window.location.href = `/dashboard/reports/${reportCode}?submitted=true`
+      const needsFollowUp = payload.items.some(
+        (item) =>
+          item.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ||
+          item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
+      )
+
+      window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal mengirim laporan checklist."
       setErrors([msg])

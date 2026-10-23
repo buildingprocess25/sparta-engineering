@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { getPrisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
 import { ReportDetailView } from "@/components/reports/report-detail-view"
+import { EsFormDetailView } from "@/components/es-dashboard/es-form-detail-view"
 import { ManagerSidebar } from "@/components/manager-dashboard/manager-sidebar"
 
 export default async function ReportDetailPage({
@@ -41,19 +42,31 @@ export default async function ReportDetailPage({
     updatedAt: report.updatedAt.toISOString(),
   }
 
-  const userEmail = (session.email as string) || "admin@admin.com"
-  const userRole = (session.role as string) || "MANAGER"
-
   const user = await getPrisma().user.findUnique({
     where: { NIK: session.userId as string },
     select: { name: true, NIK: true, role: true, email: true },
   })
+
+  const userEmail = (user?.email as string) || (session.email as string) || "admin@admin.com"
+  const userRole = (user?.role as string) || (session.role as string) || "ES"
 
   const currentUserData = {
     name: user?.name || userEmail.split("@")[0].toUpperCase(),
     NIK: user?.NIK || (session.userId as string) || "-",
     role: userRole,
     email: userEmail,
+  }
+
+  const isReviewer = ["COORD", "MANAGER", "ADMIN_HO", "SUPER_ADMIN"].includes(userRole)
+
+  if (!isReviewer) {
+    return (
+      <EsFormDetailView
+        report={serializedReport}
+        userRole={userRole}
+        currentUser={currentUserData}
+      />
+    )
   }
 
   return (

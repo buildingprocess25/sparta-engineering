@@ -84,16 +84,6 @@ const FOLLOW_UP_OPTIONS = [
     label: "Form Penggantian Spare Part (065)",
     badge: "065",
   },
-  {
-    id: "SAT/FRM/TSM/014_REV:000_060423",
-    label: "Form Estimasi Biaya ME (014)",
-    badge: "014",
-  },
-  {
-    id: "REPAIR_TANPA_BIAYA",
-    label: "Repair Tanpa Biaya (Internal)",
-    badge: "Internal",
-  },
 ]
 
 export const MONTH_LIST = [
@@ -325,21 +315,13 @@ export function FrmTs029Form({
           notes:
             itemNotes ||
             (condition === "RUSAK"
-              ? state?.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
-                ? "Form Estimasi Biaya Sipil & ME (014)"
-                : state?.repairForm === "REPAIR_TANPA_BIAYA"
-                ? "Repair Tanpa Biaya"
-                : "Form Penggantian Spare Part (065)"
+              ? "Form Penggantian Spare Part (065)"
               : ""),
           handler: state?.handler,
-          repairForm: state?.repairForm === "REPAIR_TANPA_BIAYA" ? undefined : state?.repairForm,
+          repairForm: condition === "RUSAK" ? (state?.repairForm || "SAT/FRM/TS/065_REV:00_161020") : state?.repairForm,
           repairFormName:
-            state?.repairForm === "SAT/FRM/TS/065_REV:00_161020"
+            condition === "RUSAK" || state?.repairForm === "SAT/FRM/TS/065_REV:00_161020"
               ? "Form Penggantian Spare Part (065)"
-              : state?.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
-              ? "Form Estimasi Biaya ME (014)"
-              : state?.repairForm === "REPAIR_TANPA_BIAYA"
-              ? "Repair Tanpa Biaya"
               : undefined,
         }
       }),
@@ -396,7 +378,16 @@ export function FrmTs029Form({
         })
         if (!result.ok) {
           setErrors(result.errors)
+          return
         }
+
+        const needsFollowUp = payload.items.some(
+          (item) =>
+            item.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ||
+            item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
+        )
+
+        window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat submit checklist"
         setErrors([msg])

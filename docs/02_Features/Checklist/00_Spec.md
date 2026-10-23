@@ -29,6 +29,9 @@
 3. **Model Pengisian Data**: ES membuat "Dokumen Laporan Baru" (record baru) di dalam sistem setiap kali jadwal checklist tiba.
 4. **Alur Approval (Tanpa Kerusakan)**: Jika laporan checklist 100% aman (tidak ada laporan kerusakan), maka proses approval cukup melalui **Coord** dan **Manager**, lalu status menjadi Selesai (Tidak perlu sampai ke Requester).
 5. **Alur Approval (Ada Kerusakan)**: Jika terdapat temuan kerusakan, alur akan mengikuti proses yang lebih panjang (ES -> Coord -> Manager -> Requester -> Input PB/PJU -> Selesai).
+6. **Otoritas & Tampilan Detail Laporan (`/dashboard/reports/[reportCode]`)**:
+   - **Teknisi ES**: Hanya melihat ringkasan & *draft isian* murni yang telah diinput (hasil periksa, foto bukti, catatan, form tindak lanjut). ES tidak berwenang memberikan persetujuan (*acc*), sehingga tab/tombol **"Aksi Review" (Setujui / Tolak / Minta Revisi) disembunyikan total**. ES juga tidak dimuat dalam `ManagerSidebar`, melainkan tampilan mandiri yang bersih dengan navigasi kembali ke `/dashboard`.
+   - **Reviewer (COORD, MANAGER, ADMIN_HO, SUPER_ADMIN)**: Memiliki akses penuh termasuk `ManagerSidebar` dan tab **"Aksi Review"** untuk menyetujui, meminta revisi, atau menolak laporan.
 
 ## UI & Alur Pengguna
 
@@ -52,6 +55,21 @@
   9. Laporan masuk antrean Approval:
      - Jika 100% aman: `Coord -> Manager -> Selesai`
      - Jika ada kerusakan: `Coord -> Manager -> Requester -> Input PB/PJU -> Selesai`
+
+- **Alur Penyelesaian Laporan & Halaman Sukses (Completion Screen)**:
+  Setelah pengisian form checklist (baik kondisi normal tanpa perbaikan maupun setelah melengkapi form tindak lanjut 014 / 065), sistem menampilkan halaman konfirmasi penyelesaian (`ReportCompletionSuccess`) dan tidak me-redirect pengguna secara mendadak ke tabel `/dashboard/reports`:
+  1. **Laporan Rutin (To-Do List Task)**:
+     - Badge & Judul: `Checklist Rutin Selesai` • *"Tugas Checklist Rutin Berhasil Diselesaikan!"*
+     - Notifikasi bahwa kartu to-do list otomatis ditandai `COMPLETED` dan laporan masuk antrean approval Coordinator.
+     - Tombol Navigasi Utama: *"Kembali ke To-Do List"* (`/dashboard`).
+  2. **Laporan Non-Rutin (Insidental / Buat Laporan)**:
+     - Badge & Judul: `Laporan Non-Rutin Berhasil Disimpan` • *"Laporan Non-Rutin Berhasil Disimpan!"*
+     - Notifikasi bahwa laporan non-rutin telah dicatat dan diteruskan ke antrean approval Coordinator.
+     - Tombol Navigasi Utama: *"Kembali ke Dashboard"* (`/dashboard`).
+  3. **Ringkasan Informasi Laporan**:
+     - Nomor Laporan (`reportCode`), status `Menunggu Review Coord`, objek/lokasi, cabang, dan waktu submit.
+     - Informasi form tindak lanjut (total estimasi biaya Form 014 atau jumlah spare part Form 065, atau indikator kondisi baik tanpa biaya).
+     - Tombol aksi tunggal: Tombol utama *"Kembali ke To-Do List"* (atau *"Kembali ke Dashboard"*). Tombol detail laporan ditiadakan agar teknisi langsung kembali melanjutkan tugas berikutnya.
 
 ## Data & API
 
@@ -532,7 +550,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - `No. Unit`: Nomor unit Forklift (misal `FL-01`).
   - `Branch & Lokasi`: Terisi otomatis dari konteks (misal `BANJARMASIN / Area Charger Battery`).
   - `Bulan & Tahun`: Terisi otomatis dari kalender aktif (misal `Oktober 2026`).
-  - `Sub-selector Minggu`: Radio/segmented control `Minggu 1` s/d `Minggu 5`.
+  - `Sub-selector Minggu`: Ditampilkan sebagai 1 shape ringkas minggu aktif (misal `Minggu 4`) di sebelah kanan Lokasi / Ruangan tanpa teks bantuan panjang.
   - `Tanggal Pelaksanaan`: Input tanggal pelaksanaan inspeksi mingguan.
   - `Hour Meter 1 (H1)`: Input jam kerja / pembacaan hour meter unit Forklift.
 - **Struktur Kategori & 21 Item Pemeriksaan**:
@@ -548,7 +566,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 - **Opsi Kondisi & Temuan Kerusakan (Standar Form Equipment)**:
   - Default kondisi awal seluruh item: `Baik (V)`.
   - Opsi: `Baik (V)` dan `Rusak (X)`.
-  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark otomatis, penanggung jawab (`BES` / `Eksternal`), catatan, dan dropdown form tindak lanjut (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, `REPAIR_TANPA_BIAYA`).
+  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark otomatis, penanggung jawab (`BES` / `Eksternal`), catatan, dan form tindak lanjut 065.
 - **Approval & Verifikasi**:
   - Dibuat oleh: Branch Engineering Support
   - Diperiksa oleh: Branch Engineering Coord
@@ -561,7 +579,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - `Merk Unit`: Merk unit Pallet Mover (misal `Noblelift`).
   - `Branch & Lokasi`: Terisi otomatis dari konteks (misal `BANJARMASIN / Area Charger Battery` atau `Fresh Food`).
   - `Bulan & Tahun`: Terisi otomatis dari kalender aktif.
-  - `Sub-selector Minggu`: Terkunci otomatis sesuai minggu berjalan (`Minggu 1` s/d `Minggu 5`).
+  - `Sub-selector Minggu`: Ditampilkan sebagai 1 shape ringkas minggu aktif (misal `Minggu 4`) di sebelah kanan Lokasi / Ruangan tanpa teks bantuan panjang.
   - `Tanggal Pelaksanaan`: Input tanggal pelaksanaan inspeksi mingguan.
   - `Hour Meter 1 (H1)`: Input jam kerja / pembacaan hour meter unit Pallet Mover.
 - **Struktur Kategori & 12 Item Pemeriksaan (Tindakan CL/C)**:
@@ -648,14 +666,14 @@ Required behavior:
 ## Form Tindak Lanjut Perbaikan (FRM_TSM_014 & FRM_TS_065)
 
 Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checklist:
-1. **Pilihan Form Tindak Lanjut per Unit**:
-   - `SAT/FRM/TSM/014_REV:000_060423` (Form Estimasi Biaya Sipil & ME)
-   - `SAT/FRM/TS/065_REV:00_161020` (Form Penggantian Spare Part Equipment)
-   - `REPAIR_TANPA_BIAYA` (Perbaikan tanpa biaya)
+1. **Pilihan Form Tindak Lanjut Spesifik Kategori**:
+   - **Kategori Equipment / Alat Operasional**: Otomatis menggunakan `SAT/FRM/TS/065_REV:00_161020` (Form Penggantian Spare Part Equipment).
+   - **Kategori Ruangan / Fasilitas Bangunan**: Otomatis menggunakan `SAT/FRM/TSM/014_REV:000_060423` (Form Estimasi Biaya Sipil & ME).
+   - Opsi "Repair Tanpa Biaya" ditiadakan dari opsi tindak lanjut temuan kerusakan agar seluruh temuan kerusakan tercatat melalui form resmi (065 atau 014).
 
 2. **Alur Halaman Rekapitulasi Tindak Lanjut (`/dashboard/reports/[reportCode]/follow-up`)**:
-   - Jika checklist memiliki item dengan form 014 atau 065, setelah submit checklist user diarahkan ke halaman pengisian form lanjutan.
-   - Jika tidak ada (semua baik atau repair tanpa biaya), laporan langsung menuju antrean approval `PENDING_COORD`.
+   - Jika checklist memiliki item rusak, setelah submit checklist user diarahkan ke halaman pengisian form lanjutan (`/dashboard/reports/[reportCode]/follow-up`) sesuai jenisnya (065 untuk unit mesin/equipment, 014 untuk ruangan/gedung). Standardisasi ini berlaku di seluruh formulir checklist (FRM_TSM_001 s.d. FRM_TSM_013, FRM_TS_016 s.d. FRM_TS_064).
+   - Jika 100% aman (seluruh item BAIK), laporan langsung menuju antrean approval `PENDING_COORD`.
    - **Tampilan Step-by-Step (1 Form per Halaman/Langkah)**:
      - Form ditampilkan secara berurutan unit demi unit sesuai urutan item rusak di checklist (misal: Unit 1 AC [065] -> Unit 2 AC [065] -> Unit 1 Exhaust Fan [014]).
      - Navigasi antar unit menggunakan tombol "Sebelumnya" dan "Selanjutnya", dengan progress indicator yang jelas (e.g. "Item 1 dari 3").

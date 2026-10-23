@@ -235,5 +235,31 @@ export const FORKLIFT_WEEKLY_CATEGORIES: ForkliftWeeklyCategory[] = [
   },
 ]
 
+import type { ChecklistConfig, ChecklistItemConfig } from "@/components/es-dashboard/shared-checklist-form"
+import { conditionRequiresPhoto } from "@/lib/checklists/photo-state"
+
 export const ALL_FORKLIFT_WEEKLY_ITEMS: ForkliftWeeklyItem[] =
   FORKLIFT_WEEKLY_CATEGORIES.flatMap((c) => c.items)
+
+export const FRM_TS_043_ITEMS_CONFIG: ChecklistItemConfig[] = ALL_FORKLIFT_WEEKLY_ITEMS.map((item) => ({
+  id: item.id,
+  label: item.label,
+  icon: Activity,
+}))
+
+export const FRM_TS_043_CONFIG: ChecklistConfig = {
+  formCode: FRM_TS_043_FORM_CODE,
+  formName: "Form Weekly Checklist Forklift",
+  items: FRM_TS_043_ITEMS_CONFIG,
+  conditionOptions: ["BAIK", "RUSAK"],
+  conditionLabels: {
+    BAIK: "Baik (V)",
+    RUSAK: "Rusak (X)",
+    TIDAK_ADA: "Tidak Ada (T)",
+    ADJUST_OR_ADD: "Adjust/Add (A)",
+    CLEAN: "Clean (C)",
+    REPAIR: "Repair (R)",
+    URGENT: "Urgent (U)",
+  },
+  conditionRequiresPhoto,
+}
