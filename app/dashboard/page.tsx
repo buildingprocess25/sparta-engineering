@@ -55,7 +55,7 @@ export default async function DashboardPage(props: DashboardPageProps) {
 
     return (
       <>
-        <DashboardShell>
+        <DashboardShell contentClassName="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl sm:px-6 md:px-8">
           <DashboardHeader email={session?.email as string} role={role} />
           <WelcomePanel user={userContext} />
           <WorkPermitCard userNik={session?.userId as string} initialStatus={workPermitStatus} />
@@ -65,16 +65,18 @@ export default async function DashboardPage(props: DashboardPageProps) {
             workPermitStatus={workPermitStatus}
           />
           <ReportFlow />
-          <ProgressSummary
-            total={todoData.total}
-            completed={todoData.completed}
-            percentage={
-              todoData.total > 0
-                ? Math.round((todoData.completed / todoData.total) * 100)
-                : 0
-            }
-          />
-          <StatsGrid stats={stats} />
+          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-6 md:items-start">
+            <ProgressSummary
+              total={todoData.total}
+              completed={todoData.completed}
+              percentage={
+                todoData.total > 0
+                  ? Math.round((todoData.completed / todoData.total) * 100)
+                  : 0
+              }
+            />
+            <StatsGrid stats={stats} />
+          </div>
         </DashboardShell>
         <BottomNavigation />
       </>

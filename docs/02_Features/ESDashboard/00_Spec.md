@@ -44,6 +44,17 @@
     - **Search Bar**: Berada langsung di bawah header untuk pencarian cepat berdasarkan nama alat, ruangan, kode formulir, atau cabang.
     - **Filter Controls**: Opsi tombol filter 4 kolom rata kiri-kanan (`grid grid-cols-4 w-full`) mencakup `Selesai`, `Terlewat`, `Equipment`, dan `Ruangan` tanpa counter angka, dengan visual *soft orange* (`bg-orange-50 text-orange-700 border-orange-300`) saat aktif/terpilih sesuai tema SPARTA.
     - **Looping History Cards**: Setiap riwayat ditampilkan sebagai kartu mandiri (`rounded-xl`, white surface, border halus, soft shadow) dengan icon squircle di sisi kiri, identitas objek, kode form/periode, status badge (emerald untuk Selesai, rose untuk Terlewat), tanggal/waktu penyelesaian atau batas waktu, serta akses langsung ke detail laporan (`reportCode`).
+- **Responsive Tablet Dashboard ES (`/dashboard`)**:
+  - Halaman dashboard utama ES dibuat responsif adaptif terhadap layar tablet/iPad (`md:max-w-3xl lg:max-w-4xl px-4 sm:px-6 md:px-8`).
+  - Welcome Panel & Work Permit Banner memanfaatkan ruang horizontal tablet secara proporsional.
+  - To-Do List PIC menampilkan kartu tugas dalam layout 2-kolom (`md:grid-cols-2`) dengan metrik 4-kolom.
+  - Bagian bawah menampilkan Rekap Progres Preventif & Stats Laporan berdampingan secara seimbang (`md:grid md:grid-cols-2 md:gap-4`).
+  - Bottom Navigation melebar proporsional (`md:max-w-xl`) tanpa membuat tombol terdistorsi.
+- **Responsive Tablet Halaman Aktivitas ES (`/dashboard/activity`)**:
+  - Halaman riwayat aktivitas ES dibuat responsif adaptif terhadap layar tablet/iPad (`md:max-w-3xl lg:max-w-4xl px-4 sm:px-6 md:px-8`).
+  - Search bar & tombol filter 4-kolom (`Selesai`, `Terlewat`, `Equipment`, `Ruangan`) proporsional dan nyaman diakses di tablet.
+  - Kartu riwayat aktivitas checklist (`ActivityHistoryView`) ditampilkan dalam tata letak responsif 2-kolom di tablet (`grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3`), memanfaatkan lebar viewport tablet secara optimal tanpa kolom sempit memanjang.
+  - Tampilan kosong (empty state) dan total count footer selaras dengan batas kontainer tablet.
 
 ## Aturan Bisnis
 

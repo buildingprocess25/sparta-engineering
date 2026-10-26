@@ -107,7 +107,7 @@ export function ActivityHistoryView({
 
   return (
     <>
-      <DashboardShell>
+      <DashboardShell contentClassName="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl sm:px-6 md:px-8">
         <DashboardHeader
           email={userEmail}
           role={userRole}
@@ -118,13 +118,13 @@ export function ActivityHistoryView({
         <div className="mt-5 space-y-4 pb-12">
           {/* Direct Search Bar - Compact rounded-lg */}
           <div className="relative w-full">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 md:left-3.5 top-1/2 size-3.5 md:size-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari tugas, alat, ruangan, kode..."
-              className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-8.5 pr-8 text-xs text-slate-800 placeholder-slate-400 transition-colors focus:border-[#ff8a2a] focus:outline-none focus:ring-1 focus:ring-[#ff8a2a]"
+              className="h-9 md:h-10 w-full rounded-lg md:rounded-xl border border-slate-200 bg-white pl-8.5 md:pl-10 pr-8 text-xs md:text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-[#ff8a2a] focus:outline-none focus:ring-1 focus:ring-[#ff8a2a]"
             />
             {searchQuery && (
               <button
@@ -133,19 +133,19 @@ export function ActivityHistoryView({
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                 aria-label="Hapus pencarian"
               >
-                <X className="size-3.5" />
+                <X className="size-3.5 md:size-4" />
               </button>
             )}
           </div>
 
           {/* 4 Equal-width Filter Buttons (rata kiri-kanan, soft orange on select) */}
-          <div className="grid grid-cols-4 gap-1.5 w-full">
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5 md:gap-3 w-full">
             {/* Selesai */}
             <button
               type="button"
               onClick={() => setActiveTab("COMPLETED")}
               className={cn(
-                "h-8 w-full inline-flex items-center justify-center gap-1 rounded-lg px-1.5 text-[11px] sm:text-xs transition-all cursor-pointer border",
+                "h-8 md:h-9 w-full inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
                 activeTab === "COMPLETED"
                   ? "bg-orange-50 text-orange-700 border-orange-300 font-semibold shadow-2xs ring-1 ring-orange-300/50"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium"
@@ -153,7 +153,7 @@ export function ActivityHistoryView({
             >
               <CheckCircle2
                 className={cn(
-                  "size-3.5 shrink-0",
+                  "size-3.5 md:size-4 shrink-0",
                   activeTab === "COMPLETED" ? "text-orange-500" : "text-slate-400"
                 )}
               />
@@ -165,7 +165,7 @@ export function ActivityHistoryView({
               type="button"
               onClick={() => setActiveTab("OVERDUE")}
               className={cn(
-                "h-8 w-full inline-flex items-center justify-center gap-1 rounded-lg px-1.5 text-[11px] sm:text-xs transition-all cursor-pointer border",
+                "h-8 md:h-9 w-full inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
                 activeTab === "OVERDUE"
                   ? "bg-orange-50 text-orange-700 border-orange-300 font-semibold shadow-2xs ring-1 ring-orange-300/50"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium"
@@ -173,7 +173,7 @@ export function ActivityHistoryView({
             >
               <AlertCircle
                 className={cn(
-                  "size-3.5 shrink-0",
+                  "size-3.5 md:size-4 shrink-0",
                   activeTab === "OVERDUE" ? "text-orange-500" : "text-slate-400"
                 )}
               />
@@ -189,7 +189,7 @@ export function ActivityHistoryView({
                 )
               }
               className={cn(
-                "h-8 w-full inline-flex items-center justify-center gap-1 rounded-lg px-1.5 text-[11px] sm:text-xs transition-all cursor-pointer border",
+                "h-8 md:h-9 w-full inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
                 objectFilter === "EQUIPMENT"
                   ? "bg-orange-50 text-orange-700 border-orange-300 font-semibold shadow-2xs ring-1 ring-orange-300/50"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium"
@@ -197,7 +197,7 @@ export function ActivityHistoryView({
             >
               <Wrench
                 className={cn(
-                  "size-3 shrink-0",
+                  "size-3 md:size-3.5 shrink-0",
                   objectFilter === "EQUIPMENT" ? "text-orange-500" : "text-slate-400"
                 )}
               />
@@ -213,7 +213,7 @@ export function ActivityHistoryView({
                 )
               }
               className={cn(
-                "h-8 w-full inline-flex items-center justify-center gap-1 rounded-lg px-1.5 text-[11px] sm:text-xs transition-all cursor-pointer border",
+                "h-8 md:h-9 w-full inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
                 objectFilter === "ROOM"
                   ? "bg-orange-50 text-orange-700 border-orange-300 font-semibold shadow-2xs ring-1 ring-orange-300/50"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium"
@@ -221,7 +221,7 @@ export function ActivityHistoryView({
             >
               <Building2
                 className={cn(
-                  "size-3 shrink-0",
+                  "size-3 md:size-3.5 shrink-0",
                   objectFilter === "ROOM" ? "text-orange-500" : "text-slate-400"
                 )}
               />
@@ -264,7 +264,7 @@ export function ActivityHistoryView({
                 )}
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
                 {filteredTasks.map((task) => {
                   const isCompleted = task.status === "COMPLETED"
                   const hasLink = Boolean(task.reportCode)
@@ -376,7 +376,7 @@ export function ActivityHistoryView({
 
             {/* Total Footer */}
             {filteredTasks.length > 0 && (
-              <div className="flex items-center justify-between pt-2 text-[11px] text-slate-400">
+              <div className="flex items-center justify-between pt-2 text-[11px] sm:text-xs text-slate-400">
                 <span>
                   Menampilkan {filteredTasks.length} riwayat {activeTab === "COMPLETED" ? "selesai" : "terlewat"}
                 </span>
