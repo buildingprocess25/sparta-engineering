@@ -31,10 +31,10 @@ export function ReportFlowShell({
       >
         <ReportBackButton />
 
-        <header className="rounded-2xl bg-[#111111] p-5 text-white shadow-xl shadow-black/15">
+        <header className="rounded-2xl bg-[#111111] p-5 sm:p-6 md:p-7 text-white shadow-xl shadow-black/15">
           <p className="text-xs font-semibold text-[#ffb46f]">{eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-semibold leading-tight">{title}</h1>
-          <p className="mt-2 text-sm leading-6 text-[#d9d9d9]">{description}</p>
+          <h1 className="mt-2 text-2xl md:text-3xl font-semibold leading-tight">{title}</h1>
+          <p className="mt-2 text-sm md:text-base leading-6 text-[#d9d9d9]">{description}</p>
         </header>
 
         <div className="mt-5">{children}</div>

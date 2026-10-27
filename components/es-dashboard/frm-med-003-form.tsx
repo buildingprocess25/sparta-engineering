@@ -290,28 +290,16 @@ export function FrmMed003Form({
   )
   const [electricalLainnya, setElectricalLainnya] = React.useState(safety.electrical?.lainnya || "")
 
-  // 5. APD & Fire Protection
+  // 5. APD & Fire Protection (Default uncheck / kosong sesuai template asli FRM_MED_003)
   const [apdItems, setApdItems] = React.useState<Record<string, boolean>>(() =>
-    parseBooleanMap(safety.apd?.items, {
-      topiHelm: true,
-      kacamata: true,
-      masker: true,
-      safetyShoes: true,
-      safetyVest: true,
-    })
+    parseBooleanMap(safety.apd?.items, {})
   )
   const [apdLainnya, setApdLainnya] = React.useState(safety.apd?.lainnya || "")
 
   const [fireProtectionItems, setFireProtectionItems] = React.useState<
     Record<string, boolean>
   >(() =>
-    parseBooleanMap(safety.fireProtection?.items, {
-      aparPowder: true,
-      aparCo2: false,
-      aparFoam: false,
-      air: false,
-      pasir: false,
-    })
+    parseBooleanMap(safety.fireProtection?.items, {})
   )
   const [fireLainnya, setFireLainnya] = React.useState(safety.fireProtection?.lainnya || "")
 
@@ -488,6 +476,81 @@ export function FrmMed003Form({
           <h2 className="font-semibold text-[#111111]">Informasi Pokok Pekerjaan</h2>
         </div>
 
+        {/* Periode Masa Berlaku Izin Kerja (Full-Width Highlight Banner) */}
+        <div className="mt-4 rounded-xl border border-amber-200/90 bg-amber-50/70 p-3.5 sm:p-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-slate-900">
+                Periode Masa Berlaku Izin Kerja <span className="text-red-500">*</span>
+              </label>
+              <p className="mt-0.5 text-[11px] sm:text-xs text-slate-600">
+                Izin kerja berlaku selama 1 bulan kalender penuh untuk seluruh checklist rutin.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-lg bg-amber-100 border border-amber-300 px-3 py-1.5 text-xs sm:text-sm font-bold text-amber-900 shadow-2xs">
+              {(() => {
+                try {
+                  const [y, m] = targetPeriod.split("-").map(Number)
+                  const d = new Date(y, m - 1, 1)
+                  return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" })
+                } catch {
+                  return targetPeriod
+                }
+              })()}
+            </span>
+          </div>
+
+          {!isReadOnly && (
+            <div className="mt-3 flex items-center gap-2 pt-2.5 border-t border-amber-200/60 flex-wrap">
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Pilihan Periode:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetPeriod(currentPeriod)
+                  setTanggal(new Date().toISOString().split("T")[0])
+                }}
+                className={cn(
+                  "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
+                  targetPeriod === currentPeriod
+                    ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                Bulan Berjalan ({(() => {
+                  try {
+                    const [y, m] = currentPeriod.split("-").map(Number)
+                    return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "short", year: "numeric" })
+                  } catch {
+                    return currentPeriod
+                  }
+                })()})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetPeriod(nextPeriod)
+                  setTanggal(`${nextPeriod}-01`)
+                }}
+                className={cn(
+                  "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
+                  targetPeriod === nextPeriod
+                    ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                Bulan Depan (H- {(() => {
+                  try {
+                    const [y, m] = nextPeriod.split("-").map(Number)
+                    return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "short", year: "numeric" })
+                  } catch {
+                    return nextPeriod
+                  }
+                })()})
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
@@ -571,81 +634,6 @@ export function FrmMed003Form({
                 </SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Periode Masa Berlaku Izin Kerja (1 Bulan & H-) */}
-          <div className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-3.5">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div>
-                <label className="block text-xs font-bold text-slate-900">
-                  Periode Masa Berlaku Izin Kerja <span className="text-red-500">*</span>
-                </label>
-                <p className="mt-0.5 text-[11px] text-slate-600">
-                  Izin kerja berlaku selama 1 bulan kalender penuh untuk seluruh checklist rutin.
-                </p>
-              </div>
-              <span className="shrink-0 rounded-md bg-amber-100 border border-amber-300 px-2.5 py-1 text-xs font-bold text-amber-900">
-                {(() => {
-                  try {
-                    const [y, m] = targetPeriod.split("-").map(Number)
-                    const d = new Date(y, m - 1, 1)
-                    return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" })
-                  } catch {
-                    return targetPeriod
-                  }
-                })()}
-              </span>
-            </div>
-
-            {!isReadOnly && (
-              <div className="mt-3 flex items-center gap-2 pt-2 border-t border-amber-200/60 flex-wrap">
-                <span className="text-[11px] font-semibold text-slate-700">Pilihan Periode:</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTargetPeriod(currentPeriod)
-                    setTanggal(new Date().toISOString().split("T")[0])
-                  }}
-                  className={cn(
-                    "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
-                    targetPeriod === currentPeriod
-                      ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
-                      : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
-                  )}
-                >
-                  Bulan Berjalan ({(() => {
-                    try {
-                      const [y, m] = currentPeriod.split("-").map(Number)
-                      return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "short", year: "numeric" })
-                    } catch {
-                      return currentPeriod
-                    }
-                  })()})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTargetPeriod(nextPeriod)
-                    setTanggal(`${nextPeriod}-01`)
-                  }}
-                  className={cn(
-                    "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
-                    targetPeriod === nextPeriod
-                      ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
-                      : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
-                  )}
-                >
-                  Bulan Depan (H- {(() => {
-                    try {
-                      const [y, m] = nextPeriod.split("-").map(Number)
-                      return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "short", year: "numeric" })
-                    } catch {
-                      return nextPeriod
-                    }
-                  })()})
-                </button>
-              </div>
-            )}
           </div>
 
           <div>
@@ -1350,16 +1338,16 @@ export function FrmMed003Form({
 
       {/* Action Buttons */}
       {isReadOnly ? (
-        <div className="flex flex-col gap-2.5 pt-2">
+        <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
           <Link
             href={isFromNonRoutine ? "/dashboard/reports/new" : "/dashboard"}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
           >
             <ArrowLeft className="size-4" /> Kembali ke Dashboard
           </Link>
           <Link
             href="/dashboard/reports/new/work-permit?mode=new"
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
           >
             Ajukan Izin Kerja Baru (Jika Berganti Pekerjaan)
           </Link>
@@ -1369,7 +1357,7 @@ export function FrmMed003Form({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-12 w-full bg-[#ff8a2a] hover:bg-[#e0751d] text-white font-semibold rounded-xl gap-2 shadow-sm text-sm"
+            className="h-12 md:h-14 w-full bg-[#ff8a2a] hover:bg-[#e0751d] text-white font-semibold rounded-xl gap-2 shadow-sm text-sm md:text-base cursor-pointer"
           >
             {isSubmitting ? (
               "Menyimpan Izin Kerja..."

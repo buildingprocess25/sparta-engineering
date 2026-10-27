@@ -36,6 +36,10 @@ Fitur ini mencakup alur pengajuan oleh PIC / Teknisi ES, penyimpanan persisten d
    - Di dashboard ES muncul banner informatif: *"Izin Kerja Menunggu Persetujuan Manager (Diajukan [Waktu])"*.
    - Saat izin kerja sudah di-ACC (`status = APPROVED`), tombol pada card izin kerja bertuliskan **"Lihat Izin Kerja"**.
    - Ketika teknisi mengklik **"Lihat Izin Kerja"**, sistem membuka formulir izin kerja (`FrmMed003Form`) persis sama seperti tampilan formulir pengisian aslinya namun dalam mode **Read-Only**: seluruh input, pilihan, dan checkbox terisi sesuai data pengajuan database dalam status terkunci (*disabled*), dilengkapi banner status persetujuan Manager, serta tombol navigasi "Kembali ke Dashboard" dan "Ajukan Izin Kerja Baru".
+4. **Tampilan Responsif Tablet Form Izin Kerja (`/dashboard/reports/new/work-permit`)**:
+   - Halaman formulir izin kerja ES dibuat responsif adaptif terhadap layar tablet/iPad (`md:max-w-3xl lg:max-w-4xl px-4 sm:px-6 md:px-8`).
+   - Header shell, informasi umum pekerjaan (grid 2-kolom), checklist APD (grid 3-4 kolom), dan tombol aksi (tata letak horizontal berdampingan di mode read-only) memanfaatkan lebar viewport tablet secara proporsional.
+   - Halaman pembuatan laporan/flow lain tetap menggunakan batas default sampai ada instruksi lanjutan.
 
 ### B. Sisi Manajer (Branch Building & Maintenance Manager)
 1. **Notifikasi & Antrean Approval**:

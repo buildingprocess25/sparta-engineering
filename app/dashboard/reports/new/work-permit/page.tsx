@@ -136,6 +136,7 @@ export default async function WorkPermitPage({
           ? "Dokumen resmi izin kerja K3 teknisi yang aktif dan terdaftar di database."
           : "Lengkapi izin kerja (SMK3) sebelum melaksanakan checklist atau perbaikan non-rutin."
       }
+      maxWidth="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl sm:px-6 md:px-8"
     >
       <Suspense fallback={<div className="p-4 text-center text-sm text-gray-500">Memuat formulir...</div>}>
         <FrmMed003Form
