@@ -121,8 +121,7 @@ export function FrmTs028Form({
   const [generalCondition, setGeneralCondition] = React.useState("")
 
   // 2. Cell Measurements State (12 cells for Pallet Mover, 24 for Forklift)
-  const initialCellCount = unitType === "Pallet Mover" ? 12 : 24
-  const [cellCount, setCellCount] = React.useState<number>(initialCellCount)
+  const cellCount = unitType === "Pallet Mover" ? 12 : 24
   const [cellData, setCellData] = React.useState<CellMeasurement[]>(() =>
     Array.from({ length: 24 }, (_, idx) => ({
       cellNo: idx + 1,
@@ -131,14 +130,9 @@ export function FrmTs028Form({
     }))
   )
 
-  // Sync cell count when unitType changes
+  // Sync when unitType changes
   const handleUnitTypeChange = (val: "Forklift" | "Pallet Mover") => {
     setUnitType(val)
-    if (val === "Pallet Mover") {
-      setCellCount(12)
-    } else {
-      setCellCount(24)
-    }
   }
 
   // Update single cell measurement
@@ -873,39 +867,13 @@ export function FrmTs028Form({
           </button>
         </div>
 
-        {/* Cell Count Selector Toggle */}
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 border border-slate-200">
-          <button
-            type="button"
-            onClick={() => setCellCount(12)}
-            className={cn(
-              "rounded-lg py-1.5 text-xs font-semibold transition-all",
-              cellCount === 12
-                ? "bg-white text-slate-900 shadow-2xs font-bold"
-                : "text-slate-500 hover:text-slate-800"
-            )}
-          >
-            12 Sel (Pallet Mover)
-          </button>
-          <button
-            type="button"
-            onClick={() => setCellCount(24)}
-            className={cn(
-              "rounded-lg py-1.5 text-xs font-semibold transition-all",
-              cellCount === 24
-                ? "bg-white text-slate-900 shadow-2xs font-bold"
-                : "text-slate-500 hover:text-slate-800"
-            )}
-          >
-            24 Sel (Forklift)
-          </button>
-        </div>
-
         {/* Tabel Sel 1 - 12 */}
         <div className="overflow-hidden rounded-xl border border-slate-200">
           <div className="bg-slate-50/90 px-3 py-1.5 border-b border-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-between">
             <span>Sel Baterai 01 – 12</span>
-            <span className="text-[10px] font-normal text-slate-500">Grup 1</span>
+            {cellCount === 24 && (
+              <span className="text-[10px] font-normal text-slate-500">Grup 1</span>
+            )}
           </div>
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-100/70 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">

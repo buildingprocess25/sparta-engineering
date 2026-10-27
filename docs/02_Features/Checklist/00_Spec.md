@@ -744,9 +744,9 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
   14. Check kondisi tray / housing battery
   - Pilihan Kondisi: `V` (OK - hijau soft), `X` (Not Good - merah/rose soft), `R` (Repair - amber soft), `U` (Urgent - abu-abu/slate soft).
 - **Tabel 2: Data Point 10 & 11 (Pengukuran Cell Baterai)**:
-  - Jumlah Cell Dinamis:
-    - `Pallet Mover`: 12 Cell (No. 1 s/d 12)
-    - `Forklift`: 24 Cell (No. 1 s/d 24)
+  - Jumlah Cell Dinamis (Otomatis Terikat Dropdown `Tipe Unit` tanpa toggle manual):
+    - `Pallet Mover`: 12 Cell (No. 01 s/d 12, label Grup 1 disembunyikan karena unit tunggal)
+    - `Forklift`: 24 Cell (No. 01 s/d 12 Grup 1 & No. 13 s/d 24 Grup 2)
   - Parameter per Cell:
     - `B.J` (Berat Jenis air accu, misal `1.28`)
     - `Teg. Static (V)` (Tegangan per cell, misal `2.12`)
