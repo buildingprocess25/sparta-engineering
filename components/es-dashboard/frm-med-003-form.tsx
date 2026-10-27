@@ -143,11 +143,37 @@ export function FrmMed003Form({
     initialData?.picSat || defaultUserName || searchParams.get("pic") || ""
   )
   const [kontraktor, setKontraktor] = React.useState(initialData?.kontraktor || "Internal")
+
+  const now = new Date()
+  const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const nextPeriod = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}`
+  const isHMinusWindow = now.getDate() >= 20
+
+  const [targetPeriod, setTargetPeriod] = React.useState<string>(() => {
+    const fromUrl = searchParams.get("period")
+    if (fromUrl) return fromUrl
+    const payload = initialData?.safetyPayload as any
+    if (payload?.targetPeriod) return payload.targetPeriod
+    if (initialData?.workDate) {
+      try {
+        return new Date(initialData.workDate).toISOString().slice(0, 7)
+      } catch {}
+    }
+    if (searchParams.get("mode") === "new" && isHMinusWindow) {
+      return nextPeriod
+    }
+    return currentPeriod
+  })
+
   const [tanggal, setTanggal] = React.useState(() => {
     if (initialData?.workDate) {
       try {
         return new Date(initialData.workDate).toISOString().split("T")[0]
       } catch {}
+    }
+    if (searchParams.get("period") && searchParams.get("period") !== currentPeriod) {
+      return `${searchParams.get("period")}-01`
     }
     return new Date().toISOString().split("T")[0]
   })
@@ -309,6 +335,7 @@ export function FrmMed003Form({
       kontraktor,
       workDate: tanggal,
       duration: durationText,
+      targetPeriod,
       workers: workers.filter((w) => w.trim().length > 0),
       adminReqs,
       adminLainnyaText,
@@ -331,6 +358,7 @@ export function FrmMed003Form({
       picSat,
       kontraktor,
       tanggal,
+      targetPeriod,
       lamaPekerjaan: durationText,
       duration: durationText,
       jamMulai,
@@ -543,6 +571,81 @@ export function FrmMed003Form({
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Periode Masa Berlaku Izin Kerja (1 Bulan & H-) */}
+          <div className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-3.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <label className="block text-xs font-bold text-slate-900">
+                  Periode Masa Berlaku Izin Kerja <span className="text-red-500">*</span>
+                </label>
+                <p className="mt-0.5 text-[11px] text-slate-600">
+                  Izin kerja berlaku selama 1 bulan kalender penuh untuk seluruh checklist rutin.
+                </p>
+              </div>
+              <span className="shrink-0 rounded-md bg-amber-100 border border-amber-300 px-2.5 py-1 text-xs font-bold text-amber-900">
+                {(() => {
+                  try {
+                    const [y, m] = targetPeriod.split("-").map(Number)
+                    const d = new Date(y, m - 1, 1)
+                    return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" })
+                  } catch {
+                    return targetPeriod
+                  }
+                })()}
+              </span>
+            </div>
+
+            {!isReadOnly && (
+              <div className="mt-3 flex items-center gap-2 pt-2 border-t border-amber-200/60 flex-wrap">
+                <span className="text-[11px] font-semibold text-slate-700">Pilihan Periode:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTargetPeriod(currentPeriod)
+                    setTanggal(new Date().toISOString().split("T")[0])
+                  }}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
+                    targetPeriod === currentPeriod
+                      ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
+                      : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  Bulan Berjalan ({(() => {
+                    try {
+                      const [y, m] = currentPeriod.split("-").map(Number)
+                      return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "short", year: "numeric" })
+                    } catch {
+                      return currentPeriod
+                    }
+                  })()})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTargetPeriod(nextPeriod)
+                    setTanggal(`${nextPeriod}-01`)
+                  }}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
+                    targetPeriod === nextPeriod
+                      ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
+                      : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  Bulan Depan (H- {(() => {
+                    try {
+                      const [y, m] = nextPeriod.split("-").map(Number)
+                      return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "short", year: "numeric" })
+                    } catch {
+                      return nextPeriod
+                    }
+                  })()})
+                </button>
+              </div>
+            )}
           </div>
 
           <div>

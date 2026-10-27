@@ -10,11 +10,17 @@ Fitur ini mencakup alur pengajuan oleh PIC / Teknisi ES, penyimpanan persisten d
 ## 2. Alur Pengguna (User Journey)
 
 ### A. Sisi Pemohon (Teknisi BES / PIC)
-1. **Pemeriksaan Status Izin Kerja**:
-   - Saat teknisi masuk ke Dashboard ES, sistem mengecek ke database apakah teknisi memiliki `WorkPermit` berstatus `APPROVED`.
-   - Izin kerja yang telah disetujui oleh Manager (`status = APPROVED`) berlaku aktif berkelanjutan sehingga teknisi tidak perlu mengunggah/mengisi ulang form setiap hari.
-   - Selama belum memiliki izin kerja yang di-ACC atau berstatus `PENDING_MANAGER` / `REJECTED`, kartu tugas checklist rutin terkunci (`disabled`) demi kepatuhan K3.
-   - Pada alur checklist non-rutin (`/dashboard/reports/new`), card/tombol Form Izin Kerja pada Langkah 1 tetap dipertahankan; jika teknisi sudah memiliki izin kerja `APPROVED`, status otomatis terdeteksi terisi dan pilihan Langkah 2 langsung terbuka.
+1. **Pemeriksaan Status Izin Kerja & Masa Berlaku 1 Bulan**:
+   - Saat teknisi masuk ke Dashboard ES, sistem mengecek ke database apakah teknisi memiliki `WorkPermit` berstatus `APPROVED` yang aktif untuk **periode bulan berjalan** (`targetPeriod = YYYY-MM`).
+   - **Masa Berlaku Bulanan**: Izin kerja yang telah disetujui oleh Manager (`status = APPROVED`) berlaku selama **1 bulan kalender penuh** (dari tanggal 1 pukul 00:00 hingga akhir bulan berjalan pukul 23:59).
+   - **Mekanisme Pengajuan H- Bulan Sebelumnya**:
+     - Mulai tanggal 20 ke atas setiap bulan, jendela pengajuan izin kerja untuk **bulan berikutnya (H-)** dibuka.
+     - Teknisi dapat mengajukan form izin kerja lebih awal sehingga Manager dapat meninjau dan menyetujui sebelum tanggal 1 tiba.
+     - Begitu pergantian bulan terjadi (tanggal 1), izin kerja yang telah disetujui langsung aktif secara otomatis (*seamless handoff*) tanpa membuat kartu tugas terkunci.
+   - **Status Kedaluwarsa & Kunci Tugas**:
+     - Jika izin kerja bulan sebelumnya berakhir dan belum ada izin kerja `APPROVED` untuk bulan berjalan, status menjadi `EXPIRED` (Kedaluwarsa).
+     - Kartu tugas checklist rutin terkunci (`disabled`) demi kepatuhan K3 sampai izin kerja bulan berjalan disetujui Manager.
+   - Pada alur checklist non-rutin (`/dashboard/reports/new`), card/tombol Form Izin Kerja pada Langkah 1 tetap dipertahankan; jika teknisi sudah memiliki izin kerja `APPROVED` untuk periode aktif, status otomatis terdeteksi terisi dan pilihan Langkah 2 langsung terbuka.
 2. **Pengisian Form `FRM_MED_003`**:
    - Teknisi membuka form izin kerja (`/dashboard/reports/new/work-permit`).
    - Identitas pekerjaan terisi otomatis (auto-fill):

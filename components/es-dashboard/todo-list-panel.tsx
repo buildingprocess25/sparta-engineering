@@ -379,6 +379,8 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                       ? "Daftar Tugas Terkunci (Menunggu Persetujuan Manager)"
                       : workPermitStatus?.status === "REJECTED"
                       ? "Daftar Tugas Terkunci (Izin Kerja Perlu Revisi)"
+                      : workPermitStatus?.status === "EXPIRED"
+                      ? "Daftar Tugas Terkunci (Izin Kerja Periode Lalu Telah Berakhir)"
                       : "Daftar Tugas Terkunci (Perlu Form Izin Kerja)"}
                   </p>
                   <p className="mt-0.5 text-amber-800 leading-relaxed">
@@ -386,6 +388,8 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                       ? "Pengajuan Form Izin Kerja (SAT/FRM/MED/003) sedang ditinjau Manager. Kartu checklist akan otomatis terbuka setelah disetujui."
                       : workPermitStatus?.status === "REJECTED"
                       ? "Pengajuan izin kerja ditolak oleh Manager. Silakan periksa catatan revisi dan ajukan kembali."
+                      : workPermitStatus?.status === "EXPIRED"
+                      ? "Masa berlaku izin kerja periode sebelumnya telah habis. Silakan perbarui Form Izin Kerja untuk bulan ini agar tugas checklist terbuka."
                       : "Sesuai prosedur K3/SMK3, Anda harus melengkapi Form Izin Kerja (SAT/FRM/MED/003) dan disetujui Manager sebelum dapat memulai tugas rutin."}
                   </p>
                 </div>
@@ -398,6 +402,8 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                   ? "Lihat Status &uarr;"
                   : workPermitStatus?.status === "REJECTED"
                   ? "Revisi Izin Kerja &uarr;"
+                  : workPermitStatus?.status === "EXPIRED"
+                  ? "Perbarui Izin Kerja &uarr;"
                   : "Isi Izin Kerja &uarr;"}
               </a>
             </div>
