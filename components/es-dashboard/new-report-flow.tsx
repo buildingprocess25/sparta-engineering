@@ -77,41 +77,41 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
   }, [userNik, initialWorkPermitStatus])
 
   return (
-    <div className="flex flex-col gap-5 rounded-2xl border border-[#dedede] bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-6 sm:gap-7 rounded-2xl md:rounded-3xl border border-[#dedede] bg-white p-4 sm:p-6 md:p-8 shadow-sm">
       {/* Step 1: Form Izin Kerja */}
       <section>
-        <div className="flex items-start gap-3">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <span className="grid size-8 sm:size-9 shrink-0 place-items-center rounded-full bg-[#111111] text-xs sm:text-sm font-semibold text-white">
             1
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="font-semibold text-[#111111]">Form Izin Kerja</h2>
-            <p className="mt-1 text-sm leading-5 text-[#686868]">
+            <h2 className="font-semibold text-base sm:text-lg text-[#111111]">Form Izin Kerja</h2>
+            <p className="mt-1 text-sm sm:text-base leading-5 sm:leading-6 text-[#686868]">
               Lengkapi form izin kerja (SAT/FRM/MED/003) sesuai klausul keselamatan kerja (SMK3) sebelum melaksanakan inspeksi atau perbaikan non-rutin.
             </p>
           </div>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3.5 sm:mt-4">
           <div
             className={
               hasWorkPermit
-                ? "flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50/70 p-3 text-left transition-colors"
-                : "flex items-center justify-between rounded-xl border border-[#ff8a2a] bg-[#fff5ec] p-3 text-left transition-colors"
+                ? "flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 rounded-xl md:rounded-2xl border border-emerald-300 bg-emerald-50/70 p-3.5 sm:p-4 md:p-5 text-left transition-colors"
+                : "flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 rounded-xl md:rounded-2xl border border-[#ff8a2a] bg-[#fff5ec] p-3.5 sm:p-4 md:p-5 text-left transition-colors"
             }
           >
-            <div className="min-w-0 pr-3">
-              <div className="flex items-center gap-1.5">
+            <div className="min-w-0 pr-0 sm:pr-3">
+              <div className="flex items-center gap-2">
                 {hasWorkPermit && (
-                  <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="size-4.5 sm:size-5 text-emerald-600 shrink-0" />
                 )}
-                <span className="block font-semibold text-[#111111] text-sm">
+                <span className="block font-semibold text-[#111111] text-sm sm:text-base">
                   {hasWorkPermit
                     ? "Form Izin Kerja (SAT/FRM/MED/003) - Terisi"
                     : "Isi Form Izin Kerja (SAT/FRM/MED/003)"}
                 </span>
               </div>
-              <span className="mt-0.5 block text-xs text-[#774000]">
+              <span className="mt-1 block text-xs sm:text-sm text-[#774000]">
                 {hasWorkPermit
                   ? "Izin kerja aktif & terkonfirmasi. Pilihan laporan di bawah telah terbuka."
                   : "Wajib diisi sebelum dapat memilih jenis laporan di bawah."}
@@ -125,8 +125,8 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
               }
               className={
                 hasWorkPermit
-                  ? "shrink-0 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 transition-colors"
-                  : "shrink-0 rounded-lg bg-[#ff8a2a] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#e0751d] transition-colors"
+                  ? "shrink-0 inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-white hover:bg-emerald-800 transition-colors shadow-xs"
+                  : "shrink-0 inline-flex items-center justify-center rounded-xl bg-[#ff8a2a] px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-white hover:bg-[#e0751d] transition-colors shadow-xs"
               }
             >
               {hasWorkPermit ? "Lihat Izin Kerja" : "Buka Form"}
@@ -137,20 +137,20 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
 
       {/* Step 2: Jenis Laporan */}
       <section>
-        <div className="flex items-start gap-3">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#111111] text-xs font-semibold text-white">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <span className="grid size-8 sm:size-9 shrink-0 place-items-center rounded-full bg-[#111111] text-xs sm:text-sm font-semibold text-white">
             2
           </span>
           <div>
-            <h2 className="font-semibold text-[#111111]">Jenis Laporan</h2>
-            <p className="mt-1 text-sm leading-5 text-[#686868]">
+            <h2 className="font-semibold text-base sm:text-lg text-[#111111]">Jenis Laporan</h2>
+            <p className="mt-1 text-sm sm:text-base leading-5 sm:leading-6 text-[#686868]">
               {hasWorkPermit
                 ? "Pilih jalur kerja non-rutin yang akan dilaksanakan."
                 : "Harap isi Form Izin Kerja pada Langkah 1 untuk membuka pilihan jalur kerja."}
             </p>
           </div>
         </div>
-        <div className="mt-3 flex flex-col gap-3">
+        <div className="mt-3.5 sm:mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <ReportChoiceCard
             href="/dashboard/reports/new/checklist/area?workPermit=fill"
             title="Checklist"
@@ -183,8 +183,8 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
         </div>
       </section>
 
-      <div className="rounded-xl bg-[#f8f8f8] p-3 text-xs leading-5 text-[#686868] flex items-start gap-2.5">
-        <ShieldAlert className="size-4 text-amber-600 shrink-0 mt-0.5" />
+      <div className="rounded-xl md:rounded-2xl bg-[#f8f8f8] border border-[#eeeeee] p-3.5 sm:p-4 text-xs sm:text-sm leading-5 sm:leading-6 text-[#686868] flex items-start gap-2.5 sm:gap-3">
+        <ShieldAlert className="size-4 sm:size-5 text-amber-600 shrink-0 mt-0.5" />
         <div>
           <span className="font-semibold text-[#222]">Kebijakan Keselamatan: </span>
           Berdasarkan SOP SAT/KEB/MED/001, pelaksana wajib memastikan Form Izin Kerja terisi sebelum memulai pekerjaan.

@@ -55,6 +55,13 @@
   - Search bar & tombol filter 4-kolom (`Selesai`, `Terlewat`, `Equipment`, `Ruangan`) proporsional dan nyaman diakses di tablet.
   - Kartu riwayat aktivitas checklist (`ActivityHistoryView`) ditampilkan dalam tata letak responsif 2-kolom di tablet (`grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3`), memanfaatkan lebar viewport tablet secara optimal tanpa kolom sempit memanjang.
   - Tampilan kosong (empty state) dan total count footer selaras dengan batas kontainer tablet.
+- **Responsive Tablet Halaman Mulai Laporan ES (`/dashboard/reports/new`)**:
+  - Container shell `ReportFlowShell` dibuat responsif adaptif terhadap layar tablet/iPad (`max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl px-4 sm:px-6 md:px-8`) menggantikan batasan kaku `max-w-lg`.
+  - Header kartu hitam ("Mulai Laporan") memanfaatkan ruang horizontal tablet dengan padding lapang (`p-5 sm:p-6 md:p-8`), rounded corner (`rounded-2xl md:rounded-3xl`), dan tipografi proporsional.
+  - Kartu putih alur kerja (`NewReportFlow`) menggunakan padding adaptif (`p-4 sm:p-6 md:p-8`).
+  - Banner Form Izin Kerja pada Langkah 1 tertata rapi dalam flex horizontal di tablet dengan tombol aksi yang ergonomis.
+  - Pilihan Jenis Laporan pada Langkah 2 bertransformasi menjadi grid 3-kolom di tablet (`grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4`) dengan kartu mandiri `ReportChoiceCard` yang menampilkan icon squircle, panah navigasi, judul, dan deskripsi secara terstruktur tanpa terhimpit.
+  - Footer kebijakan keselamatan melebar proporsional mengikuti lebar kontainer tablet.
 
 ## Aturan Bisnis
 

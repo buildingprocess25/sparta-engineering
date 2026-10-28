@@ -23,26 +23,49 @@ export function ReportChoiceCard({
 }: ReportChoiceCardProps) {
   const content = (
     <>
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-[#111111]">
-        <Icon aria-hidden="true" />
+      {/* Mobile-only icon */}
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white border border-[#eaeaea] shadow-xs text-[#111111] md:hidden">
+        <Icon className="size-5" aria-hidden="true" />
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold text-[#111111]">{title}</span>
-        <span className="mt-1 block text-sm leading-5 text-[#686868]">
+
+      {/* Tablet-only top row: Icon + Arrow */}
+      <div className="hidden md:flex w-full items-center justify-between">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white border border-[#eaeaea] shadow-xs text-[#111111]">
+          <Icon className="size-5" aria-hidden="true" />
+        </span>
+        {active ? (
+          <Check className="size-5 shrink-0 text-[#a64f00]" aria-hidden="true" />
+        ) : (
+          <ArrowRight className="size-5 shrink-0 text-[#b2b2b2] transition-transform group-hover:translate-x-1 group-hover:text-[#ff8a2a]" aria-hidden="true" />
+        )}
+      </div>
+
+      {/* Title & Description */}
+      <div className="min-w-0 flex-1 md:mt-4 md:w-full">
+        <span className="block font-semibold text-[#111111] text-sm md:text-base transition-colors group-hover:text-[#ff8a2a]">
+          {title}
+        </span>
+        <span className="mt-1 block text-xs md:text-sm leading-5 text-[#686868]">
           {description}
         </span>
+      </div>
+
+      {/* Mobile-only arrow */}
+      <span className="shrink-0 self-center md:hidden">
+        {active ? (
+          <Check className="size-4.5 text-[#a64f00]" aria-hidden="true" />
+        ) : (
+          <ArrowRight className="size-4.5 text-[#b2b2b2]" aria-hidden="true" />
+        )}
       </span>
-      {active ? (
-        <Check className="shrink-0 text-[#a64f00]" aria-hidden="true" />
-      ) : (
-        <ArrowRight className="shrink-0 text-[#b2b2b2]" aria-hidden="true" />
-      )}
     </>
   )
 
   const className = cn(
-    "flex min-h-24 items-start gap-3 rounded-xl border p-3 text-left transition-colors",
-    active ? "border-[#ff8a2a] bg-[#fff0e3]" : "border-[#dedede] bg-[#fbfbfb]",
+    "group flex min-h-20 md:min-h-[175px] items-center md:items-start md:flex-col md:justify-between gap-3 md:gap-0 rounded-xl md:rounded-2xl border p-3.5 md:p-5 text-left transition-all",
+    active
+      ? "border-[#ff8a2a] bg-[#fff0e3] shadow-xs"
+      : "border-[#dedede] bg-[#fbfbfb] hover:border-[#ff8a2a]/60 hover:bg-[#fffaf5] hover:shadow-xs",
     disabled && "pointer-events-none opacity-45",
   )
 
