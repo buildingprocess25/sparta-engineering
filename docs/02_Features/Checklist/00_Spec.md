@@ -32,6 +32,9 @@
 6. **Otoritas & Tampilan Detail Laporan (`/dashboard/reports/[reportCode]`)**:
    - **Teknisi ES**: Hanya melihat ringkasan & *draft isian* murni yang telah diinput (hasil periksa, foto bukti, catatan, form tindak lanjut). ES tidak berwenang memberikan persetujuan (*acc*), sehingga tab/tombol **"Aksi Review" (Setujui / Tolak / Minta Revisi) disembunyikan total**. ES juga tidak dimuat dalam `ManagerSidebar`, melainkan tampilan mandiri yang bersih dengan navigasi kembali ke `/dashboard`.
    - **Reviewer (COORD, MANAGER, ADMIN_HO, SUPER_ADMIN)**: Memiliki akses penuh termasuk `ManagerSidebar` dan tab **"Aksi Review"** untuk menyetujui, meminta revisi, atau menolak laporan.
+7. **Validasi K3 di server**. Form rutin dan non-rutin memeriksa izin kerja aktif sebelum draft dibuka atau dibuat. Saat pengiriman, server memeriksa kembali izin dan menyimpan `workPermitId` bersama perubahan status laporan ke `PENDING_COORD`. Status laporan rutin dan penyelesaian tugas disimpan dalam satu transaksi. ES hanya dapat membuka dan menyelesaikan tugas miliknya.
+8. **Tindak lanjut 014/065**. ES pemilik laporan memerlukan izin aktif untuk menyimpan Form 014/065. Pada pengiriman awal, laporan berstatus `PENDING_COORD` dan tindakan review baru tersedia setelah tindak lanjut lengkap. Pada revisi, laporan tetap `NEEDS_REVISION` sampai tindak lanjut lengkap. Server menghitung ringkasan berdasarkan rincian yang disimpan.
+9. **Reset untuk pengujian lokal**. Reset laporan yang sudah dikirim hanya dapat digunakan oleh ES pemilik laporan di lingkungan development.
 
 ## UI & Alur Pengguna
 
@@ -77,6 +80,14 @@
 - Status approval: `PENDING_COORD`, `PENDING_MANAGER`, `PENDING_REQUESTER`, `COMPLETED`, `REJECTED`.
 - Periode Checklist (`ChecklistPeriod`): `WEEKLY`, `MONTHLY`, `QUARTERLY`, `SEMESTER`.
 *(Detail field didokumentasikan di `docs/01_Architecture/10_Data_Models.md`)*
+
+## Minta Revisi
+
+- COORD atau Manager pada tahap review yang sesuai dapat mengembalikan laporan cabangnya dengan alasan wajib. Laporan berubah menjadi `NEEDS_REVISION`. Riwayat menyimpan alasan, NIK dan nama reviewer, tahap review, waktu permintaan, dan isian sebelum perbaikan.
+- Tab **Perlu Revisi** di Aktivitas menampilkan laporan milik ES, baik rutin Equipment, rutin Ruangan, maupun non-rutin. Detail menampilkan alasan dan tombol **Perbaiki Laporan**. Hanya ES pemilik dengan izin kerja aktif yang dapat mengedit dan mengirim ulang. Tugas rutin tetap tercatat selesai dan tetap terhubung ke laporan itu.
+- Editor memakai form asli, mengisi ulang metadata, jawaban dan foto, serta mempertahankan identitas target, periode, dan nomor laporan. Form 014/065 yang masih dipilih untuk item dan unit yang sama membawa rincian lama. Jika jenis atau unit tindak lanjut berubah, rincian yang tidak berlaku dilepas dan ringkasan dihitung ulang.
+- Laporan kembali ke `PENDING_COORD` setelah ES melengkapi checklist dan tindak lanjut yang diperlukan. Waktu kirim ulang dan isian setelah perbaikan disimpan dalam riwayat. Reviewer dapat melihat perubahan dan COORD meneruskan laporan ke Manager dengan persetujuan biasa.
+- Migrasi memulihkan laporan lama yang masih berstatus `DRAFT` dan menyimpan payload checklist yang sudah dikirim, termasuk `ENG-WH-202611-003`. Riwayat lama menampilkan alasan yang tidak tersimpan dan membiarkan reviewer, tahap, serta waktu permintaan kosong bila tidak diketahui. Reservasi draft baru hanya dapat menghapus draft kosong tanpa riwayat revisi.
 
 ## Form Checklist Tersedia
 

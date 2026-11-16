@@ -1,9 +1,11 @@
 import { Suspense } from "react"
+import { notFound, redirect } from "next/navigation"
 import { FrmMed003Form } from "@/components/es-dashboard/frm-med-003-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getPrisma } from "@/lib/prisma"
-import { getSession } from "@/lib/session"
 import { getUserFullWorkPermit } from "@/lib/actions/work-permit"
+import { getWorkPermitUser } from "@/lib/work-permits/current-user"
+import { getWorkPermitHistoryHref } from "@/lib/work-permits/history"
 
 export const dynamic = "force-dynamic"
 
@@ -14,6 +16,7 @@ type WorkPermitPageProps = {
     view?: string
     mode?: string
     permitCode?: string
+    historyPage?: string | string[]
     kegiatan?: string
     lokasi?: string
     area?: string
@@ -29,21 +32,17 @@ type WorkPermitPageProps = {
 export default async function WorkPermitPage({
   searchParams,
 }: WorkPermitPageProps) {
-  const [params, session] = await Promise.all([searchParams, getSession()])
+  const [params, user] = await Promise.all([searchParams, getWorkPermitUser()])
+  if (!user) redirect("/login")
+  if (user.role !== "ES") redirect("/dashboard")
 
-  let userName = ""
-  let branchName = ""
+  const { NIK: userNik, name: userName, branchName } = user
+  const fullPermit = await getUserFullWorkPermit(userNik, params.permitCode)
+  if (params.permitCode && !fullPermit) notFound()
 
-  if (typeof session?.userId === "string") {
-    const user = await getPrisma().user.findUnique({
-      where: { NIK: session.userId },
-      select: { name: true, branchName: true },
-    })
-    if (user) {
-      userName = user.name
-      branchName = user.branchName || ""
-    }
-  }
+  const historyHref = params.permitCode && params.source === "history"
+    ? getWorkPermitHistoryHref(params.historyPage)
+    : undefined
 
   const isFromTodo = params.source === "todo" || params.next === "dashboard"
   const isFromNonRoutine = params.source === "non-routine" || params.next === "select"
@@ -64,7 +63,7 @@ export default async function WorkPermitPage({
 
   if (params.taskId) {
     const task = await getPrisma().checklistTask.findUnique({
-      where: { id: params.taskId },
+      where: { id: params.taskId, assignment: { userNik } },
       include: {
         assignment: {
           include: {
@@ -116,16 +115,11 @@ export default async function WorkPermitPage({
     resolvedLokasi = parts.join(" - ") || branchName || ""
   }
 
-  const userNik = typeof session?.userId === "string" ? session.userId : undefined
-  const fullPermit = await getUserFullWorkPermit(userNik, params.permitCode)
-
   const isExplicitReadonly = params.view === "readonly"
   const isExplicitNew = params.mode === "new"
 
-  // Tampilkan Read-Only view jika:
-  // 1. Parameter eksplisit view=readonly, ATAU
-  // 2. User sudah memiliki izin kerja APPROVED dan tidak sedang dalam mode 'new'
-  const showReadOnlyView = !isExplicitNew && (isExplicitReadonly || fullPermit?.status === "APPROVED")
+  const showReadOnlyView = Boolean(params.permitCode) ||
+    (!isExplicitNew && (isExplicitReadonly || fullPermit?.status === "APPROVED"))
 
   return (
     <ReportFlowShell
@@ -133,13 +127,16 @@ export default async function WorkPermitPage({
       title={showReadOnlyView ? "Detail Izin Kerja (Read-Only)" : "Form Izin Kerja"}
       description={
         showReadOnlyView
-          ? "Dokumen resmi izin kerja K3 teknisi yang aktif dan terdaftar di database."
+          ? "Dokumen izin kerja K3 yang tersimpan beserta status pengajuannya."
           : "Lengkapi izin kerja (SMK3) sebelum melaksanakan checklist atau perbaikan non-rutin."
       }
       maxWidth="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl sm:px-6 md:px-8"
+      backHref={historyHref}
+      backLabel={historyHref ? "Kembali ke Riwayat" : undefined}
     >
       <Suspense fallback={<div className="p-4 text-center text-sm text-gray-500">Memuat formulir...</div>}>
         <FrmMed003Form
+          key={showReadOnlyView ? fullPermit?.id : "new"}
           userNik={userNik}
           defaultUserName={userName}
           defaultUserBranch={branchName}
@@ -147,7 +144,8 @@ export default async function WorkPermitPage({
           defaultLokasi={resolvedLokasi}
           nextPath={params.next}
           isReadOnly={showReadOnlyView}
-          initialData={fullPermit as any}
+          initialData={fullPermit}
+          historyHref={historyHref}
         />
       </Suspense>
     </ReportFlowShell>

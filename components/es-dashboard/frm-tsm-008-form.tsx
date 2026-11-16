@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -57,6 +58,7 @@ export type FrmTsm008FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -104,6 +106,7 @@ export function FrmTsm008Form({
   watermarkUserRole,
   formCode = FRM_TSM_008_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTsm008FormProps) {
   // Parse month index from periodKey (e.g. "2026-10" -> index 9 = Okt)
@@ -121,9 +124,10 @@ export function FrmTsm008Form({
   const activeMonthLabel = MONTH_LIST[currentMonthIdx] || "Okt"
 
   // Form metadata inputs (sesuai header Excel FRM_TSM_008: Lokasi, Nama & jenis unit, Tahun)
-  const [location, setLocation] = React.useState(areaName || "")
-  const [unitBrand, setUnitBrand] = React.useState("Forklift / Reach truck")
+  const [location, setLocation] = React.useState(initialPayload?.locationCode ?? (areaName || ""))
+  const [unitBrand, setUnitBrand] = React.useState(initialPayload?.unitBrand ?? "Forklift / Reach truck")
   const [inspectionYear, setInspectionYear] = React.useState(() => {
+    if (initialPayload?.inspectionYear) return initialPayload.inspectionYear
     return periodKey.split("-")[0] || String(new Date().getFullYear())
   })
 
@@ -140,7 +144,7 @@ export function FrmTsm008Form({
         uploading: false,
       }
     }
-    return initial
+    return restoreChecklistItems(initialPayload, initial)
   })
 
   // Accordion state: open first 2 categories by default

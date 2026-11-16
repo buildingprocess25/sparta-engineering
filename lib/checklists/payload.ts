@@ -27,6 +27,7 @@ export type ChecklistPayloadItem = {
   value?: string
   unitNo?: string
   followUpCode?: string
+  actionTaken?: string
 }
 
 export type ChecklistPayload = {
@@ -42,6 +43,7 @@ export type ChecklistPayload = {
   unitModel?: string
   capacityKva?: string
   inspectionDate?: string
+  inspectionEndDate?: string
   hourMeter?: string
   generalNotes?: string
   locationCode?: string

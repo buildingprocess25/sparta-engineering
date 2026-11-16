@@ -1,9 +1,18 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { WorkPermitStatus, type Prisma } from "@/generated/prisma"
+import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
-import { getSession } from "@/lib/session"
-import type { WorkPermitStatus } from "@/generated/prisma"
+import {
+  getApplicantWorkPermitScope,
+  getManagerWorkPermitScope,
+  getPendingWorkPermitDecisionScope,
+} from "@/lib/work-permits/access"
+import { getWorkPermitPeriod } from "@/lib/work-permits/active-period"
+import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
+import { getWorkPermitUser } from "@/lib/work-permits/current-user"
+import { getWorkPermitHistoryHref } from "@/lib/work-permits/history"
 
 export type WorkPermitInput = {
   kegiatan: string
@@ -26,21 +35,12 @@ export type WorkPermitInput = {
 }
 
 export async function submitWorkPermitAction(data: WorkPermitInput) {
-  const session = await getSession()
-  if (!session?.userId) {
+  const user = await getWorkPermitUser()
+  if (!user) {
     return { ok: false, error: "Sesi tidak valid. Silakan login kembali." }
   }
-
-  const prisma = getPrisma()
-
-  // Ambil user pemohon
-  const user = await prisma.user.findUnique({
-    where: { NIK: String(session.userId) },
-    select: { NIK: true, branchName: true },
-  })
-
-  if (!user) {
-    return { ok: false, error: "Data pengguna tidak ditemukan." }
+  if (user.role !== "ES") {
+    return { ok: false, error: "Hanya teknisi ES yang dapat mengajukan izin kerja." }
   }
 
   const now = new Date()
@@ -81,7 +81,7 @@ export async function submitWorkPermitAction(data: WorkPermitInput) {
   }
 
   try {
-    const permit = await prisma.workPermit.create({
+    const permit = await getPrisma().workPermit.create({
       data: {
         permitCode,
         formCode: "SAT/FRM/MED/003_Rev:000_180225",
@@ -101,6 +101,7 @@ export async function submitWorkPermitAction(data: WorkPermitInput) {
 
     revalidatePath("/dashboard")
     revalidatePath("/dashboard/work-permits")
+    revalidatePath(getWorkPermitHistoryHref())
 
     return {
       ok: true,
@@ -110,123 +111,90 @@ export async function submitWorkPermitAction(data: WorkPermitInput) {
         status: permit.status,
       },
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to submit work permit:", err)
-    return { ok: false, error: err.message || "Gagal menyimpan form izin kerja ke database." }
+    return { ok: false, error: "Gagal menyimpan form izin kerja ke database." }
   }
 }
 
 export async function approveWorkPermitAction(permitId: string, managerNotes?: string) {
-  const session = await getSession()
-  if (!session?.userId) {
+  return decideWorkPermit(permitId, "APPROVED", managerNotes)
+}
+
+export async function rejectWorkPermitAction(permitId: string, reason: string) {
+  return decideWorkPermit(permitId, "REJECTED", reason)
+}
+
+async function decideWorkPermit(permitId: string, status: "APPROVED" | "REJECTED", notes?: string) {
+  const user = await getWorkPermitUser()
+  if (!user) {
     return { ok: false, error: "Sesi tidak valid." }
   }
 
-  // Izinkan Manager, COORD, atau ADMIN_HO
-  if (
-    session.role !== "MANAGER" &&
-    session.role !== "COORD" &&
-    session.role !== "ADMIN_HO" &&
-    session.role !== "SUPER_ADMIN"
-  ) {
-    return { ok: false, error: "Hanya Manager atau Koordinator yang berhak menyetujui izin kerja." }
+  const where = getPendingWorkPermitDecisionScope(user, permitId)
+  if (!where) {
+    return { ok: false, error: "Hanya Manager cabang yang dapat memproses izin kerja." }
   }
 
-  const prisma = getPrisma()
+  const managerNotes = typeof notes === "string" ? notes.trim() : ""
+  if (status === "REJECTED" && !managerNotes) {
+    return { ok: false, error: "Alasan penolakan izin kerja wajib diisi." }
+  }
 
   try {
-    const updated = await prisma.workPermit.update({
-      where: { id: permitId },
+    const [permit] = await getPrisma().workPermit.updateManyAndReturn({
+      where,
       data: {
-        status: "APPROVED",
-        managerNik: session.userId,
+        status,
+        managerNik: user.NIK,
         managerSignedAt: new Date(),
         managerNotes: managerNotes || "Disetujui oleh Manager",
       },
     })
 
-    revalidatePath("/dashboard")
-    revalidatePath("/dashboard/work-permits")
-
-    return { ok: true, permit: updated }
-  } catch (err: any) {
-    console.error("Failed to approve work permit:", err)
-    return { ok: false, error: err.message || "Gagal menyetujui izin kerja." }
-  }
-}
-
-export async function rejectWorkPermitAction(permitId: string, reason: string) {
-  const session = await getSession()
-  if (!session?.userId) {
-    return { ok: false, error: "Sesi tidak valid." }
-  }
-
-  if (
-    session.role !== "MANAGER" &&
-    session.role !== "COORD" &&
-    session.role !== "ADMIN_HO" &&
-    session.role !== "SUPER_ADMIN"
-  ) {
-    return { ok: false, error: "Hanya Manager atau Koordinator yang berhak menolak izin kerja." }
-  }
-
-  const prisma = getPrisma()
-
-  try {
-    const updated = await prisma.workPermit.update({
-      where: { id: permitId },
-      data: {
-        status: "REJECTED",
-        managerNik: session.userId,
-        managerSignedAt: new Date(),
-        managerNotes: reason || "Perlengkapan K3 belum memenuhi standar keselamatan kerja.",
-      },
-    })
+    if (!permit) {
+      return { ok: false, error: "Izin kerja tidak tersedia atau sudah diproses. Muat ulang antrean izin kerja." }
+    }
 
     revalidatePath("/dashboard")
     revalidatePath("/dashboard/work-permits")
+    revalidatePath(getWorkPermitHistoryHref())
 
-    return { ok: true, permit: updated }
-  } catch (err: any) {
-    console.error("Failed to reject work permit:", err)
-    return { ok: false, error: err.message || "Gagal menolak izin kerja." }
+    return { ok: true, permit }
+  } catch (err) {
+    console.error("Failed to record work permit decision:", err)
+    return { ok: false, error: "Gagal menyimpan keputusan izin kerja." }
   }
 }
 
 export async function getTodayWorkPermitStatus(userNik?: string) {
-  if (!userNik) return null
-
-  const prisma = getPrisma()
-
   try {
+    const user = await getWorkPermitUser()
+    const where = getApplicantWorkPermitScope(user, userNik)
+    if (!where) return null
+
     const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonthNum = now.getMonth() + 1
-    const currentPeriod = `${currentYear}-${String(currentMonthNum).padStart(2, "0")}`
+    const currentPeriod = getCurrentPeriodKey("MONTHLY", now)
 
     // Bulan berikutnya (H- pengajuan bulan depan)
-    const nextDate = new Date(currentYear, now.getMonth() + 1, 1)
-    const nextPeriod = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}`
+    const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const nextPeriod = getCurrentPeriodKey("MONTHLY", nextDate)
     // Jendela pengajuan H- dibuka mulai tanggal 20 ke atas
     const isHMinusWindow = now.getDate() >= 20
 
-    // Ambil riwayat izin kerja teknisi
-    const userPermits = await prisma.workPermit.findMany({
-      where: {
-        applicantNik: userNik,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 20,
-      include: {
-        manager: {
-          select: { name: true, NIK: true },
+    const [approvedCurrent, userPermits] = await Promise.all([
+      getActiveWorkPermit(user, now),
+      getPrisma().workPermit.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: {
+          manager: { select: { name: true, NIK: true } },
         },
-      },
-    })
+      }),
+    ])
 
-    if (!userPermits || userPermits.length === 0) {
+    if (!approvedCurrent && userPermits.length === 0) {
       return {
         id: "",
         permitCode: "",
@@ -237,28 +205,11 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
         isHMinusWindow,
         nextMonthPeriod: nextPeriod,
         nextMonthPermit: null,
-      } as any
+      }
     }
 
-    const getPermitPeriod = (p: any): string => {
-      const payload = p.safetyPayload as any
-      if (payload?.targetPeriod && typeof payload.targetPeriod === "string") {
-        return payload.targetPeriod
-      }
-      if (p.workDate) {
-        return new Date(p.workDate).toISOString().slice(0, 7)
-      }
-      return new Date(p.createdAt).toISOString().slice(0, 7)
-    }
-
-    // 1. Cek izin kerja yang disetujui (APPROVED) untuk bulan berjalan
-    const approvedCurrent = userPermits.find(
-      (p) => p.status === "APPROVED" && getPermitPeriod(p) === currentPeriod
-    )
-
-    // 2. Cek izin kerja untuk bulan berikutnya (jika sudah ada pengajuan H-)
     const nextMonthPermit = userPermits.find(
-      (p) => getPermitPeriod(p) === nextPeriod
+      (p) => getWorkPermitPeriod(p) === nextPeriod
     )
 
     const nextMonthPermitData = nextMonthPermit
@@ -291,7 +242,7 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
 
     // 4. Jika belum ada yang APPROVED di bulan berjalan, cek apakah ada pengajuan bulan berjalan (PENDING / REJECTED)
     const latestCurrent = userPermits.find(
-      (p) => getPermitPeriod(p) === currentPeriod
+      (p) => getWorkPermitPeriod(p) === currentPeriod
     )
 
     if (latestCurrent) {
@@ -315,11 +266,11 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
     // 5. Jika tidak ada izin bulan berjalan, tetapi teknisi pernah punya izin APPROVED di bulan sebelumnya -> EXPIRED
     const pastApproved = userPermits.find((p) => p.status === "APPROVED")
     if (pastApproved) {
-      const pastPeriod = getPermitPeriod(pastApproved)
+      const pastPeriod = getWorkPermitPeriod(pastApproved)
       return {
         id: pastApproved.id,
         permitCode: pastApproved.permitCode,
-        status: "EXPIRED" as any,
+        status: "EXPIRED" as const,
         kegiatan: pastApproved.kegiatan,
         lokasi: pastApproved.lokasi,
         managerNotes: pastApproved.managerNotes,
@@ -346,7 +297,7 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
       managerName: fallbackLatest.manager?.name,
       createdAt: fallbackLatest.createdAt.toISOString(),
       managerSignedAt: fallbackLatest.managerSignedAt?.toISOString() || null,
-      targetPeriod: getPermitPeriod(fallbackLatest),
+      targetPeriod: getWorkPermitPeriod(fallbackLatest),
       isHMinusWindow,
       nextMonthPeriod: nextPeriod,
       nextMonthPermit: nextMonthPermitData,
@@ -360,41 +311,36 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
 export const getUserWorkPermitStatus = getTodayWorkPermitStatus
 
 export async function getUserFullWorkPermit(userNik?: string, permitCode?: string) {
-  if (!userNik && !permitCode) return null
-
-  const prisma = getPrisma()
-
   try {
+    const scope = getApplicantWorkPermitScope(await getWorkPermitUser(), userNik)
+    if (!scope) return null
+
+    const prisma = getPrisma()
+    const include = {
+      applicant: { select: { name: true, NIK: true, branchName: true } },
+      manager: { select: { name: true, NIK: true } },
+    } satisfies Prisma.WorkPermitInclude
     let permit = null
 
     if (permitCode) {
       permit = await prisma.workPermit.findUnique({
-        where: { permitCode },
-        include: {
-          applicant: { select: { name: true, NIK: true, branchName: true } },
-          manager: { select: { name: true, NIK: true } },
-        },
+        where: { ...scope, permitCode },
+        include,
       })
-    } else if (userNik) {
+    } else {
       // Prioritaskan permit APPROVED
       permit = await prisma.workPermit.findFirst({
-        where: { applicantNik: userNik, status: "APPROVED" },
+        where: { ...scope, status: "APPROVED" },
         orderBy: { createdAt: "desc" },
-        include: {
-          applicant: { select: { name: true, NIK: true, branchName: true } },
-          manager: { select: { name: true, NIK: true } },
-        },
+        include,
       })
 
       // Jika belum ada yang APPROVED, ambil yang terakhir
       if (!permit) {
         permit = await prisma.workPermit.findFirst({
-          where: { applicantNik: userNik },
+          where: scope,
           orderBy: { createdAt: "desc" },
-          include: {
-            applicant: { select: { name: true, NIK: true, branchName: true } },
-            manager: { select: { name: true, NIK: true } },
-          },
+          include,
         })
       }
     }
@@ -419,11 +365,11 @@ export async function getManagerWorkPermits(filters?: {
   status?: string
   search?: string
 }) {
-  const prisma = getPrisma()
-
-  const where: any = {}
+  const where = getManagerWorkPermitScope(await getWorkPermitUser())
+  if (!where) return []
 
   if (filters?.status && filters.status !== "ALL") {
+    if (!Object.values(WorkPermitStatus).includes(filters.status as WorkPermitStatus)) return []
     where.status = filters.status as WorkPermitStatus
   }
 
@@ -438,7 +384,7 @@ export async function getManagerWorkPermits(filters?: {
     ]
   }
 
-  return prisma.workPermit.findMany({
+  return getPrisma().workPermit.findMany({
     where,
     orderBy: {
       createdAt: "desc",

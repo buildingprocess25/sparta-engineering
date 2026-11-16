@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache"
 
 import { getPrisma } from "@/lib/prisma"
-import { getSession } from "@/lib/session"
+import { ACTIVE_WORK_PERMIT_REQUIRED, getActiveWorkPermit } from "@/lib/work-permits/active-permit"
+import { getWorkPermitUser } from "@/lib/work-permits/current-user"
 
 import type { ChecklistPayload, ChecklistPayloadItem, ChecklistPhoto } from "@/lib/checklists/payload"
 import { validateChecklistPayload, calculateChecklistIsSafe } from "@/lib/checklists/payload"
@@ -12,18 +13,31 @@ import { validateFrmTsm004Payload } from "@/lib/checklists/payload-004"
 import type { FrmTsm001Payload } from "@/lib/checklists/payload-001"
 import { validateFrmTsm001Payload } from "@/lib/checklists/payload-001"
 import { generateAndUploadReportPdf } from "@/lib/reports/drive-pdf-service"
+import { saveChecklistSubmission } from "@/lib/reports/checklist-submission"
 
-export async function submitChecklistAction(input: {
+type SubmitChecklistInput = {
   reportCode: string
   payload: ChecklistPayload | FrmTsm004Payload | FrmTsm001Payload
-}) {
-  const session = await getSession()
-  if (
-    typeof session?.userId !== "string" ||
-    typeof session.role !== "string" ||
-    session.role !== "ES"
-  ) {
+}
+
+export async function submitChecklistAction(input: SubmitChecklistInput) {
+  return submitChecklist(input)
+}
+
+export async function submitChecklistRevisionAction(reportCode: string, version: string, input: SubmitChecklistInput) {
+  if (input?.reportCode !== reportCode || typeof version !== "string") {
+    return { ok: false as const, errors: ["Versi revisi laporan tidak valid."] }
+  }
+  return submitChecklist(input, version)
+}
+
+async function submitChecklist(input: SubmitChecklistInput, revisionVersion?: string) {
+  const user = await getWorkPermitUser()
+  if (user?.role !== "ES") {
     return { ok: false as const, errors: ["Sesi tidak valid."] }
+  }
+  if (typeof input?.reportCode !== "string" || !input.reportCode.trim()) {
+    return { ok: false as const, errors: ["Nomor laporan tidak valid."] }
   }
 
   let validationResult: { valid: boolean; errors: string[] } = { valid: false, errors: [] }
@@ -31,7 +45,7 @@ export async function submitChecklistAction(input: {
   let photoFileIds: string[] = []
 
   // Clean formCode to get baseFormId
-  const baseFormId = (input.payload.formCode || "").replace("_REPAIR", "")
+  const baseFormId = typeof input.payload?.formCode === "string" ? input.payload.formCode.replace(/_REPAIR$/, "") : ""
 
   if (
     baseFormId === "FRM_TSM_002" ||
@@ -55,9 +69,11 @@ export async function submitChecklistAction(input: {
   ) {
     validationResult = validateChecklistPayload(input.payload)
     isSafe = calculateChecklistIsSafe(input.payload)
-    photoFileIds = ((input.payload as ChecklistPayload).items || []).flatMap((item: ChecklistPayloadItem) => 
-      (item.photos || []).map((photo: ChecklistPhoto) => photo.fileId)
-    )
+    if (validationResult.valid) {
+      photoFileIds = (input.payload as ChecklistPayload).items.flatMap((item: ChecklistPayloadItem) =>
+        item.photos.map((photo: ChecklistPhoto) => photo.fileId)
+      )
+    }
   } else if (baseFormId === "FRM_TSM_004") {
     validationResult = validateFrmTsm004Payload(input.payload)
     isSafe = true // Form 004 is purely data entry
@@ -65,7 +81,7 @@ export async function submitChecklistAction(input: {
     validationResult = validateFrmTsm001Payload(input.payload)
     const p = input.payload as FrmTsm001Payload
     isSafe = p.atsTest?.systemAtsStatus !== "NOK"
-    photoFileIds = (p.atsTest?.photos || []).map((photo) => photo.fileId)
+    if (validationResult.valid) photoFileIds = (p.atsTest.photos || []).map((photo) => photo.fileId)
   } else {
     return { ok: false as const, errors: ["Form ID tidak valid."] }
   }
@@ -74,52 +90,38 @@ export async function submitChecklistAction(input: {
     return { ok: false as const, errors: validationResult.errors }
   }
 
-  const existingReport = await getPrisma().checklistReport.findFirst({
-    where: {
-      reportCode: input.reportCode,
-      authorId: session.userId,
-      status: "DRAFT",
-    },
-    select: {
-      id: true,
-      taskId: true,
-    },
+  const permit = await getActiveWorkPermit(user)
+  if (!permit) {
+    return { ok: false as const, errors: [ACTIVE_WORK_PERMIT_REQUIRED] }
+  }
+
+  const submittedReport = await saveChecklistSubmission(getPrisma(), {
+    ...input,
+    authorId: user.NIK,
+    permitId: permit.id,
+    isSafe,
+    photoFileIds,
+    revisionVersion,
   })
 
-  await getPrisma().checklistReport.updateMany({
-    where: {
-      reportCode: input.reportCode,
-      authorId: session.userId,
-      status: "DRAFT",
-    },
-    data: {
-      checklistPayload: input.payload,
-      drivePhotoFileIds: photoFileIds,
-      isSafe: isSafe,
-      status: "PENDING_COORD",
-    },
-  })
-
-  if (existingReport?.taskId) {
-    await getPrisma().checklistTask.update({
-      where: { id: existingReport.taskId },
-      data: {
-        status: "COMPLETED",
-        completedAt: new Date(),
-      },
-    })
+  if (!submittedReport) {
+    return { ok: false as const, errors: ["Laporan tidak tersedia atau sudah berubah. Muat ulang halaman."] }
   }
 
   // Automatic PDF generation & Google Drive upload
-  try {
-    await generateAndUploadReportPdf(input.reportCode)
-  } catch (pdfErr) {
-    console.error(`[PDF Auto-Generate Error] on report ${input.reportCode}:`, pdfErr)
+  if (!submittedReport.pendingFollowUp) {
+    try {
+      await generateAndUploadReportPdf(input.reportCode)
+    } catch (pdfErr) {
+      console.error(`[PDF Auto-Generate Error] on report ${input.reportCode}:`, pdfErr)
+    }
   }
 
   revalidatePath("/dashboard", "page")
   revalidatePath("/dashboard/reports")
+  revalidatePath("/dashboard/activity")
   revalidatePath(`/dashboard/reports/${input.reportCode}`)
+  revalidatePath(`/dashboard/reports/${input.reportCode}/follow-up`)
 
   return { ok: true as const, isSafe }
 }

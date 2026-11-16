@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { getPrisma } from "@/lib/prisma"
-import { getSession } from "@/lib/session"
-import type { ChecklistPayload } from "@/lib/checklists/payload"
+import { ACTIVE_WORK_PERMIT_REQUIRED, getActiveWorkPermit } from "@/lib/work-permits/active-permit"
+import { getWorkPermitUser } from "@/lib/work-permits/current-user"
+import { saveChecklistFollowUp } from "@/lib/reports/checklist-submission"
+import { generateAndUploadReportPdf } from "@/lib/reports/drive-pdf-service"
 
 export async function POST(
   req: NextRequest,
@@ -10,71 +12,57 @@ export async function POST(
 ) {
   try {
     const { reportCode } = await params
-    const session = await getSession()
-
-    if (
-      typeof session?.userId !== "string" ||
-      typeof session.role !== "string" ||
-      session.role !== "ES"
-    ) {
+    const user = await getWorkPermitUser()
+    if (user?.role !== "ES") {
       return NextResponse.json({ message: "Sesi tidak valid." }, { status: 401 })
     }
 
-    const body = await req.json()
-    const { items, followUp014Summary, followUp065Summary } = body
+    const body = await req.json().catch(() => null)
+    const { items, version } = body ?? {}
 
-    if (!Array.isArray(items)) {
+    if (!Array.isArray(items) || typeof version !== "string") {
       return NextResponse.json(
         { message: "Data items tidak valid." },
         { status: 400 }
       )
     }
 
-    const report = await getPrisma().checklistReport.findUnique({
-      where: {
-        reportCode,
-        authorId: session.userId,
-      },
-    })
-
-    if (!report) {
+    const permit = await getActiveWorkPermit(user)
+    if (!permit) {
+      return NextResponse.json({ message: ACTIVE_WORK_PERMIT_REQUIRED }, { status: 403 })
+    }
+    const result = await saveChecklistFollowUp(getPrisma(), { reportCode, authorId: user.NIK, permitId: permit.id, version, items })
+    if (result === "NOT_FOUND") {
       return NextResponse.json(
         { message: "Laporan tidak ditemukan." },
         { status: 404 }
       )
     }
 
-    const currentPayload = (report.checklistPayload as unknown as ChecklistPayload) || {}
-
-    // Update items in payload while preserving the checklist items structure
-    const updatedPayload = {
-      ...currentPayload,
-      items,
-      followUpCompleted: true,
-      followUpCompletedAt: new Date().toISOString(),
-      followUp014Summary: followUp014Summary || null,
-      followUp065Summary: followUp065Summary || null,
+    if (result === "CONFLICT") {
+      return NextResponse.json({ message: "Laporan sudah berubah. Muat ulang sebelum menyimpan." }, { status: 409 })
+    }
+    if (result === "INVALID") {
+      return NextResponse.json({ message: "Periksa kembali jenis tindak lanjut, jumlah, dan harga yang diisi." }, { status: 400 })
     }
 
-    await getPrisma().checklistReport.update({
-      where: {
-        reportCode,
-      },
-      data: {
-        checklistPayload: updatedPayload,
-        status: "PENDING_COORD", // Ensure it transitions to coordinator queue
-      },
-    })
+    try {
+      await generateAndUploadReportPdf(reportCode)
+    } catch (error) {
+      console.error(`[PDF Auto-Generate Error] on report ${reportCode}:`, error)
+    }
 
     revalidatePath("/dashboard")
     revalidatePath("/dashboard/reports")
+    revalidatePath("/dashboard/activity")
     revalidatePath(`/dashboard/reports/${reportCode}`)
+    revalidatePath(`/dashboard/reports/${reportCode}/follow-up`)
 
     return NextResponse.json({ ok: true })
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error saving follow-up form:", error)
     return NextResponse.json(
-      { message: error?.message || "Internal server error" },
+      { message: "Gagal menyimpan form tindak lanjut." },
       { status: 500 }
     )
   }

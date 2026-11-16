@@ -1,11 +1,14 @@
 import { notFound, redirect } from "next/navigation"
 
 import { getPrisma } from "@/lib/prisma"
-import { getSession } from "@/lib/session"
 import type { ChecklistPayload } from "@/lib/checklists/payload"
+import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
+import { getWorkPermitUser } from "@/lib/work-permits/current-user"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { FollowUpFormsEditor } from "@/components/es-dashboard/follow-up-forms-editor"
 import { ReportCompletionSuccess } from "@/components/es-dashboard/report-completion-success"
+import { FORM_014, FORM_065, getReportItems, needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
+import { editableChecklistOwner } from "@/lib/reports/checklist-submission"
 
 export default async function FollowUpOrchestratorPage({
   params,
@@ -13,15 +16,16 @@ export default async function FollowUpOrchestratorPage({
   params: Promise<{ reportCode: string }>
 }) {
   const { reportCode } = await params
-  
-  const session = await getSession()
-  if (!session?.userId || session.role !== "ES") {
+
+  const user = await getWorkPermitUser()
+  if (user?.role !== "ES") {
     redirect("/login")
   }
 
   const report = await getPrisma().checklistReport.findUnique({
     where: {
-      reportCode: reportCode,
+      reportCode,
+      ...editableChecklistOwner(user.NIK),
     },
     include: {
       area: true,
@@ -36,18 +40,34 @@ export default async function FollowUpOrchestratorPage({
     },
   })
 
-  if (!report || report.authorId !== session.userId) {
+  if (!report) {
     notFound()
   }
 
-  const payload = (report.checklistPayload as unknown as ChecklistPayload) || {}
-  const items = payload.items || []
+  if (report.status === "DRAFT") {
+    return (
+      <ReportFlowShell
+        eyebrow="CHECKLIST"
+        title="Laporan belum terkirim"
+        description="Laporan ini masih Draft. Kembali ke form checklist, lalu klik Simpan & Kirim Checklist."
+      >
+        <p className="text-sm">Nomor laporan: {reportCode}</p>
+      </ReportFlowShell>
+    )
+  }
+
+  const payload = (report.checklistPayload ?? {}) as unknown as ChecklistPayload & {
+    followUpCompleted?: boolean
+    followUp014Summary?: { totalCost: number }
+    followUp065Summary?: { itemCount: number }
+  }
+  const items = getReportItems(payload)
 
   const needs014 = items.some(
-    (item) => item.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
+    (item) => item.repairForm === FORM_014
   )
   const needs065 = items.some(
-    (item) => item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
+    (item) => item.repairForm === FORM_065
   )
 
   const isRoutine = Boolean(report.taskId)
@@ -57,12 +77,12 @@ export default async function FollowUpOrchestratorPage({
     report.area?.name ||
     "Objek Maintenance"
 
-  const anyPayload = payload as any
-  const isFollowUpCompleted = Boolean(anyPayload?.followUpCompleted)
-  const followUp014Summary = anyPayload?.followUp014Summary
-  const followUp065Summary = anyPayload?.followUp065Summary
+  const { followUp014Summary, followUp065Summary } = payload
+  const isRevision = report.status === "NEEDS_REVISION"
+  const needsFollowUp = needsChecklistFollowUp(payload)
+  if (isRevision && !needsFollowUp) redirect(`/dashboard/reports/${reportCode}`)
 
-  if (isFollowUpCompleted || (!needs014 && !needs065)) {
+  if (!needsFollowUp) {
     return (
       <ReportFlowShell
         eyebrow="TINDAK LANJUT"
@@ -76,13 +96,13 @@ export default async function FollowUpOrchestratorPage({
           branchName={report.author?.branchName || "Cabang"}
           authorName={report.author?.name || "ES"}
           status={report.status}
-          submittedAt={report.updatedAt ? report.updatedAt.toISOString() : undefined}
+          submittedAt={report.updatedAt.toISOString()}
           followUpType={
             followUp014Summary || needs014
               ? "014"
               : followUp065Summary || needs065
-              ? "065"
-              : "NONE"
+                ? "065"
+                : "NONE"
           }
           followUpSummary={{
             totalCost014: followUp014Summary?.totalCost,
@@ -93,26 +113,37 @@ export default async function FollowUpOrchestratorPage({
     )
   }
 
+  if (report.status !== "PENDING_COORD" && !isRevision) {
+    redirect(`/dashboard/reports/${reportCode}`)
+  }
+
+  if (!(await getActiveWorkPermit(user))) {
+    redirect(isRevision ? `/dashboard/reports/${reportCode}` : report.taskId ? "/dashboard" : "/dashboard/reports/new")
+  }
+
   return (
     <ReportFlowShell
       eyebrow="TINDAK LANJUT"
       title="Form Tindak Lanjut Perbaikan"
       description="Lengkapi rincian estimasi biaya atau spare part untuk item yang rusak."
+      backHref={isRevision ? `/dashboard/reports/${reportCode}` : undefined}
+      backLabel={isRevision ? "Kembali ke Detail Laporan" : undefined}
     >
       <FollowUpFormsEditor
         reportCode={reportCode}
-        payload={payload}
+        version={report.updatedAt.toISOString()}
+        isRevision={isRevision}
+        payload={{ ...payload, items }}
         context={{
           branchName: report.author?.branchName || "HO",
           authorName: report.author?.name || "ES",
           areaName: report.area?.name || "Area",
           areaCode: report.area?.code || "",
-          targetName: targetName,
-          isRoutine: isRoutine,
+          targetName,
+          isRoutine,
           createdAt: report.createdAt.toISOString(),
         }}
       />
     </ReportFlowShell>
   )
 }
-

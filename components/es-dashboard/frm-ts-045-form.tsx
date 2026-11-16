@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems, readWeeklyChecklistNotes } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -52,6 +53,7 @@ export type FrmTs045FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -104,6 +106,7 @@ export function FrmTs045Form({
   watermarkUserRole,
   formCode = FRM_TS_045_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTs045FormProps) {
   const router = useRouter()
@@ -113,13 +116,14 @@ export function FrmTs045Form({
   const selectedWeek = currentWeekId
 
   // Metadata
-  const [unitNo, setUnitNo] = React.useState("")
-  const [unitBrand, setUnitBrand] = React.useState("")
+  const savedNotes = readWeeklyChecklistNotes(initialPayload?.generalNotes)
+  const [unitNo, setUnitNo] = React.useState(initialPayload?.unitNo ?? "")
+  const [unitBrand, setUnitBrand] = React.useState(initialPayload?.unitBrand ?? "")
   const [inspectionDate, setInspectionDate] = React.useState(
-    () => new Date().toISOString().split("T")[0],
+    () => initialPayload?.inspectionDate ?? savedNotes.date ?? new Date().toISOString().split("T")[0],
   )
-  const [hourMeter, setHourMeter] = React.useState("")
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [hourMeter, setHourMeter] = React.useState(initialPayload?.hourMeter ?? "")
+  const [generalNotes, setGeneralNotes] = React.useState(savedNotes.notes)
 
   // Form items state (NO default condition - user must determine each item)
   const [itemsState, setItemsState] = React.useState<Record<string, ItemState>>(
@@ -135,7 +139,7 @@ export function FrmTs045Form({
           uploading: false,
         }
       }
-      return initial
+      return restoreChecklistItems(initialPayload, initial)
     },
   )
 

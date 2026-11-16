@@ -83,10 +83,11 @@ Constraint: `@@unique([roomId, formCode, period])`. Tabel ini menggantikan `Area
 | areaId | String | Relasi ke Area |
 | roomId | String? | Relasi ke Room (spesifik ruangan yang dicek) |
 | authorId | String | Relasi ke User pembuat laporan (ES) |
+| workPermitId | String? | Izin kerja aktif saat checklist dikirim. Opsional untuk draft dan laporan yang sudah tersimpan sebelum aturan ini berlaku |
 | category | ReportCategory | Enum (PREVENTIVE, INCIDENTAL). Pembeda laporan rutin dan insidental |
 | period | ChecklistPeriod? | Enum (WEEKLY, MONTHLY, QUARTERLY, SEMESTER). Berlaku hanya untuk PREVENTIVE |
 | periodKey | String? | Penanda periode unik (misal "2026-W37", "2026-09", "2026-Q3", "2026-S2"). Berlaku hanya untuk PREVENTIVE |
-| status | ReportStatus | Enum (DRAFT, PENDING_COORD, PENDING_MANAGER, PENDING_REQUESTER, COMPLETED, REJECTED). Default: `DRAFT` |
+| status | ReportStatus | Enum (DRAFT, NEEDS_REVISION, PENDING_COORD, PENDING_MANAGER, PENDING_REQUESTER, COMPLETED, REJECTED). Default: `DRAFT` |
 | isSafe | Boolean | True jika 100% aman (bypass Requester approval) |
 | checklistPayload | Json | One JSON object containing submitted checklist item results |
 | drivePhotoFileIds | Json | Array of Google Drive file IDs uploaded for the report |
@@ -96,6 +97,19 @@ Constraint: `@@unique([roomId, formCode, period])`. Tabel ini menggantikan `Area
 | updatedAt | DateTime | Timestamp update terakhir |
 
 Constraint: `@@unique([areaId, roomId, period, periodKey, formCode])` untuk mencegah duplikasi laporan preventif per ruangan. Laporan insidental (`period = null`) tidak dibatasi.
+
+### ChecklistReportRevision
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String | Primary key |
+| reportId | String | Relasi ke ChecklistReport |
+| reason, reviewerId, reviewerName | String? | Alasan dan identitas reviewer saat permintaan. Kosong untuk riwayat lama yang tidak tercatat |
+| reviewStage | ReportStatus? | `PENDING_COORD` atau `PENDING_MANAGER` saat diminta revisi |
+| requestedAt, resubmittedAt | DateTime? | Waktu permintaan dan pengiriman ulang |
+| previousPayload, resubmittedPayload | Json, Json? | Isian saat dikembalikan dan saat dikirim ulang |
+
+Satu permintaan aktif per laporan, dijamin oleh indeks unik parsial pada `reportId` dengan `resubmittedAt IS NULL`. Perubahan status laporan dan pencatatan permintaan atau pengiriman ulang berada dalam transaksi yang sama.
 
 ### GoogleDriveFolderCache
 | Field | Tipe | Keterangan |

@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems, restoreChecklistAction } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -68,6 +69,7 @@ export type FrmTsm013FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -102,15 +104,21 @@ export function FrmTsm013Form({
   watermarkUserRole,
   formCode = FRM_TSM_013_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTsm013FormProps) {
   // Metadata States
-  const [locationCode, setLocationCode] = React.useState("")
+  const [locationCode, setLocationCode] = React.useState(initialPayload?.locationCode ?? "")
   const [inspectionDate, setInspectionDate] = React.useState(() => {
+    if (initialPayload?.inspectionDate) return initialPayload.inspectionDate
     const today = new Date()
     return today.toISOString().split("T")[0]
   })
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [generalNotes, setGeneralNotes] = React.useState(() => {
+    const saved = initialPayload?.generalNotes ?? ""
+    const note = saved.match(/(?:^| \| )Catatan: ([\s\S]*?)(?: \| Dosis Standar:|$)/)
+    return note?.[1] ?? (/^(Kode Lokasi:|Dosis Standar:)/.test(saved) ? "" : saved)
+  })
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -134,7 +142,7 @@ export function FrmTsm013Form({
         uploading: false,
       }
     })
-    return initial
+    return restoreChecklistItems(initialPayload, initial, restoreChecklistAction)
   })
 
   const [submitting, setSubmitting] = React.useState(false)
@@ -321,6 +329,7 @@ export function FrmTsm013Form({
           label: it.label,
           condition: cond,
           photos: state.photos || [],
+          actionTaken: state.actionTaken,
           notes: state.meterValue
             ? `Meteran: ${state.meterValue} m³${state.notes ? ` - ${state.notes}` : ""}`
             : state.notes || (state.actionTaken ? `Tindakan: ${state.actionTaken}` : isAction ? "Pemeriksaan rutin berkala" : undefined),

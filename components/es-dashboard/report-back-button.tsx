@@ -7,11 +7,13 @@ import { ArrowLeft } from "lucide-react"
 type ReportBackButtonProps = {
   fallbackHref?: string
   label?: string
+  href?: string
 }
 
 export function ReportBackButton({
   fallbackHref = "/dashboard",
   label = "Kembali",
+  href,
 }: ReportBackButtonProps) {
   const router = useRouter()
 
@@ -24,19 +26,26 @@ export function ReportBackButton({
     router.push(fallbackHref)
   }
 
+  const controlClass = "inline-flex items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[#4c4c4c] outline-none transition-colors hover:text-[#111111] focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/35"
+
   return (
     <div className="mb-5 flex items-center">
-      <button
-        type="button"
-        onClick={goBack}
-        className="inline-flex items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[#4c4c4c] outline-none transition-colors hover:text-[#111111] focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/35"
-      >
-        <ArrowLeft aria-hidden="true" />
-        {label}
-      </button>
-      <Link href={fallbackHref} className="sr-only">
-        {label}
-      </Link>
+      {href ? (
+        <Link href={href} className={controlClass}>
+          <ArrowLeft aria-hidden="true" />
+          {label}
+        </Link>
+      ) : (
+        <>
+          <button type="button" onClick={goBack} className={controlClass}>
+            <ArrowLeft aria-hidden="true" />
+            {label}
+          </button>
+          <Link href={fallbackHref} className="sr-only">
+            {label}
+          </Link>
+        </>
+      )}
     </div>
   )
 }

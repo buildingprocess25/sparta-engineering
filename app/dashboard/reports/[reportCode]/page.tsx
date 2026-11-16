@@ -5,6 +5,9 @@ import { getSession } from "@/lib/session"
 import { ReportDetailView } from "@/components/reports/report-detail-view"
 import { EsFormDetailView } from "@/components/es-dashboard/es-form-detail-view"
 import { ManagerSidebar } from "@/components/manager-dashboard/manager-sidebar"
+import { asPayloadRecord } from "@/lib/reports/checklist-follow-up"
+import { describeRevisionChanges, getChecklistRevisionUrl } from "@/lib/reports/checklist-revision-history"
+import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
 
 export default async function ReportDetailPage({
   params,
@@ -14,7 +17,7 @@ export default async function ReportDetailPage({
   const { reportCode } = await params
   const session = await getSession()
 
-  if (!session) {
+  if (typeof session?.userId !== "string") {
     redirect("/login")
   }
 
@@ -26,7 +29,8 @@ export default async function ReportDetailPage({
       area: true,
       room: true,
       equipment: true,
-      author: true,
+      author: { select: { NIK: true, name: true, role: true, branchName: true } },
+      revisions: { orderBy: [{ requestedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }] },
     },
   })
 
@@ -34,47 +38,62 @@ export default async function ReportDetailPage({
     notFound()
   }
 
-  // Serialize dates and ensure non-null reportCode for client component boundary
-  const serializedReport = {
-    ...report,
-    reportCode: report.reportCode || reportCode,
-    createdAt: report.createdAt.toISOString(),
-    updatedAt: report.updatedAt.toISOString(),
-  }
-
   const user = await getPrisma().user.findUnique({
-    where: { NIK: session.userId as string },
-    select: { name: true, NIK: true, role: true, email: true },
+    where: { NIK: session.userId },
+    select: { name: true, NIK: true, role: true, email: true, branchName: true },
   })
 
-  const userEmail = (user?.email as string) || (session.email as string) || "admin@admin.com"
-  const userRole = (user?.role as string) || (session.role as string) || "ES"
+  if (!user) notFound()
+  const isBranchReviewer = user.role === "COORD" || user.role === "MANAGER"
+  const isReviewer = isBranchReviewer || user.role === "ADMIN_HO" || user.role === "SUPER_ADMIN"
+  const branch = user.branchName.trim().toUpperCase()
+  if (isBranchReviewer && (!branch || branch !== report.author.branchName.trim().toUpperCase())) notFound()
+  if (!isReviewer && report.authorId !== user.NIK) notFound()
+
+  const userEmail = user.email || (session.email as string) || "admin@admin.com"
+  const userRole = user.role
 
   const currentUserData = {
-    name: user?.name || userEmail.split("@")[0].toUpperCase(),
-    NIK: user?.NIK || (session.userId as string) || "-",
+    name: user.name,
+    NIK: user.NIK,
     role: userRole,
     email: userEmail,
   }
 
-  const isReviewer = ["COORD", "MANAGER", "ADMIN_HO", "SUPER_ADMIN"].includes(userRole)
+  const serializedReport = {
+    ...report,
+    reportCode,
+    createdAt: report.createdAt.toISOString(),
+    updatedAt: report.updatedAt.toISOString(),
+    revisions: report.revisions.map(({ previousPayload, resubmittedPayload, requestedAt, resubmittedAt, ...entry }) => ({
+      ...entry,
+      requestedAt: requestedAt?.toISOString() ?? null,
+      resubmittedAt: resubmittedAt?.toISOString() ?? null,
+      changes: isReviewer && resubmittedAt ? describeRevisionChanges(previousPayload, resubmittedPayload) : [],
+    })),
+  }
 
   if (!isReviewer) {
+    const savedFormCode = asPayloadRecord(report.checklistPayload).formCode
+    const editUrl = userRole === "ES" && report.status === "NEEDS_REVISION"
+      ? getChecklistRevisionUrl(reportCode, report.formCode ?? (typeof savedFormCode === "string" ? savedFormCode : null))
+      : null
+    const canEdit = Boolean(editUrl && await getActiveWorkPermit(user))
     return (
       <EsFormDetailView
         report={serializedReport}
         userRole={userRole}
         currentUser={currentUserData}
+        revisionUrl={editUrl}
+        canEditRevision={canEdit}
       />
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#ff8a2a]/20 selection:text-slate-950">
-      {/* Sidebar Navigation matching Sparta Maintenance layout */}
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#ff8a2a]/20 selection:text-black">
       <ManagerSidebar userEmail={userEmail} userRole={userRole} />
 
-      {/* Main Content Layout Wrapper */}
       <div className="flex min-h-screen flex-col lg:pl-60 transition-all duration-200">
         <main className="flex-1 pb-10">
           <ReportDetailView

@@ -76,6 +76,8 @@ interface FollowUpUnit {
 
 interface FollowUpFormsEditorProps {
   reportCode: string
+  version: string
+  isRevision: boolean
   payload: any
   context: {
     branchName: string
@@ -90,6 +92,8 @@ interface FollowUpFormsEditorProps {
 
 export function FollowUpFormsEditor({
   reportCode,
+  version,
+  isRevision,
   payload,
   context,
 }: FollowUpFormsEditorProps) {
@@ -147,8 +151,12 @@ export function FollowUpFormsEditor({
         const existing = item?.followUp014 || item?.followUpData
         if (existing?.materials && Array.isArray(existing.materials) && existing.materials.length > 0) {
           initial[unit.key] = {
-            materials: existing.materials,
-            catatan: existing.catatan || unit.notes || "",
+            materials: (existing.materials as MaterialItem[]).map((material) => {
+              const jumlah = Number(material.jumlah)
+              const hargaUnit = Number(material.hargaUnit)
+              return { ...material, jumlah, hargaUnit, total: jumlah * hargaUnit }
+            }),
+            catatan: existing.catatan ?? unit.notes ?? "",
           }
         } else {
           initial[unit.key] = {
@@ -179,12 +187,12 @@ export function FollowUpFormsEditor({
         const existing = item?.followUp065 || item?.followUpData
         initial[unit.key] = {
           jenis: existing?.jenis || "PENGGANTIAN_SPARE_PART",
-          namaUnit: existing?.namaUnit || unit.label,
-          merk: existing?.merk || "",
-          nomorUnit: existing?.nomorUnit || item?.unitNo || "",
-          nomorTiketProblem: existing?.nomorTiketProblem || "",
-          analisa: existing?.analisa || unit.notes || "",
-          tindakan: existing?.tindakan || "",
+          namaUnit: existing?.namaUnit ?? unit.label,
+          merk: existing?.merk ?? "",
+          nomorUnit: existing?.nomorUnit ?? item?.unitNo ?? "",
+          nomorTiketProblem: existing?.nomorTiketProblem ?? "",
+          analisa: existing?.analisa ?? unit.notes ?? "",
+          tindakan: existing?.tindakan ?? "",
           parts: existing?.parts && Array.isArray(existing.parts) && existing.parts.length > 0
             ? existing.parts
             : [
@@ -266,9 +274,8 @@ export function FollowUpFormsEditor({
         if (m.id !== matId) return m
         const updated = { ...m, [field]: val }
         if (field === "jumlah" || field === "hargaUnit") {
-          const qty = field === "jumlah" ? Number(val) || 0 : m.jumlah
-          const price = field === "hargaUnit" ? Number(val) || 0 : m.hargaUnit
-          updated.total = qty * price
+          updated[field] = Number(val) || 0
+          updated.total = updated.jumlah * updated.hargaUnit
         }
         return updated
       })
@@ -450,8 +457,7 @@ export function FollowUpFormsEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: updatedItems,
-          followUp014Summary: has014 ? { totalCost: grandTotal014 } : null,
-          followUp065Summary: has065 ? { itemCount: followUpUnits.filter((u) => u.formType === "065").length } : null,
+          version,
         }),
       })
 
@@ -1109,7 +1115,7 @@ export function FollowUpFormsEditor({
                 </>
               ) : (
                 <>
-                  Simpan Form
+                  {isRevision ? "Kirim Ulang Laporan" : "Simpan Form"}
                   <Check className="size-4" />
                 </>
               )}

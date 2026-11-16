@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -47,6 +48,7 @@ export type FrmTsm007FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -83,14 +85,15 @@ export function FrmTsm007Form({
   watermarkUserRole,
   formCode = "FRM_TSM_007",
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTsm007FormProps) {
   const currentYear = new Date().getFullYear()
-  const [daya, setDaya] = React.useState("")
-  const [tahun, setTahun] = React.useState(String(currentYear))
-  const [jenisPerawatan, setJenisPerawatan] = React.useState<JenisPerawatanPLTSOption | "">("")
-  const [generalNotes, setGeneralNotes] = React.useState("")
-  const [itemStates, setItemStates] = React.useState<Record<string, ItemState>>({})
+  const [daya, setDaya] = React.useState(initialPayload?.dayaPLTS ?? "")
+  const [tahun, setTahun] = React.useState(initialPayload?.tahunPLTS ?? String(currentYear))
+  const [jenisPerawatan, setJenisPerawatan] = React.useState<JenisPerawatanPLTSOption | "">((initialPayload?.jenisPerawatan ?? "") as JenisPerawatanPLTSOption | "")
+  const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
+  const [itemStates, setItemStates] = React.useState<Record<string, ItemState>>(() => restoreChecklistItems<ItemState>(initialPayload, {}))
   const [collapsedCategories, setCollapsedCategories] = React.useState<Record<string, boolean>>({})
   const [uploadNotice, setUploadNotice] = React.useState<{ tone: "loading" | "success" | "error"; message: string } | null>(null)
   const [errors, setErrors] = React.useState<string[]>([])

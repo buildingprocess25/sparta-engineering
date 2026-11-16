@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -59,6 +60,7 @@ export type FrmTsm006FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -101,22 +103,24 @@ export function FrmTsm006Form({
   watermarkUserRole,
   formCode = "FRM_TSM_006",
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTsm006FormProps) {
-  const [jenisHydrant, setJenisHydrant] = React.useState("IHB - OHB")
-  const [jenisPerawatan, setJenisPerawatan] = React.useState<JenisPerawatanOption | "">("")
+  const [jenisHydrant, setJenisHydrant] = React.useState(initialPayload?.jenisHydrant ?? "IHB - OHB")
+  const [jenisPerawatan, setJenisPerawatan] = React.useState<JenisPerawatanOption | "">((initialPayload?.jenisPerawatan ?? "") as JenisPerawatanOption | "")
   const calendarInfo = React.useMemo(() => getHydrantWeekRanges(), [])
   const [selectedWeek, setSelectedWeek] = React.useState<"MGG_1" | "MGG_2" | "MGG_3" | "MGG_4">(
-    calendarInfo.activeWeekId
+    initialPayload?.subPeriod?.startsWith("MGG_") ? initialPayload.subPeriod as typeof calendarInfo.activeWeekId : calendarInfo.activeWeekId
   )
   const [selectedSemester, setSelectedSemester] = React.useState<"SEMESTER_1" | "SEMESTER_2">(() =>
-    getCurrentHydrantSemester()
+    initialPayload?.subPeriod === "SEMESTER_1" || initialPayload?.subPeriod === "SEMESTER_2"
+      ? initialPayload.subPeriod : getCurrentHydrantSemester()
   )
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
-  const [itemStates, setItemStates] = React.useState<Record<string, ItemState>>({})
-  const [battery1Volt, setBattery1Volt] = React.useState("")
-  const [battery2Volt, setBattery2Volt] = React.useState("")
+  const [itemStates, setItemStates] = React.useState<Record<string, ItemState>>(() => restoreChecklistItems<ItemState>(initialPayload, {}))
+  const [battery1Volt, setBattery1Volt] = React.useState(initialPayload?.items.find((item) => item.id === "5.I")?.value ?? "")
+  const [battery2Volt, setBattery2Volt] = React.useState(initialPayload?.items.find((item) => item.id === "5.J")?.value ?? "")
 
   const [collapsedCategories, setCollapsedCategories] = React.useState<Record<string, boolean>>({})
   const [uploadNotice, setUploadNotice] = React.useState<{
@@ -273,6 +277,9 @@ export function FrmTsm006Form({
         selectedSemester === "SEMESTER_1"
           ? "Semester 1 (Januari - Juni)"
           : "Semester 2 (Juli - Desember)"
+    }
+    if (initialPayload?.subPeriod === subPeriod && initialPayload?.subPeriodLabel) {
+      subPeriodLabel = initialPayload.subPeriodLabel
     }
 
     return {

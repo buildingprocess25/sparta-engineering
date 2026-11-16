@@ -20,7 +20,7 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
   return {
     async findDraftByUser(authorId): Promise<ChecklistDraft | null> {
       const draft = await getPrisma().checklistReport.findFirst({
-        where: { authorId, status: "DRAFT" },
+        where: { authorId, status: "DRAFT", checklistPayload: { equals: {} }, revisions: { none: {} } },
         select: {
           reportCode: true,
           areaId: true,
@@ -102,7 +102,7 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
 
     async deleteDraft(reportCode) {
       await getPrisma().checklistReport.deleteMany({
-        where: { reportCode, status: "DRAFT" },
+        where: { reportCode, status: "DRAFT", checklistPayload: { equals: {} }, revisions: { none: {} } },
       })
     },
 

@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -61,6 +62,7 @@ export type FrmTs022FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -94,17 +96,19 @@ export function FrmTs022Form({
   watermarkUserRole,
   formCode = FRM_TS_022_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTs022FormProps) {
   // Metadata States
-  const [unitBrand, setUnitBrand] = React.useState("")
-  const [unitModel, setUnitModel] = React.useState("")
-  const [capacityKva, setCapacityKva] = React.useState("")
+  const [unitBrand, setUnitBrand] = React.useState(initialPayload?.unitBrand ?? "")
+  const [unitModel, setUnitModel] = React.useState(initialPayload?.unitModel ?? "")
+  const [capacityKva, setCapacityKva] = React.useState(initialPayload?.capacityKva ?? "")
   const [inspectionDate, setInspectionDate] = React.useState(() => {
+    if (initialPayload?.inspectionDate) return initialPayload.inspectionDate
     const today = new Date()
     return today.toISOString().split("T")[0]
   })
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -128,7 +132,7 @@ export function FrmTs022Form({
         uploading: false,
       }
     })
-    return initial
+    return restoreChecklistItems(initialPayload, initial)
   })
 
   const [submitting, setSubmitting] = React.useState(false)

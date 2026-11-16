@@ -1,4 +1,5 @@
 import type { AreaFilter, PeriodFilter, ManagerDashboardData } from "@/components/manager-dashboard/mock-data"
+import type { ReportStatus } from "@/generated/prisma"
 
 export interface RealReportItem {
   id: string
@@ -7,7 +8,7 @@ export interface RealReportItem {
   category: "PREVENTIVE" | "INCIDENTAL"
   period: "MONTHLY" | "WEEKLY" | "QUARTERLY" | "SEMESTER" | null
   periodKey: string | null
-  status: "PENDING_COORD" | "PENDING_MANAGER" | "PENDING_REQUESTER" | "COMPLETED" | "REJECTED" | "DRAFT"
+  status: ReportStatus
   createdAt: Date
   updatedAt: Date
   area: {

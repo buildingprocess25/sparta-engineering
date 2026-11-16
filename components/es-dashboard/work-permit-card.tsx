@@ -2,7 +2,10 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2, Clock, ShieldAlert, XCircle } from "lucide-react"
+import { ArrowRight, CheckCircle2, Clock, History, ShieldAlert, XCircle } from "lucide-react"
+
+import { buttonVariants } from "@/components/ui/button"
+import { getWorkPermitHistoryHref } from "@/lib/work-permits/history"
 
 export type WorkPermitStatusData = {
   id: string
@@ -186,7 +189,7 @@ export function WorkPermitCard({ userNik, initialStatus }: WorkPermitCardProps =
             </div>
           </div>
 
-          <div className="shrink-0 self-start sm:self-center">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 self-start sm:flex-col sm:items-end sm:self-center">
             <Link
               href={
                 isApproved || isPending
@@ -223,6 +226,10 @@ export function WorkPermitCard({ userNik, initialStatus }: WorkPermitCardProps =
                   : "Isi Form Izin Kerja"}
               </span>
               <ArrowRight className="size-3.5" />
+            </Link>
+            <Link href={getWorkPermitHistoryHref()} className={buttonVariants({ variant: "outline", size: "lg" })}>
+              <History data-icon="inline-start" aria-hidden="true" />
+              Riwayat Izin Kerja
             </Link>
           </div>
         </div>

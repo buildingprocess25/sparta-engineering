@@ -41,7 +41,8 @@ export type FrmTsm001FormProps = {
   periodKey: string
   watermarkUserLabel: string
   watermarkUserRole: string
-  formCode?: string
+  formCode?: FrmTsm001Payload["formCode"]
+  initialPayload?: FrmTsm001Payload
   isRepairMode?: boolean
   submitAction(input: {
     reportCode: string
@@ -67,14 +68,15 @@ export function FrmTsm001Form({
   watermarkUserLabel,
   watermarkUserRole,
   formCode = "FRM_TSM_001",
+  initialPayload,
   submitAction,
 }: FrmTsm001FormProps) {
   // Genset Metadata
-  const [merk, setMerk] = React.useState("")
-  const [kva, setKva] = React.useState("")
+  const [merk, setMerk] = React.useState(initialPayload?.merk ?? "")
+  const [kva, setKva] = React.useState(initialPayload?.kva ?? "")
 
   // Running Log state
-  const [runningLog, setRunningLog] = React.useState<FrmTsm001RunningLog>({
+  const [runningLog, setRunningLog] = React.useState<FrmTsm001RunningLog>(() => initialPayload?.runningLog ?? ({
     operationalType: "Test ATS",
     timeStart: "",
     timeOff: "",
@@ -87,10 +89,10 @@ export function FrmTsm001Form({
     voltageSinglePhase: { rn: "", sn: "", tn: "" },
     loadAmpere: { r: "", s: "", t: "" },
     fuelConsumptionLiter: "",
-  })
+  }))
 
   // ATS Test state
-  const [atsTest, setAtsTest] = React.useState<FrmTsm001AtsTest>({
+  const [atsTest, setAtsTest] = React.useState<FrmTsm001AtsTest>(() => initialPayload?.atsTest ?? ({
     testDate: new Date().toISOString().split("T")[0],
     systemAtsStatus: "OK",
     voltageBatteryCharge: "",
@@ -100,9 +102,9 @@ export function FrmTsm001Form({
     handler: undefined,
     repairForm: undefined,
     notes: "",
-  })
+  }))
 
-  const [catatanKeterangan, setCatatanKeterangan] = React.useState("")
+  const [catatanKeterangan, setCatatanKeterangan] = React.useState(initialPayload?.catatanKeterangan ?? "")
   const [uploading, setUploading] = React.useState(false)
   const [errors, setErrors] = React.useState<string[]>([])
   const [uploadNotice, setUploadNotice] = React.useState<{
@@ -194,15 +196,15 @@ export function FrmTsm001Form({
     }
 
     const payload: FrmTsm001Payload = {
-      formCode: "FRM_TSM_001",
+      formCode,
       formName: "Form Pemantauan Penggunaan Genset dan Test Fungsi ATS",
       areaCode,
       period: "MONTHLY",
       periodKey,
-      branch: areaName,
+      branch: initialPayload?.branch ?? areaName,
       merk: merk.trim(),
       kva: kva.trim(),
-      bulan: periodKey,
+      bulan: initialPayload?.bulan ?? periodKey,
       runningLog,
       atsTest: {
         ...atsTest,

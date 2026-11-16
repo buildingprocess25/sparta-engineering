@@ -6,6 +6,13 @@ import { uploadPhotoToDriveCdn } from "@/lib/storage/drive-photo-service"
 import { createPhotoUploadPostHandler } from "./handler"
 
 export const POST = createPhotoUploadPostHandler({
+  async hasActiveWorkPermit(authorId) {
+    const [{ getWorkPermitUser }, { getActiveWorkPermit }] = await Promise.all([
+      import("@/lib/work-permits/current-user"), import("@/lib/work-permits/active-permit"),
+    ])
+    const user = await getWorkPermitUser()
+    return user?.NIK === authorId && Boolean(await getActiveWorkPermit(user))
+  },
   async getSession() {
     const session = await import("@/lib/session")
     const currentSession = await session.getSession()

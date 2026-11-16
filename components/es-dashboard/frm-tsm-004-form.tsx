@@ -26,6 +26,7 @@ type FrmTsm004FormProps = {
   formCode?: "FRM_TSM_004" | "FRM_TSM_004_REPAIR"
   watermarkUserLabel: string
   watermarkUserRole: string
+  initialPayload?: FrmTsm004Payload
   submitAction: (input: {
     reportCode: string
     payload: FrmTsm004Payload
@@ -37,6 +38,7 @@ export function FrmTsm004Form({
   areaCode,
   periodKey,
   formCode = "FRM_TSM_004",
+  initialPayload,
   submitAction,
 }: FrmTsm004FormProps) {
   const router = useRouter()
@@ -46,13 +48,13 @@ export function FrmTsm004Form({
   const [expandedPanel, setExpandedPanel] = useState<string | null>(
     FRM_TSM_004_PANELS[0].id
   )
-  const [keterangan, setKeterangan] = useState("")
+  const [keterangan, setKeterangan] = useState(initialPayload?.keterangan ?? "")
   const [measurements, setMeasurements] = useState<
     Record<string, FrmTsm004Measurements>
   >(() => {
     const initial: Record<string, FrmTsm004Measurements> = {}
     for (const panel of FRM_TSM_004_PANELS) {
-      initial[panel.id] = { rn: "", sn: "", tn: "", rs: "", st: "", tr: "" }
+      initial[panel.id] = initialPayload?.panels.find((saved) => saved.id === panel.id)?.measurements ?? { rn: "", sn: "", tn: "", rs: "", st: "", tr: "" }
     }
     return initial
   })

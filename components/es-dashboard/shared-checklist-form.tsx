@@ -1,5 +1,6 @@
 "use client"
 
+import { toEditableChecklistItem } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -65,6 +66,7 @@ export type SharedChecklistFormProps = {
   watermarkUserLabel: string
   watermarkUserRole: string
   formCode: string
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -107,14 +109,22 @@ export function SharedChecklistForm({
   watermarkUserLabel,
   watermarkUserRole,
   formCode,
+  initialPayload,
   submitAction,
 }: SharedChecklistFormProps) {
   const router = useRouter()
   const config = React.useMemo(() => getChecklistConfig(formCode), [formCode])
   
+  const savedItems = new Map<string, ItemState[]>()
+  for (const item of initialPayload?.items ?? []) {
+    const group = savedItems.get(item.id) ?? []
+    group.push(toEditableChecklistItem(item))
+    savedItems.set(item.id, group)
+  }
+
   const [quantities, setQuantities] = React.useState<Record<string, number>>(() => {
     if (!config) return {}
-    return Object.fromEntries(config.items.map((item) => [item.id, 1]))
+    return Object.fromEntries(config.items.map((item) => [item.id, savedItems.get(item.id)?.length ?? 1]))
   })
   
   const [items, setItems] = React.useState<Record<string, ItemState[]>>(() => {
@@ -122,7 +132,7 @@ export function SharedChecklistForm({
     return Object.fromEntries(
       config.items.map((item) => [
         item.id,
-        [
+        savedItems.get(item.id) ?? [
           {
             photos: [],
             notes: "",

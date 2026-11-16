@@ -44,6 +44,8 @@ function matchesDraft(
   return (
     draft.areaId === input.areaId &&
     (draft.roomId ?? null) === (input.roomId ?? null) &&
+    (draft.taskId ?? null) === (input.taskId ?? null) &&
+    (draft.equipmentId ?? null) === (input.equipmentId ?? null) &&
     draft.periodKey === input.periodKey &&
     draft.formCode === input.formCode
   )

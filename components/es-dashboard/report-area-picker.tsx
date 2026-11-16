@@ -353,7 +353,6 @@ export function ReportAreaPicker({
               roomName: selectedRoom.name,
               period: period,
               ...(workPermit ? { workPermit } : {}),
-              reset: "true",
             },
           }}
           className="inline-flex h-12 items-center justify-center rounded-lg bg-[#111111] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#242424]"

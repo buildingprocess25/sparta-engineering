@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
   ArrowLeft,
@@ -30,11 +31,15 @@ import {
 
 import { cn } from "@/lib/utils"
 import { triggerReportPdfUploadAction } from "@/lib/actions/checklist"
+import { reviewReportDecision } from "@/app/dashboard/reports/actions"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
 import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
 import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
 import { GENSET_CATEGORIES } from "@/lib/checklists/frm-ts-022"
 import { getChecklistConfig } from "@/lib/checklists/registry"
+import { getReportItems, needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
+import type { ChecklistRevisionHistory } from "@/lib/reports/checklist-revision-history"
+import { RevisionHistory } from "@/components/reports/checklist-revision-history"
 
 export interface ReportDetailViewProps {
   report: {
@@ -75,6 +80,7 @@ export interface ReportDetailViewProps {
       branchName: string | null
     }
     checklistPayload: unknown
+    revisions: ChecklistRevisionHistory[]
   }
   userRole?: string
   currentUser?: {
@@ -87,6 +93,94 @@ export interface ReportDetailViewProps {
 
 type TabKey = "checklist" | "pekerjaan" | "dokumentasi" | "riwayat" | "aksi"
 type ChecklistFilter = "semua" | "bermasalah" | "ada_foto"
+type ReviewDecision = Parameters<typeof reviewReportDecision>[1]
+
+type FollowUp065 = {
+  jenis?: string
+  namaUnit?: string
+  merk?: string
+  nomorUnit?: string
+  nomorTiketProblem?: string
+  analisa?: string
+  tindakan?: string
+  parts?: {
+    id?: string
+    namaPart?: string
+    nomorPart?: string
+    asalPart?: string
+    jumlahPart?: number
+  }[]
+}
+
+type Material014 = {
+  id?: string
+  namaBarang?: string
+  jumlah?: number | string
+  satuan?: string
+  hargaUnit?: number | string
+  total?: number | string
+}
+
+type FollowUp014 = {
+  totalCost?: number | string
+  materials?: Material014[]
+  catatan?: string
+}
+
+type ReportItem = ChecklistPayloadItem & {
+  followUp065?: FollowUp065
+  followUp014?: FollowUp014
+  followUpData?: FollowUp065 & FollowUp014
+}
+
+function getFollowUp065(item: ReportItem): FollowUp065 | undefined {
+  return item.followUp065 ??
+    (item.repairForm === "SAT/FRM/TS/065_REV:00_161020" ? item.followUpData : undefined)
+}
+
+function getFollowUp014(item: ReportItem): FollowUp014 | undefined {
+  return item.followUp014 ??
+    (item.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ? item.followUpData : undefined)
+}
+
+function getMaterials014(followUp?: FollowUp014): Material014[] {
+  return Array.isArray(followUp?.materials)
+    ? followUp.materials.filter((material) => material && typeof material === "object")
+    : []
+}
+
+function readMaterialNumber(value: unknown): number | null {
+  if (typeof value === "string") {
+    const text = value.trim()
+    if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text)) return null
+    value = Number(text)
+  }
+
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null
+}
+
+function getMaterialSubtotal(material: Material014): number | null {
+  const savedSubtotal = readMaterialNumber(material.total)
+  if (savedSubtotal !== null) return savedSubtotal
+
+  const quantity = readMaterialNumber(material.jumlah)
+  const unitPrice = readMaterialNumber(material.hargaUnit)
+  if (quantity === null || unitPrice === null) return null
+
+  return readMaterialNumber(quantity * unitPrice)
+}
+
+function getItemEstimate(item: ReportItem): number | null {
+  const followUp = getFollowUp014(item)
+  if (!followUp) return null
+
+  const totals = getMaterials014(followUp).map(getMaterialSubtotal)
+  if (totals.length > 0 && totals.every((total) => total !== null)) {
+    return totals.reduce((sum, total) => sum + total, 0)
+  }
+
+  return readMaterialNumber(followUp.totalCost)
+}
 
 function formatIndoDateTime(dateStr: string): string {
   try {
@@ -163,6 +257,14 @@ export function ReportDetailView({
   userRole = "MANAGER",
   currentUser,
 }: ReportDetailViewProps) {
+  const router = useRouter()
+  const [reviewDecision, setReviewDecision] = React.useState<ReviewDecision | null>(null)
+  const [reviewNotes, setReviewNotes] = React.useState("")
+  const [reviewFeedback, setReviewFeedback] = React.useState<{
+    message: string
+    isError: boolean
+  } | null>(null)
+  const [isReviewPending, startReview] = React.useTransition()
   const [activeTab, setActiveTab] = React.useState<TabKey>("checklist")
   const [checklistFilter, setChecklistFilter] = React.useState<ChecklistFilter>("semua")
   const [searchItem, setSearchItem] = React.useState("")
@@ -175,12 +277,10 @@ export function ReportDetailView({
   const payload = (report.checklistPayload as ChecklistPayload) || {}
 
   // Fallback to form template items if payload.items is empty (e.g. DRAFT reports)
-  const rawItems: ChecklistPayloadItem[] = React.useMemo(() => {
-    if (Array.isArray(payload.items) && payload.items.length > 0) {
-      return payload.items
-    }
-    return getDefaultItemsForForm(report.formCode || "")
-  }, [payload.items, report.formCode])
+  const rawItems: ReportItem[] = React.useMemo(() => {
+    const savedItems = getReportItems(report.checklistPayload)
+    return savedItems.length ? savedItems : getDefaultItemsForForm(report.formCode || "")
+  }, [report.checklistPayload, report.formCode])
 
   // Items classification
   const itemsWithIssues = React.useMemo(() => {
@@ -190,6 +290,11 @@ export function ReportDetailView({
     })
   }, [rawItems])
 
+  const workItems = React.useMemo(() => {
+    const issueIds = new Set(itemsWithIssues.map((item) => item.id))
+    return rawItems.filter((item) => issueIds.has(item.id) || Boolean(getFollowUp014(item)))
+  }, [itemsWithIssues, rawItems])
+
   const itemsWithPhotos = React.useMemo(() => {
     return rawItems.filter((it) => Array.isArray(it.photos) && it.photos.length > 0)
   }, [rawItems])
@@ -198,20 +303,10 @@ export function ReportDetailView({
     return rawItems.reduce((acc, it) => acc + (Array.isArray(it.photos) ? it.photos.length : 0), 0)
   }, [rawItems])
 
-  // Estimasi & Realisasi calculation
-  const { totalEstimasi, totalRealisasi } = React.useMemo(() => {
-    let est = 0
-    let real = 0
-    rawItems.forEach((it) => {
-      if ((it.condition || "").includes("RUSAK") || (it.condition || "").includes("REPAIR")) {
-        est += 140000
-        if (report.status === "COMPLETED") {
-          real += 137500
-        }
-      }
-    })
-    return { totalEstimasi: est, totalRealisasi: real }
-  }, [rawItems, report.status])
+  const totalEstimasi = rawItems.reduce<number | null>((total, item) => {
+    const estimate = getItemEstimate(item)
+    return estimate === null ? total : (total ?? 0) + estimate
+  }, null)
 
   // Filtered items
   const filteredItems = React.useMemo(() => {
@@ -345,6 +440,45 @@ export function ReportDetailView({
     }
   }
 
+  function openReviewDecision(decision: ReviewDecision) {
+    setReviewDecision(decision)
+    setReviewNotes("")
+    setReviewFeedback(null)
+  }
+
+  function confirmReviewDecision() {
+    if (!reviewDecision || isReviewPending) return
+    const decision = reviewDecision
+    const notes = reviewNotes.trim()
+
+    if (decision !== "approve" && !notes) {
+      setReviewFeedback({ message: "Isi catatan keputusan terlebih dahulu.", isError: true })
+      return
+    }
+
+    startReview(async () => {
+      try {
+        const result = await reviewReportDecision(report.id, decision, notes, report.updatedAt)
+        if (!result.success) {
+          setReviewFeedback({
+            message: result.error || "Keputusan review gagal disimpan.",
+            isError: true,
+          })
+          return
+        }
+
+        setReviewDecision(null)
+        setReviewFeedback({ message: result.message, isError: false })
+        router.refresh()
+      } catch {
+        setReviewFeedback({
+          message: "Keputusan review belum bisa disimpan. Muat ulang laporan sebelum mencoba lagi.",
+          isError: true,
+        })
+      }
+    })
+  }
+
   // Target object & sub
   const targetName =
     report.equipment?.name || report.room?.name || report.area.name
@@ -360,8 +494,10 @@ export function ReportDetailView({
   const isCoord = report.status === "PENDING_COORD"
   const isManager = report.status === "PENDING_MANAGER"
   const isDraft = report.status === "DRAFT"
+  const needsRevision = report.status === "NEEDS_REVISION"
   const isRejected = report.status === "REJECTED"
   const isReviewer = ["COORD", "MANAGER", "ADMIN_HO", "SUPER_ADMIN"].includes(userRole || "")
+  const canReview = !needsChecklistFollowUp(payload) && ((userRole === "COORD" && isCoord) || (userRole === "MANAGER" && isManager))
 
   return (
     <div className="w-full bg-[#f8fafc] text-slate-800 antialiased">
@@ -395,6 +531,13 @@ export function ReportDetailView({
       </div>
 
       <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+        {report.revisions.length > 0 && activeTab !== "riwayat" && (
+          <div className="mb-4">
+            <button type="button" onClick={() => setActiveTab("riwayat")} className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-900">
+              {needsRevision ? "Perlu Revisi" : "Laporan pernah direvisi"} · Lihat riwayat
+            </button>
+          </div>
+        )}
         {/* PDF notification banner */}
         {pdfSuccessMessage && (
           <div className="mb-4 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-800">
@@ -453,6 +596,11 @@ export function ReportDetailView({
             {isDraft && (
               <span className="inline-flex items-center rounded-lg bg-slate-200/80 px-2.5 py-1 text-xs font-bold text-slate-700 border border-slate-300">
                 Draft
+              </span>
+            )}
+            {needsRevision && (
+              <span className="inline-flex items-center rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-900">
+                Perlu Revisi
               </span>
             )}
             {isRejected && (
@@ -615,16 +763,18 @@ export function ReportDetailView({
               <div className="mt-2 space-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Estimasi:</span>
-                  <span className="font-bold text-[#ff8a2a]">{formatRupiah(totalEstimasi)}</span>
+                  <span className="font-bold text-[#ff8a2a]">
+                    {totalEstimasi === null ? "—" : formatRupiah(totalEstimasi)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Realisasi:</span>
-                  <span className="font-bold text-emerald-600">{formatRupiah(totalRealisasi)}</span>
+                  <span className="font-bold text-emerald-600">—</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Selisih:</span>
                   <span className="font-bold text-indigo-600">
-                    {formatRupiah(Math.max(0, totalEstimasi - totalRealisasi))} (Sisa)
+                    —
                   </span>
                 </div>
               </div>
@@ -702,7 +852,7 @@ export function ReportDetailView({
             <Wrench className="size-4" />
             <span>Pekerjaan & Biaya</span>
             <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-              {itemsWithIssues.length}
+              {workItems.length}
             </span>
           </button>
 
@@ -856,6 +1006,7 @@ export function ReportDetailView({
                           cond.includes("REPAIR") ||
                           cond.includes("URGENT")
                         const isNone = cond.includes("TIDAK")
+                        const estimate = getItemEstimate(item)
 
                         return (
                           <tr
@@ -918,10 +1069,10 @@ export function ReportDetailView({
                               )}
                             </td>
                             <td className="py-3 px-4 whitespace-nowrap text-slate-500 font-medium">
-                              {isBad ? "Rp 140.000" : "-"}
+                              {estimate === null ? "—" : formatRupiah(estimate)}
                             </td>
                             <td className="py-3 px-4 whitespace-nowrap text-slate-500 font-medium">
-                              {isBad && isCompleted ? "Rp 137.500" : "-"}
+                              —
                             </td>
                           </tr>
                         )
@@ -945,7 +1096,7 @@ export function ReportDetailView({
                 Daftar temuan kondisi abnormal yang memerlukan penggantian spare part atau tindak lanjut teknisi.
               </p>
 
-              {itemsWithIssues.length === 0 ? (
+              {workItems.length === 0 ? (
                 <div className="mt-6 rounded-lg border border-dashed border-slate-200 p-8 text-center">
                   <CheckCircle2 className="mx-auto size-8 text-emerald-500" />
                   <p className="mt-2 text-xs font-bold text-slate-800">
@@ -957,30 +1108,142 @@ export function ReportDetailView({
                 </div>
               ) : (
                 <div className="mt-4 divide-y divide-slate-100">
-                  {itemsWithIssues.map((item, idx) => (
-                    <div key={item.id} className="py-3.5 flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-slate-500">
-                            #{idx + 1}
-                          </span>
-                          <span className="text-xs font-bold text-slate-900">
-                            {item.label}
-                          </span>
-                          <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
-                            {item.condition}
-                          </span>
+                  {workItems.map((item, idx) => {
+                    const followUp014 = getFollowUp014(item)
+                    const materials = getMaterials014(followUp014)
+                    const followUp065 = getFollowUp065(item)
+                    const parts = Array.isArray(followUp065?.parts) ? followUp065.parts : []
+                    const estimate = getItemEstimate(item)
+                    const workType = followUp065?.jenis === "PENGGANTIAN_SPARE_PART"
+                      ? "Penggantian Spare Part"
+                      : followUp065?.jenis === "PERBAIKAN" ? "Perbaikan" : undefined
+
+                    return (
+                      <div key={item.id} className="py-3.5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-slate-500">
+                                #{idx + 1}
+                              </span>
+                              <span className="text-xs font-bold text-slate-900">{item.label}</span>
+                              <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
+                                {item.condition}
+                              </span>
+                            </div>
+                            {item.notes && <p className="mt-1 text-xs text-slate-500">Catatan: {item.notes}</p>}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-bold text-slate-900">
+                              {estimate === null ? "—" : formatRupiah(estimate)}
+                            </p>
+                            <p className="text-[10px] text-slate-400">Estimasi Biaya</p>
+                          </div>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Catatan: {item.notes || "Dibutuhkan tindakan perbaikan atau penggantian komponen."}
-                        </p>
+
+                        {followUp014 && (
+                          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs">
+                            <h4 className="font-bold text-slate-900">
+                              Form 014 · Estimasi Biaya Sipil &amp; ME
+                            </h4>
+                            {materials.length > 0 ? (
+                              <div className="overflow-x-auto">
+                                <table className="w-full min-w-[540px] text-left">
+                                  <thead className="border-b border-slate-200 text-slate-600">
+                                    <tr>
+                                      <th scope="col" className="p-2">Material / Pekerjaan</th>
+                                      <th scope="col" className="p-2 text-right">Jumlah</th>
+                                      <th scope="col" className="p-2">Satuan</th>
+                                      <th scope="col" className="p-2 text-right">Harga Satuan</th>
+                                      <th scope="col" className="p-2 text-right">Subtotal</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-200">
+                                    {materials.map((material, index) => {
+                                      const quantity = readMaterialNumber(material.jumlah)
+                                      const unitPrice = readMaterialNumber(material.hargaUnit)
+                                      const subtotal = getMaterialSubtotal(material)
+
+                                      return (
+                                        <tr key={material.id || index}>
+                                          <td className="p-2">{material.namaBarang || "—"}</td>
+                                          <td className="p-2 text-right">{quantity ?? "—"}</td>
+                                          <td className="p-2">{material.satuan || "—"}</td>
+                                          <td className="whitespace-nowrap p-2 text-right">
+                                            {unitPrice === null ? "—" : formatRupiah(unitPrice)}
+                                          </td>
+                                          <td className="whitespace-nowrap p-2 text-right">
+                                            {subtotal === null ? "—" : formatRupiah(subtotal)}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-slate-600">Belum ada rincian material tersimpan.</p>
+                            )}
+                            {followUp014.catatan && (
+                              <p className="whitespace-pre-line text-slate-600">Catatan estimasi: {followUp014.catatan}</p>
+                            )}
+                            <div className="flex justify-between gap-3 border-t border-slate-200 pt-2 font-bold">
+                              <span>Total Estimasi Form 014</span>
+                              <span>{estimate === null ? "—" : formatRupiah(estimate)}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {followUp065 && (
+                          <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs">
+                            <h4 className="font-bold text-slate-900">Form 065 · Penggantian Spare Part Equipment</h4>
+                            <dl className="grid gap-3 sm:grid-cols-2">
+                              {[
+                                ["Jenis pekerjaan", workType],
+                                ["Unit / Equipment", followUp065.namaUnit],
+                                ["Merk / Brand", followUp065.merk],
+                                ["No. Unit / Asset", followUp065.nomorUnit],
+                                ["No. Tiket Problem", followUp065.nomorTiketProblem],
+                                ["Analisa kerusakan", followUp065.analisa],
+                                ["Tindakan", followUp065.tindakan],
+                              ].map(([label, value]) => (
+                                <div key={label}>
+                                  <dt className="text-slate-500">{label}</dt>
+                                  <dd className="mt-0.5 break-words font-semibold text-slate-900">{value || "—"}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                            {parts.length > 0 && (
+                              <div className="overflow-x-auto">
+                                <table className="w-full min-w-[420px] text-left">
+                                  <thead className="border-b border-slate-200 text-slate-600">
+                                    <tr>
+                                      <th className="p-2">Spare Part</th>
+                                      <th className="p-2">No. Part / Seri</th>
+                                      <th className="p-2">Asal Part</th>
+                                      <th className="p-2 text-right">Jumlah</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-200">
+                                    {parts.map((part, partIndex) => (
+                                      <tr key={part.id || partIndex}>
+                                        <td className="p-2">{part.namaPart || "—"}</td>
+                                        <td className="p-2">{part.nomorPart || "—"}</td>
+                                        <td className="p-2">
+                                          {part.asalPart === "STOCK" ? "Stock Gudang" : part.asalPart === "PB" ? "PB (Pengadaan Baru)" : "—"}
+                                        </td>
+                                        <td className="p-2 text-right">{part.jumlahPart ?? "—"}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-slate-900">Rp 140.000</p>
-                        <p className="text-[10px] text-slate-400">Estimasi Biaya</p>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -1044,6 +1307,7 @@ export function ReportDetailView({
         {/* 8. Tab Content: Riwayat Aktivitas */}
         {activeTab === "riwayat" && (
           <div className="mt-5 space-y-4">
+            <RevisionHistory revisions={report.revisions} />
             <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
               <h3 className="text-xs font-black uppercase tracking-wide text-slate-900">
                 Riwayat & Log Aktivitas Laporan
@@ -1060,7 +1324,7 @@ export function ReportDetailView({
                   </p>
                 </div>
 
-                {report.status !== "DRAFT" && (
+                {!isDraft && !report.revisions.length && (
                   <div className="relative pl-6">
                     <div className="absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white bg-[#ff8a2a]" />
                     <p className="text-xs font-bold text-slate-900">
@@ -1105,29 +1369,96 @@ export function ReportDetailView({
                 Tinjau kelengkapan form checklist sebelum memberikan status persetujuan.
               </p>
 
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-colors"
+              {canReview && (
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={isReviewPending}
+                    onClick={() => openReviewDecision("approve")}
+                    className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="mr-1.5 size-4" />
+                    {userRole === "COORD" ? "Validasi & Teruskan ke Manager" : "Setujui Final"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isReviewPending}
+                    onClick={() => openReviewDecision("reject_revision")}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-5 text-xs font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+                  >
+                    <RefreshCw className="mr-1.5 size-4" />
+                    Minta Revisi
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isReviewPending}
+                    onClick={() => openReviewDecision("reject")}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-5 text-xs font-bold text-rose-900 hover:bg-rose-100 disabled:opacity-50"
+                  >
+                    <X className="mr-1.5 size-4" />
+                    Tolak Laporan
+                  </button>
+                </div>
+              )}
+
+              {!canReview && (
+                <p className="mt-4 text-xs text-slate-600">
+                  Laporan ini tidak sedang menunggu keputusan akunmu.
+                </p>
+              )}
+
+              {canReview && reviewDecision && (
+                <div className="mt-4 rounded-lg border border-slate-200 p-4">
+                  <p className="text-sm font-semibold">
+                    {reviewDecision === "approve"
+                      ? userRole === "COORD"
+                        ? "Teruskan laporan ini ke Manager?"
+                        : "Setujui laporan ini secara final?"
+                      : reviewDecision === "reject_revision"
+                        ? "Kembalikan laporan untuk revisi?"
+                        : "Tolak laporan ini?"}
+                  </p>
+                  {reviewDecision !== "approve" && (
+                    <label className="mt-3 block text-xs font-medium">
+                      Catatan keputusan
+                      <textarea
+                        className="mt-1 block w-full rounded-lg border border-slate-300 p-2"
+                        value={reviewNotes}
+                        onChange={(event) => setReviewNotes(event.target.value)}
+                        disabled={isReviewPending}
+                        rows={3}
+                      />
+                    </label>
+                  )}
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={isReviewPending}
+                      onClick={() => setReviewDecision(null)}
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold disabled:opacity-50"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isReviewPending}
+                      onClick={confirmReviewDecision}
+                      className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      {isReviewPending ? "Memproses..." : "Konfirmasi"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {reviewFeedback && (
+                <p
+                  role={reviewFeedback.isError ? "alert" : "status"}
+                  className={cn("mt-3 text-xs font-semibold", reviewFeedback.isError ? "text-rose-700" : "text-emerald-700")}
                 >
-                  <CheckCircle2 className="mr-1.5 size-4" />
-                  Setujui Laporan
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex h-10 items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors"
-                >
-                  <RefreshCw className="mr-1.5 size-4" />
-                  Minta Revisi
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex h-10 items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-5 text-xs font-bold text-rose-900 hover:bg-rose-100 transition-colors"
-                >
-                  <X className="mr-1.5 size-4" />
-                  Tolak Laporan
-                </button>
-              </div>
+                  {reviewFeedback.message}
+                </p>
+              )}
             </div>
           </div>
         )}

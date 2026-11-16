@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -51,6 +52,7 @@ export type FrmTs041FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -98,6 +100,7 @@ export function FrmTs041Form({
   watermarkUserRole,
   formCode = FRM_TS_041_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTs041FormProps) {
   const currentMonthIdx = React.useMemo(() => {
@@ -120,10 +123,10 @@ export function FrmTs041Form({
   }, [])
 
   // Header State
-  const [warehouse, setWarehouse] = React.useState("")
-  const [inspectionStartDate, setInspectionStartDate] = React.useState(todayStr)
-  const [inspectionEndDate, setInspectionEndDate] = React.useState(todayStr)
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [warehouse, setWarehouse] = React.useState(initialPayload?.locationCode ?? "")
+  const [inspectionStartDate, setInspectionStartDate] = React.useState(initialPayload?.inspectionDate ?? todayStr)
+  const [inspectionEndDate, setInspectionEndDate] = React.useState(initialPayload?.inspectionEndDate ?? initialPayload?.inspectionDate ?? todayStr)
+  const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
   React.useEffect(() => {
     if (!warehouse && areaName) {
@@ -141,7 +144,7 @@ export function FrmTs041Form({
         uploading: false,
       }
     }
-    return initial
+    return restoreChecklistItems(initialPayload, initial)
   })
 
   // Accordion state: open first 3 categories by default
@@ -392,6 +395,7 @@ export function FrmTs041Form({
       items: payloadItems,
       locationCode: warehouse.trim() || undefined,
       inspectionDate: inspectionStartDate || undefined,
+      inspectionEndDate: inspectionEndDate || undefined,
       generalNotes: generalNotes.trim() || undefined,
     }
 

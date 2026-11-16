@@ -34,6 +34,9 @@ import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
 import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
 import { GENSET_CATEGORIES } from "@/lib/checklists/frm-ts-022"
 import { getChecklistConfig } from "@/lib/checklists/registry"
+import { getReportItems } from "@/lib/reports/checklist-follow-up"
+import type { ChecklistRevisionHistory } from "@/lib/reports/checklist-revision-history"
+import { RevisionHistory } from "@/components/reports/checklist-revision-history"
 
 export interface EsFormDetailViewProps {
   report: {
@@ -73,8 +76,11 @@ export interface EsFormDetailViewProps {
       branchName: string | null
     }
     checklistPayload: unknown
+    revisions: ChecklistRevisionHistory[]
   }
   userRole?: string
+  revisionUrl?: string | null
+  canEditRevision?: boolean
   currentUser?: {
     name: string
     NIK: string
@@ -90,6 +96,8 @@ type PreviewPhoto = {
 
 export function EsFormDetailView({
   report,
+  revisionUrl,
+  canEditRevision,
 }: EsFormDetailViewProps) {
   const router = useRouter()
   const [previewPhoto, setPreviewPhoto] = React.useState<PreviewPhoto | null>(null)
@@ -97,7 +105,18 @@ export function EsFormDetailView({
   const [openCategories, setOpenCategories] = React.useState<Record<string, boolean>>({})
 
   const payload = (report.checklistPayload as ChecklistPayload) || {}
-  const rawItems: ChecklistPayloadItem[] = Array.isArray(payload.items) ? payload.items : []
+  const rawItems: ChecklistPayloadItem[] = React.useMemo(() => getReportItems(report.checklistPayload), [report.checklistPayload])
+  const activeRevision = report.revisions.find((entry) => !entry.resubmittedAt)
+  const isRevision = report.status === "NEEDS_REVISION"
+  const statusLabel: Record<string, string> = {
+    DRAFT: "Draft",
+    NEEDS_REVISION: "Perlu Revisi",
+    PENDING_COORD: "Review Coord",
+    PENDING_MANAGER: "Review Manager",
+    PENDING_REQUESTER: "Review Requester",
+    COMPLETED: "Selesai",
+    REJECTED: "Ditolak",
+  }
 
   const formCode = (report.formCode || payload.formCode || "").toUpperCase()
   const formConfig = getChecklistConfig(formCode)
@@ -270,16 +289,16 @@ export function EsFormDetailView({
       {/* 1. Mobile-friendly Top Navigation Header */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#e8e8e6] bg-white/95 px-4 backdrop-blur-md">
         <Link
-          href="/dashboard"
+          href={isRevision ? "/dashboard/activity?tab=revision" : "/dashboard"}
           className="inline-flex size-9 items-center justify-center rounded-xl bg-[#f5f5f3] text-[#111111] transition-transform active:scale-95"
-          aria-label="Kembali ke Dashboard"
+          aria-label={isRevision ? "Kembali ke Perlu Revisi" : "Kembali ke Dashboard"}
         >
           <ArrowLeft className="size-4" />
         </Link>
 
         <div className="flex flex-col items-center text-center">
           <span className="text-[10px] font-bold uppercase tracking-wider text-[#707784]">
-            Draft Isian Form
+            Detail Laporan
           </span>
           <span className="font-mono text-xs font-bold text-[#111111]">
             {report.reportCode}
@@ -288,12 +307,34 @@ export function EsFormDetailView({
 
         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] font-bold text-amber-800">
           <Clock className="size-3" />
-          Review Coord
+          {statusLabel[report.status] ?? report.status}
         </span>
       </header>
 
       {/* 2. Main Form Content Wrapper */}
       <main className="mx-auto max-w-2xl px-3 py-4 sm:px-4 sm:py-6 space-y-4">
+        {isRevision && (
+          <section className="space-y-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
+            <h2 className="text-sm font-bold text-orange-900">Perlu Revisi</h2>
+            <p className="whitespace-pre-wrap break-words text-sm text-slate-800">
+              {activeRevision?.reason ?? "Alasan revisi sebelumnya tidak tersimpan."}
+            </p>
+            {revisionUrl && canEditRevision && (
+              <Button nativeButton={false} size="lg" render={<Link href={revisionUrl} />}>
+                Perbaiki Laporan
+              </Button>
+            )}
+            {revisionUrl && !canEditRevision && (
+              <div className="space-y-2">
+                <p className="text-sm text-slate-700">Aktifkan Izin Kerja bulan ini untuk memperbaiki laporan.</p>
+                <Button nativeButton={false} size="lg" variant="outline" render={<Link href="/dashboard/reports/new/work-permit" />}>
+                  Buka Izin Kerja
+                </Button>
+              </div>
+            )}
+          </section>
+        )}
+        <RevisionHistory revisions={report.revisions.filter((entry) => entry.resubmittedAt)} />
         {/* Form Identity Card */}
         <div className="overflow-hidden rounded-2xl border border-[#dedede] bg-white p-4 shadow-xs">
           <div className="flex items-start justify-between gap-3 border-b border-[#f0f0f0] pb-3">

@@ -5,7 +5,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import {
-  ChevronRight,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -143,6 +142,8 @@ export function ManagerSidebar({
             )}
 
             {section.items.map((item) => {
+              if (item.href === "/dashboard/work-permits" && userRole !== "MANAGER") return null
+
               const isActive =
                 item.href === "/dashboard"
                   ? pathname === "/dashboard"

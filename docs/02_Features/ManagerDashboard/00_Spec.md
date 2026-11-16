@@ -23,7 +23,7 @@
      - `Laporan Maintenance` (`/dashboard/reports`) - Approval checklist & laporan temuan
      - `Izin Kerja K3` (`/dashboard/work-permits`) - Approval form izin kerja (FRM_MED_003)
 3. **Halaman Izin Kerja K3 (`/dashboard/work-permits`)**:
-   - Menampilkan antrean persetujuan izin kerja diajukan oleh teknisi BES.
+   - Menampilkan antrean pengajuan teknisi BES di cabang Manager sesuai [spesifikasi Izin Kerja](../WorkPermit/00_Spec.md).
    - Memberikan badge status, indikator risiko tinggi (Hot Work, Ketinggian, Listrik), serta aksi Setujui / Tolak.
 4. **Halaman Laporan Maintenance (`/dashboard/reports`)**:
    - Dikhususkan untuk role reviewer/management (`COORD`, `MANAGER`, `ADMIN_HO`, `SUPER_ADMIN`).

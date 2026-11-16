@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems, toEditableChecklistItem } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -63,6 +64,7 @@ export type FrmTs029FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -110,6 +112,7 @@ export function FrmTs029Form({
   watermarkUserRole,
   formCode = FRM_TS_029_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTs029FormProps) {
   const currentMonthIdx = React.useMemo(() => {
@@ -121,10 +124,10 @@ export function FrmTs029Form({
     return new Date().getMonth()
   }, [periodKey])
 
-  const [unitNo, setUnitNo] = React.useState("")
-  const [unitBrand, setUnitBrand] = React.useState("")
-  const [hourMeter, setHourMeter] = React.useState("")
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [unitNo, setUnitNo] = React.useState(initialPayload?.unitNo ?? "")
+  const [unitBrand, setUnitBrand] = React.useState(initialPayload?.unitBrand ?? "")
+  const [hourMeter, setHourMeter] = React.useState(initialPayload?.hourMeter ?? "")
+  const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
   const [items, setItems] = React.useState<Record<string, ItemState>>(() => {
     const initial: Record<string, ItemState> = {}
@@ -136,7 +139,15 @@ export function FrmTs029Form({
         uploading: false,
       }
     })
-    return initial
+    return restoreChecklistItems(initialPayload, initial, (item) => {
+      const state = toEditableChecklistItem(item)
+      const hourMeter = initialPayload?.hourMeter
+      if (item.id !== "fk_hour_meter_1" || !hourMeter) return state
+      const prefix = `${hourMeter} (`
+      const notes = state.notes === hourMeter ? ""
+        : state.notes.startsWith(prefix) && state.notes.endsWith(")") ? state.notes.slice(prefix.length, -1) : state.notes
+      return { ...state, notes }
+    })
   })
 
   const [openCategories, setOpenCategories] = React.useState<Record<string, boolean>>(() => {

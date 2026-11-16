@@ -9,6 +9,7 @@ import {
 import { ensureDriveFolderPath, uploadPdfToDrive, downloadFileFromDrive } from "@/lib/google-drive/files"
 import { generateReportPdfBuffer, type PdfReportData, type PdfReportPhoto } from "./pdf-generator"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
+import { getReportItems } from "./checklist-follow-up"
 
 export type GenerateAndUploadResult = {
   ok: boolean
@@ -39,7 +40,7 @@ export async function generateAndUploadReportPdf(
 
   // Parse payload
   const rawPayload = (report.checklistPayload as unknown as ChecklistPayload) || {}
-  const rawItems = Array.isArray(rawPayload.items) ? rawPayload.items : []
+  const rawItems = getReportItems(report.checklistPayload)
 
   const formattedItems: PdfReportData["items"] = rawItems.map(
     (item: ChecklistPayloadItem, index: number) => ({
@@ -155,9 +156,10 @@ export async function generateAndUploadReportPdf(
     ? `https://drive.google.com/drive/folders/${driveFolderId}`
     : null
 
-  await prisma.checklistReport.update({
-    where: { id: report.id },
+  await prisma.checklistReport.updateMany({
+    where: { id: report.id, updatedAt: report.updatedAt },
     data: {
+      updatedAt: report.updatedAt,
       finalPdfDriveUrl: driveWebViewLink || report.finalPdfDriveUrl,
       finalPdfFolderUrl: driveFolderUrl || report.finalPdfFolderUrl,
     },

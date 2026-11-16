@@ -41,6 +41,7 @@ type PhotoUploadResult =
 export type PhotoUploadHandlerDeps = {
   getSession(): Promise<Session | null>
   loadReport(reportCode: string): Promise<LoadedReport | null>
+  hasActiveWorkPermit?(authorId: string): Promise<boolean>
   rootFolderId: string
   ensureEvidenceFolder(input: {
     rootFolderId: string
@@ -136,8 +137,11 @@ export function createPhotoUploadPostHandler(deps: PhotoUploadHandlerDeps) {
     if (report.authorId !== session.userId) {
       return jsonError("Forbidden", 403)
     }
-    if (report.status !== "DRAFT") {
+    if (report.status !== "DRAFT" && report.status !== "NEEDS_REVISION") {
       return jsonError("Report is not editable", 422)
+    }
+    if (report.status === "NEEDS_REVISION" && !(await deps.hasActiveWorkPermit?.(session.userId))) {
+      return jsonError("Izin Kerja K3 bulan ini harus disetujui Manager.", 403)
     }
     if (report.formCode && report.formCode !== context.formCode) {
       return jsonError("Report form mismatch", 422)

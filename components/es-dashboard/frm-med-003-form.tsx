@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { submitWorkPermitAction } from "@/lib/actions/work-permit"
+import { getWorkPermitPeriod } from "@/lib/work-permits/active-period"
 
 export type WorkPermitFullData = {
   id: string
@@ -67,6 +68,7 @@ type FrmMed003FormProps = {
   nextPath?: string
   isReadOnly?: boolean
   initialData?: WorkPermitFullData | null
+  historyHref?: string
 }
 
 function parseBooleanMap(raw: any, defaults: Record<string, boolean> = {}): Record<string, boolean> {
@@ -95,6 +97,7 @@ export function FrmMed003Form({
   nextPath,
   isReadOnly = false,
   initialData,
+  historyHref,
 }: FrmMed003FormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -151,6 +154,10 @@ export function FrmMed003Form({
   const isHMinusWindow = now.getDate() >= 20
 
   const [targetPeriod, setTargetPeriod] = React.useState<string>(() => {
+    if (isReadOnly && initialData) {
+      return getWorkPermitPeriod({ safetyPayload: initialData.safetyPayload, workDate: new Date(initialData.workDate) })
+    }
+
     const fromUrl = searchParams.get("period")
     if (fromUrl) return fromUrl
     const payload = initialData?.safetyPayload as any
@@ -425,12 +432,12 @@ export function FrmMed003Form({
                   )}
                 >
                   {initialData.status === "APPROVED"
-                    ? "Disetujui Manager (Izin Aktif)"
+                    ? "Disetujui Manager"
                     : initialData.status === "PENDING_MANAGER"
                     ? "Menunggu Approval Manager"
                     : initialData.status === "REJECTED"
                     ? "Ditolak / Perlu Revisi"
-                    : "Read-Only"}
+                    : "Selesai"}
                 </span>
                 <span className="font-mono text-xs font-semibold text-slate-500">
                   {initialData.permitCode}
@@ -1340,10 +1347,11 @@ export function FrmMed003Form({
       {isReadOnly ? (
         <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
           <Link
-            href={isFromNonRoutine ? "/dashboard/reports/new" : "/dashboard"}
+            href={historyHref ?? (isFromNonRoutine ? "/dashboard/reports/new" : "/dashboard")}
             className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
           >
-            <ArrowLeft className="size-4" /> Kembali ke Dashboard
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            {historyHref ? "Kembali ke Riwayat" : "Kembali ke Dashboard"}
           </Link>
           <Link
             href="/dashboard/reports/new/work-permit?mode=new"

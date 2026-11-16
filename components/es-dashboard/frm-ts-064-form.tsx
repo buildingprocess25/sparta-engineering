@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems, restoreChecklistAction } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -65,6 +66,7 @@ export type FrmTs064FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -105,15 +107,17 @@ export function FrmTs064Form({
   watermarkUserRole,
   formCode = FRM_TS_064_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTs064FormProps) {
   // Form header state
-  const [unitNo, setUnitNo] = React.useState("")
-  const [unitBrand, setUnitBrand] = React.useState("")
+  const [unitNo, setUnitNo] = React.useState(initialPayload?.unitNo ?? "")
+  const [unitBrand, setUnitBrand] = React.useState(initialPayload?.unitBrand ?? "")
   const [inspectionDate, setInspectionDate] = React.useState(() => {
+    if (initialPayload?.inspectionDate) return initialPayload.inspectionDate
     return new Date().toISOString().split("T")[0]
   })
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
   // Search & Collapsible states
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -126,7 +130,7 @@ export function FrmTs064Form({
   })
 
   // Items evaluation state
-  const [items, setItems] = React.useState<Record<string, ItemState>>({})
+  const [items, setItems] = React.useState<Record<string, ItemState>>(() => restoreChecklistItems<ItemState>(initialPayload, {}, restoreChecklistAction))
 
   // Form submission & UI states
   const [submitting, setSubmitting] = React.useState(false)
@@ -322,6 +326,7 @@ export function FrmTs064Form({
           label: it.label,
           condition: cond,
           photos: state.photos || [],
+          actionTaken: state.actionTaken,
           notes: state.notes || (state.actionTaken ? `Tindakan: ${state.actionTaken}` : isAction ? "Pemeriksaan rutin berkala" : undefined),
           handler: isAction ? (state.handler || "BES") : state.handler,
           repairForm: state.repairForm,

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { getSession } from "@/lib/session"
-import { getRealAdminReports } from "@/lib/manager-dashboard"
+import { getDashboardReportScope, getRealAdminReports } from "@/lib/manager-dashboard"
 import { AdminReportsTable } from "@/components/manager-dashboard/admin-reports-table"
 import { ManagerSidebar } from "@/components/manager-dashboard/manager-sidebar"
 import { PlaceholderScreen } from "@/components/es-dashboard/placeholder-screen"
@@ -26,7 +26,7 @@ export default async function ReportsPage() {
     )
   }
 
-  const reports = await getRealAdminReports({})
+  const reports = await getRealAdminReports(await getDashboardReportScope(session.userId), {})
 
   const userEmail = session.email as string || "admin@admin.com"
   const userRole = session.role as string || "MANAGER"

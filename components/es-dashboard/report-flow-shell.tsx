@@ -9,6 +9,8 @@ type ReportFlowShellProps = {
   description: string
   children: ReactNode
   maxWidth?: string
+  backHref?: string
+  backLabel?: string
 }
 
 export function ReportFlowShell({
@@ -17,6 +19,8 @@ export function ReportFlowShell({
   description,
   children,
   maxWidth = "max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl",
+  backHref,
+  backLabel,
 }: ReportFlowShellProps) {
   return (
     <main
@@ -29,7 +33,7 @@ export function ReportFlowShell({
           maxWidth
         )}
       >
-        <ReportBackButton />
+        <ReportBackButton href={backHref} label={backLabel} />
 
         <header className="rounded-2xl md:rounded-3xl bg-[#111111] p-5 sm:p-6 md:p-8 text-white shadow-xl shadow-black/15">
           <p className="text-xs md:text-sm font-semibold text-[#ffb46f]">{eyebrow}</p>

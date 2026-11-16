@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -67,6 +68,7 @@ export type FrmTs028FormProps = {
   isRepairMode?: boolean
   defaultUnitName?: string
   defaultUnitNo?: number
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -91,6 +93,20 @@ type ItemState = {
   uploading?: boolean
 }
 
+function readBatteryNotes(notes?: string): {
+  warehouse?: string
+  unitType?: "Forklift" | "Pallet Mover"
+  brand?: "Jungheinrich" | "Crown"
+  generalCondition?: string
+  cellMeasurements?: CellMeasurement[]
+} {
+  try {
+    return notes ? JSON.parse(notes) ?? {} : {}
+  } catch {
+    return { generalCondition: notes }
+  }
+}
+
 export function FrmTs028Form({
   reportCode,
   areaCode,
@@ -102,6 +118,7 @@ export function FrmTs028Form({
   isRepairMode = false,
   defaultUnitName = "",
   defaultUnitNo,
+  initialPayload,
   submitAction,
   onSuccess,
 }: FrmTs028FormProps) {
@@ -113,17 +130,18 @@ export function FrmTs028Form({
       : "Forklift"
 
   // 1. Header Metadata State
-  const [warehouse, setWarehouse] = React.useState(areaName || "Warehouse")
-  const [unitType, setUnitType] = React.useState<"Forklift" | "Pallet Mover">(initialUnitType)
-  const [unitNo, setUnitNo] = React.useState(defaultUnitNo ? String(defaultUnitNo) : "")
-  const [volt, setVolt] = React.useState("")
-  const [brand, setBrand] = React.useState<"Jungheinrich" | "Crown">("Jungheinrich")
-  const [generalCondition, setGeneralCondition] = React.useState("")
+  const savedBattery = readBatteryNotes(initialPayload?.generalNotes)
+  const [warehouse, setWarehouse] = React.useState(savedBattery.warehouse ?? (areaName || "Warehouse"))
+  const [unitType, setUnitType] = React.useState<"Forklift" | "Pallet Mover">(savedBattery.unitType ?? initialUnitType)
+  const [unitNo, setUnitNo] = React.useState(initialPayload?.unitNo ?? (defaultUnitNo ? String(defaultUnitNo) : ""))
+  const [volt, setVolt] = React.useState(initialPayload?.capacityKva ?? "")
+  const [brand, setBrand] = React.useState<"Jungheinrich" | "Crown">(savedBattery.brand ?? "Jungheinrich")
+  const [generalCondition, setGeneralCondition] = React.useState(savedBattery.generalCondition ?? "")
 
   // 2. Cell Measurements State (12 cells for Pallet Mover, 24 for Forklift)
   const cellCount = unitType === "Pallet Mover" ? 12 : 24
   const [cellData, setCellData] = React.useState<CellMeasurement[]>(() =>
-    Array.from({ length: 24 }, (_, idx) => ({
+    Array.from({ length: 24 }, (_, idx) => savedBattery.cellMeasurements?.find((cell) => cell.cellNo === idx + 1) ?? ({
       cellNo: idx + 1,
       bj: "",
       voltage: "",
@@ -181,7 +199,7 @@ export function FrmTs028Form({
         photos: [],
       }
     })
-    return initial
+    return restoreChecklistItems(initialPayload, initial)
   })
 
   const evaluatedCount = React.useMemo(

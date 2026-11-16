@@ -1,3 +1,5 @@
+import { notFound, redirect } from "next/navigation"
+
 import { SharedChecklistForm } from "@/components/es-dashboard/shared-checklist-form"
 import { FrmTsm004Form } from "@/components/es-dashboard/frm-tsm-004-form"
 import { FrmTs016Form } from "@/components/es-dashboard/frm-ts-016-form"
@@ -20,8 +22,14 @@ import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
 import { reserveChecklistDraft } from "@/lib/reports/drive-draft-service"
 import { createPrismaChecklistDraftRepository } from "@/lib/reports/drive-draft-prisma-repository"
-import { getSession } from "@/lib/session"
-import { submitChecklistAction } from "@/lib/actions/checklist"
+import { submitChecklistAction, submitChecklistRevisionAction } from "@/lib/actions/checklist"
+import type { ChecklistPayload } from "@/lib/checklists/payload"
+import { isFrmTsm001Payload } from "@/lib/checklists/payload-001"
+import { isFrmTsm004Payload } from "@/lib/checklists/payload-004"
+import { asPayloadRecord } from "@/lib/reports/checklist-follow-up"
+import { editableChecklistOwner } from "@/lib/reports/checklist-submission"
+import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
+import { getWorkPermitUser } from "@/lib/work-permits/current-user"
 
 export const dynamic = "force-dynamic"
 
@@ -36,8 +44,8 @@ type DynamicFormPageProps = {
     roomName?: string
     period?: string
     workPermit?: string
-    reset?: string
     taskId?: string
+    revision?: string
   }>
 }
 
@@ -162,7 +170,7 @@ export default async function DynamicFormPage({
   params,
   searchParams,
 }: DynamicFormPageProps) {
-  const [routeParams, queryParams, session] = await Promise.all([params, searchParams, getSession()])
+  const [routeParams, queryParams, user] = await Promise.all([params, searchParams, getWorkPermitUser()])
   
   const { reportType, formId } = routeParams
   
@@ -175,44 +183,75 @@ export default async function DynamicFormPage({
     return unavailable("Form tidak dikenali", "Form ID yang dipilih tidak didukung.")
   }
 
-  if (
-    typeof session?.userId !== "string" ||
-    typeof session.role !== "string" ||
-    session.role !== "ES"
-  ) {
+  if (user?.role !== "ES") {
     return unavailable(
       "Sesi tidak valid",
       "Masuk sebagai Engineering Support untuk mengisi checklist.",
       meta.eyebrow
     )
   }
-  
-  const validPeriods = ["WEEKLY", "MONTHLY", "QUARTERLY", "SEMESTER"] as const
-  type ValidPeriod = (typeof validPeriods)[number]
+  const formCode = formId.replaceAll("-", "_").toUpperCase() + (reportType === "repair" ? "_REPAIR" : "")
+  if (queryParams.revision !== undefined && (typeof queryParams.revision !== "string" || !queryParams.revision.trim())) notFound()
+  const revision = queryParams.revision
+    ? await getPrisma().checklistReport.findUnique({
+        where: { reportCode: queryParams.revision, status: "NEEDS_REVISION", ...editableChecklistOwner(user.NIK) },
+        include: {
+          area: true, room: true, equipment: true,
+          revisions: { where: { resubmittedAt: null }, select: { reason: true }, take: 1 },
+        },
+      })
+    : null
+  if (queryParams.revision && (!revision || (revision.formCode ?? asPayloadRecord(revision.checklistPayload).formCode) !== formCode)) {
+    notFound()
+  }
+  if (!(await getActiveWorkPermit(user))) {
+    redirect(revision
+      ? `/dashboard/reports/${queryParams.revision}`
+      : queryParams.taskId ? "/dashboard" : "/dashboard/reports/new")
+  }
 
-  let areaId = queryParams.areaId
-  let roomId = queryParams.roomId || null
-  let roomName = queryParams.roomName
-  let selectedPeriod = queryParams.period as ValidPeriod | undefined
-  let equipmentId: string | undefined = undefined
+  let area: { id: string; code: string; name: string }
+  let periodKey: string
+  let reportCode: string
+  let roomName: string | undefined
 
-  // Jika datang dari Tugas Rutin (To-Do List), auto-resolve data terkait
-  if (queryParams.taskId) {
-    const task = await getPrisma().checklistTask.findUnique({
-      where: { id: queryParams.taskId },
-      include: {
-        assignment: {
-          include: {
-            equipment: true,
-            room: true,
+  if (revision && queryParams.revision) {
+    const savedPeriodKey = revision.periodKey ?? asPayloadRecord(revision.checklistPayload).periodKey
+    if (typeof savedPeriodKey !== "string" || !savedPeriodKey) notFound()
+
+    area = revision.area
+    periodKey = savedPeriodKey
+    reportCode = queryParams.revision
+    roomName = revision.equipment
+      ? `${revision.equipment.name}${revision.equipment.unitNo ? ` Unit ${revision.equipment.unitNo}` : ""}`
+      : revision.room?.name
+  } else {
+    const validPeriods = ["WEEKLY", "MONTHLY", "QUARTERLY", "SEMESTER"] as const
+    type ValidPeriod = (typeof validPeriods)[number]
+
+    let areaId = queryParams.areaId
+    let roomId = queryParams.roomId || null
+    roomName = queryParams.roomName
+    let selectedPeriod = queryParams.period as ValidPeriod | undefined
+    let equipmentId: string | undefined = undefined
+
+    // Jika datang dari Tugas Rutin (To-Do List), auto-resolve data terkait
+    if (queryParams.taskId) {
+      const task = await getPrisma().checklistTask.findUnique({
+        where: { id: queryParams.taskId, assignment: { userNik: user.NIK } },
+        include: {
+          assignment: {
+            include: {
+              equipment: true,
+              room: true,
+            },
           },
         },
-      },
-    })
+      })
 
-    if (task) {
+      if (!task) notFound()
       if (!selectedPeriod) {
-        selectedPeriod = task.assignment.period as ValidPeriod
+        selectedPeriod = task.assignment.period
       }
       if (task.assignment.room) {
         roomId = roomId || task.assignment.room.id
@@ -227,114 +266,106 @@ export default async function DynamicFormPage({
         areaId = areaId || task.assignment.equipment.areaId || undefined
       }
     }
-  }
 
-  // Fallback areaId jika tugas belum terhubung ke area spesifik
-  if (!areaId) {
-    const defaultArea = await getPrisma().area.findFirst({
-      where: { isActive: true },
-      orderBy: { code: "asc" },
-    })
-    if (defaultArea) areaId = defaultArea.id
-  }
+    // Fallback areaId jika tugas belum terhubung ke area spesifik
+    if (!areaId) {
+      const defaultArea = await getPrisma().area.findFirst({
+        where: { isActive: true },
+        orderBy: { code: "asc" },
+      })
+      if (defaultArea) areaId = defaultArea.id
+    }
 
-  if (
-    !areaId ||
-    !selectedPeriod ||
-    !validPeriods.includes(selectedPeriod)
-  ) {
-    return unavailable(
-      "Periode belum dipilih",
-      "Pilih area, ruangan, dan periode checklist yang valid.",
-      meta.eyebrow,
-    )
-  }
+    if (
+      !areaId ||
+      !selectedPeriod ||
+      !validPeriods.includes(selectedPeriod)
+    ) {
+      return unavailable(
+        "Periode belum dipilih",
+        "Pilih area, ruangan, dan periode checklist yang valid.",
+        meta.eyebrow,
+      )
+    }
 
-  const [area, user] = await Promise.all([
-    getPrisma().area.findUnique({
+    const selectedArea = await getPrisma().area.findUnique({
       where: { id: areaId },
       select: { id: true, code: true, name: true },
-    }),
-    getPrisma().user.findUnique({
-      where: { NIK: session.userId },
-      select: { NIK: true, name: true, role: true },
-    }),
-  ])
+    })
 
-  if (!area) {
-    return unavailable(
-      "Area tidak ditemukan",
-      "Data area checklist belum tersedia atau sudah tidak aktif.",
-      meta.eyebrow,
-    )
-  }
+    if (!selectedArea) {
+      return unavailable(
+        "Area tidak ditemukan",
+        "Data area checklist belum tersedia atau sudah tidak aktif.",
+        meta.eyebrow,
+      )
+    }
 
-  const periodKey = getCurrentPeriodKey(selectedPeriod)
+    area = selectedArea
+    periodKey = getCurrentPeriodKey(selectedPeriod)
 
-  const formCode =
-    reportType === "repair"
-      ? `${formId.replace(/-/g, "_").toUpperCase()}_REPAIR`
-      : formId.replace(/-/g, "_").toUpperCase()
+    const existingReport = queryParams.taskId
+      ? await getPrisma().checklistReport.findFirst({
+          where: {
+            taskId: queryParams.taskId,
+          },
+          select: { status: true },
+        })
+      : await getPrisma().checklistReport.findFirst({
+          where: {
+            areaId: area.id,
+            roomId,
+            period: selectedPeriod,
+            periodKey,
+            formCode,
+          },
+          select: { status: true },
+        })
 
-  const existingReport = queryParams.taskId
-    ? await getPrisma().checklistReport.findFirst({
-        where: {
-          taskId: queryParams.taskId,
-        },
-        select: { id: true, status: true },
-      })
-    : await getPrisma().checklistReport.findFirst({
-        where: {
-          areaId: area.id,
-          roomId,
-          period: selectedPeriod,
-          periodKey,
-          formCode,
-        },
-        select: { id: true, status: true },
-      })
-
-  if (existingReport && existingReport.status !== "DRAFT") {
-    if (queryParams.reset === "true") {
-      // Mode testing: izinkan submit berulang dengan membersihkan laporan sebelumnya jika dimulai dari area picker
-      await getPrisma().checklistItem.deleteMany({
-        where: {
-          reportId: existingReport.id,
-        },
-      })
-      await getPrisma().checklistReport.delete({
-        where: {
-          id: existingReport.id,
-        },
-      })
-    } else {
+    if (existingReport && existingReport.status !== "DRAFT") {
       return unavailable(
         "Checklist Sudah Disubmit",
         "Laporan checklist untuk tugas / ruangan ini sudah pernah disubmit pada periode ini.",
         meta.eyebrow,
       )
     }
+
+    const draft = await reserveChecklistDraft(
+      createPrismaChecklistDraftRepository(),
+      {
+        authorId: user.NIK,
+        areaId: area.id,
+        roomId,
+        areaCode: area.code,
+        formCode: formCode,
+        period: selectedPeriod,
+        periodKey,
+        taskId: queryParams.taskId || null,
+        equipmentId: equipmentId || null,
+      },
+    )
+    reportCode = draft.reportCode
   }
 
-  const draft = await reserveChecklistDraft(
-    createPrismaChecklistDraftRepository(),
-    {
-      authorId: session.userId,
-      areaId: area.id,
-      roomId,
-      areaCode: area.code,
-      formCode: formCode,
-      period: selectedPeriod,
-      periodKey,
-      taskId: queryParams.taskId || null,
-      equipmentId: equipmentId || null,
-    },
-  )
+  const savedPayload = revision?.checklistPayload
+  const initialChecklist = revision ? savedPayload as unknown as ChecklistPayload : undefined
+  const formProps = {
+    reportCode,
+    areaCode: area.code,
+    periodKey,
+    watermarkUserLabel: `${user.name} (${user.NIK})`,
+    watermarkUserRole: user.role,
+    submitAction: revision
+      ? submitChecklistRevisionAction.bind(null, reportCode, revision.updatedAt.toISOString())
+      : submitChecklistAction,
+  }
 
   const isRepair = reportType === "repair"
 
   return (
     <ReportFlowShell
+      backHref={revision ? `/dashboard/reports/${reportCode}` : undefined}
+      backLabel={revision ? "Kembali ke Detail Laporan" : undefined}
       eyebrow={
         <>
           <span>{meta.eyebrow}</span>
@@ -346,244 +377,148 @@ export default async function DynamicFormPage({
           )}
         </>
       }
-      title={roomName ? `Checklist ${roomName}` : meta.title}
+      title={revision ? `Perbaiki Laporan ${reportCode}` : roomName ? `Checklist ${roomName}` : meta.title}
       description={isRepair && formId !== "frm-tsm-004" ? "Pilih item yang rusak dan wajib sertakan foto." : meta.description}
     >
+      {revision && (
+        <div className="mb-4 space-y-1 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-slate-800">
+          <p className="font-semibold">{roomName || area.name} · {periodKey}</p>
+          <p className="whitespace-pre-wrap break-words">{revision.revisions[0]?.reason ?? "Alasan revisi sebelumnya tidak tersimpan."}</p>
+        </div>
+      )}
       {formId === "frm-tsm-001" ? (
         <FrmTsm001Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={isFrmTsm001Payload(savedPayload) ? savedPayload : undefined}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
-          formCode={formCode}
+          formCode={formCode as "FRM_TSM_001" | "FRM_TSM_001_REPAIR"}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-tsm-004" ? (
         <FrmTsm004Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
+          {...formProps}
+          initialPayload={isFrmTsm004Payload(savedPayload) ? savedPayload : undefined}
           formCode={formCode as "FRM_TSM_004" | "FRM_TSM_004_REPAIR"}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-016" ? (
         <FrmTs016Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-tsm-006" ? (
         <FrmTsm006Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-062" ? (
         <FrmTs062Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-tsm-007" ? (
         <FrmTsm007Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-043" ? (
         <FrmTs043Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-045" ? (
         <FrmTs045Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-029" ? (
         <FrmTs029Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-022" ? (
         <FrmTs022Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-tsm-013" ? (
         <FrmTsm013Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-064" ? (
         <FrmTs064Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-tsm-008" ? (
         <FrmTsm008Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-063" ? (
         <FrmTs063Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-041" ? (
         <FrmTs041Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : formId === "frm-ts-028" || formId === "frm-ts-068" ? (
         <FrmTs028Form
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
           isRepairMode={isRepair}
-          submitAction={submitChecklistAction}
         />
       ) : (
         <SharedChecklistForm
-          reportCode={draft.reportCode}
-          areaCode={area.code}
+          {...formProps}
+          initialPayload={initialChecklist}
           areaName={area.name}
           roomName={roomName}
-          periodKey={periodKey}
-          watermarkUserLabel={
-            user ? `${user.name} (${user.NIK})` : session.userId
-          }
-          watermarkUserRole={user?.role ?? session.role}
           formCode={formCode}
-          submitAction={submitChecklistAction}
         />
       )}
     </ReportFlowShell>

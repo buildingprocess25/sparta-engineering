@@ -81,3 +81,29 @@ const forbidden = await createPhotoUploadPostHandler({
 )
 
 assert.equal(forbidden.status, 403)
+
+for (const activePermit of [false, true]) {
+  const uploadRevision = createPhotoUploadPostHandler({
+    getSession: async () => ({ userId: "ES001", role: "ES" }),
+    loadReport: async () => ({
+      reportCode: "ENG-OFFICE-202609-001",
+      authorId: "ES001",
+      status: "NEEDS_REVISION",
+      formCode: "FRM_TSM_003",
+      periodKey: "2026-09",
+      area: { name: "Office" },
+      author: { branchName: "BANJARMASIN" },
+    }),
+    hasActiveWorkPermit: async (authorId) => authorId === "ES001" && activePermit,
+    rootFolderId: "root",
+    ensureEvidenceFolder: async () => "evidence",
+    uploadPhoto: async () => ({ success: true, fileId: "file", url: "/api/photos/file" }),
+  })
+  const result = await uploadRevision(await makeRequest({
+    kind: "CHECKLIST_ITEM",
+    reportCode: "ENG-OFFICE-202609-001",
+    formCode: "FRM_TSM_003",
+    itemId: "air_conditioner",
+  }))
+  assert.equal(result.status, activePermit ? 200 : 403)
+}

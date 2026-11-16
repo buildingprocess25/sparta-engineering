@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -54,6 +55,7 @@ export type FrmTs063FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -101,6 +103,7 @@ export function FrmTs063Form({
   watermarkUserRole,
   formCode = FRM_TS_063_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTs063FormProps) {
   // Parse month index from periodKey (e.g. "2026-09" -> month index 8 = Sep)
@@ -123,10 +126,10 @@ export function FrmTs063Form({
   const activeMonthLabel = MONTH_LIST[currentMonthIdx] ?? "Jan"
 
   // Header State
-  const [location, setLocation] = React.useState("")
-  const [unitNo, setUnitNo] = React.useState("")
-  const [unitBrand, setUnitBrand] = React.useState("")
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [location, setLocation] = React.useState(initialPayload?.locationCode ?? "")
+  const [unitNo, setUnitNo] = React.useState(initialPayload?.unitNo ?? "")
+  const [unitBrand, setUnitBrand] = React.useState(initialPayload?.unitBrand ?? "")
+  const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
   // Auto-populate location from areaName if empty
   React.useEffect(() => {
@@ -145,7 +148,7 @@ export function FrmTs063Form({
         uploading: false,
       }
     }
-    return initial
+    return restoreChecklistItems(initialPayload, initial)
   })
 
   // Accordion state: open all categories by default
@@ -242,8 +245,12 @@ export function FrmTs063Form({
       })
       const payload = await response.json()
 
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || "Gagal mengunggah foto")
+      if (
+            !response.ok ||
+            typeof payload?.fileId !== "string" ||
+            typeof payload?.url !== "string"
+          ) {
+            throw new Error(payload?.error || "Gagal mengunggah foto")
       }
 
       setItems((prev) => {

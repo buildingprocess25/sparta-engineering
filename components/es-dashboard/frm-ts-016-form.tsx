@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -57,6 +58,7 @@ export type FrmTs016FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -105,6 +107,7 @@ export function FrmTs016Form({
   watermarkUserRole,
   formCode = FRM_TS_016_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTs016FormProps) {
   // Parse month index from periodKey (e.g. "2026-09" -> month index 8 = Sep)
@@ -122,10 +125,10 @@ export function FrmTs016Form({
   const activeMonthLabel = MONTH_LIST[currentMonthIdx] || "Jan"
 
   // Equipment Identity
-  const [unitNo, setUnitNo] = React.useState("")
-  const [unitBrand, setUnitBrand] = React.useState("")
-  const [hourMeter, setHourMeter] = React.useState("")
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [unitNo, setUnitNo] = React.useState(initialPayload?.unitNo ?? "")
+  const [unitBrand, setUnitBrand] = React.useState(initialPayload?.unitBrand ?? "")
+  const [hourMeter, setHourMeter] = React.useState(initialPayload?.hourMeter ?? "")
+  const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
   // Item states
   const [items, setItems] = React.useState<Record<string, ItemState>>(() => {
@@ -140,7 +143,7 @@ export function FrmTs016Form({
         uploading: false,
       }
     }
-    return initial
+    return restoreChecklistItems(initialPayload, initial)
   })
 
   // UI accordion state: which categories are open

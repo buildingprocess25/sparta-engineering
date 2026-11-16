@@ -3,14 +3,29 @@ import type { AreaFilter, PeriodFilter } from "@/components/manager-dashboard/mo
 export type { RealReportItem } from "./manager-dashboard-types"
 export { mapRealStatsToDashboardData } from "./manager-dashboard-types"
 import type { RealReportItem } from "./manager-dashboard-types"
+import type { Prisma } from "@/generated/prisma"
 
-export async function getRealDashboardStats(areaFilter: AreaFilter = "ALL") {
+export async function getDashboardReportScope(userId: unknown): Promise<Prisma.ChecklistReportWhereInput> {
+  const user = typeof userId === "string" ? await getPrisma().user.findUnique({
+    where: { NIK: userId }, select: { role: true, branchName: true },
+  }) : null
+  if (user?.role === "ADMIN_HO" || user?.role === "SUPER_ADMIN") return {}
+  if ((user?.role === "COORD" || user?.role === "MANAGER") && user.branchName.trim()) {
+    return { author: { branchName: { equals: user.branchName, mode: "insensitive" } } }
+  }
+  return { id: { in: [] } }
+}
+
+const reportAuthor = { select: { NIK: true, name: true, email: true, branchName: true, role: true } } as const
+
+export async function getRealDashboardStats(areaFilter: AreaFilter, reportScope: Prisma.ChecklistReportWhereInput) {
   const prisma = getPrisma()
 
   const areaWhere =
     areaFilter === "ALL"
-      ? undefined
+      ? reportScope
       : {
+          ...reportScope,
           area: {
             type: areaFilter,
           },
@@ -70,7 +85,7 @@ export async function getRealDashboardStats(areaFilter: AreaFilter = "ALL") {
         createdAt: "desc",
       },
       include: {
-        author: true,
+        author: reportAuthor,
         area: true,
         room: true,
         equipment: true,
@@ -87,6 +102,7 @@ export async function getRealDashboardStats(areaFilter: AreaFilter = "ALL") {
     COMPLETED: 0,
     REJECTED: 0,
     DRAFT: 0,
+    NEEDS_REVISION: 0,
   }
 
   statusGroup.forEach((g) => {
@@ -164,7 +180,7 @@ export async function getRealDashboardStats(areaFilter: AreaFilter = "ALL") {
   }
 }
 
-export async function getRealAdminReports(params: {
+export async function getRealAdminReports(reportScope: Prisma.ChecklistReportWhereInput, params: {
   search?: string
   status?: string
   scope?: string
@@ -172,7 +188,7 @@ export async function getRealAdminReports(params: {
 }) {
   const prisma = getPrisma()
 
-  const whereConditions: any = {}
+  const whereConditions: any = { ...reportScope }
 
   if (params.areaType) {
     whereConditions.area = {
@@ -217,7 +233,7 @@ export async function getRealAdminReports(params: {
       createdAt: "desc",
     },
     include: {
-      author: true,
+      author: reportAuthor,
       area: true,
       room: true,
       equipment: true,

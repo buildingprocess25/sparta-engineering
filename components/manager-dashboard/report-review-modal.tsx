@@ -23,6 +23,7 @@ import {
 import type { RealReportItem } from "@/lib/manager-dashboard-types"
 import { reviewReportDecision } from "@/app/dashboard/reports/actions"
 import { cn } from "@/lib/utils"
+import { needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
 
 interface ReportReviewModalProps {
   report: RealReportItem | null
@@ -79,7 +80,9 @@ export function ReportReviewModal({
   const isDraft = report.status === "DRAFT"
   const isRejected = report.status === "REJECTED"
 
-  const canApprove = isPendingCoord || isPendingManager
+  const canApprove = !needsChecklistFollowUp(report.checklistPayload) && (
+    (viewerRole === "COORD" && isPendingCoord) || (viewerRole === "MANAGER" && isPendingManager)
+  )
 
   const handleConfirmDecision = async () => {
     if (activeDialog === "REVISION" && !decisionNotes.trim()) {
@@ -97,7 +100,7 @@ export function ReportReviewModal({
     if (activeDialog === "REVISION") decision = "reject_revision"
     if (activeDialog === "REJECT") decision = "reject"
 
-    const res = await reviewReportDecision(report.id, decision, decisionNotes.trim())
+    const res = await reviewReportDecision(report.id, decision, decisionNotes.trim(), new Date(report.updatedAt).toISOString())
     setIsSubmitting(false)
 
     if (res.error) {

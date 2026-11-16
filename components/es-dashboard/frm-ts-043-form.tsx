@@ -1,5 +1,6 @@
 "use client"
 
+import { restoreChecklistItems, readWeeklyChecklistNotes } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -57,6 +58,7 @@ export type FrmTs043FormProps = {
   watermarkUserRole: string
   formCode?: string
   isRepairMode?: boolean
+  initialPayload?: ChecklistPayload
   submitAction(input: {
     reportCode: string
     payload: ChecklistPayload
@@ -109,6 +111,7 @@ export function FrmTs043Form({
   watermarkUserRole,
   formCode = FRM_TS_043_FORM_CODE,
   isRepairMode = false,
+  initialPayload,
   submitAction,
 }: FrmTs043FormProps) {
   const router = useRouter()
@@ -118,12 +121,13 @@ export function FrmTs043Form({
   const selectedWeek = currentWeekId
 
   // Metadata
-  const [unitNo, setUnitNo] = React.useState("")
+  const savedNotes = readWeeklyChecklistNotes(initialPayload?.generalNotes)
+  const [unitNo, setUnitNo] = React.useState(initialPayload?.unitNo ?? "")
   const [inspectionDate, setInspectionDate] = React.useState(
-    () => new Date().toISOString().split("T")[0],
+    () => initialPayload?.inspectionDate ?? savedNotes.date ?? new Date().toISOString().split("T")[0],
   )
-  const [hourMeter, setHourMeter] = React.useState("")
-  const [generalNotes, setGeneralNotes] = React.useState("")
+  const [hourMeter, setHourMeter] = React.useState(initialPayload?.hourMeter ?? "")
+  const [generalNotes, setGeneralNotes] = React.useState(savedNotes.notes)
 
   // Form items state (NO default condition - user must evaluate each item)
   const [itemsState, setItemsState] = React.useState<Record<string, ItemState>>(
@@ -139,7 +143,7 @@ export function FrmTs043Form({
           uploading: false,
         }
       }
-      return initial
+      return restoreChecklistItems(initialPayload, initial)
     },
   )
 

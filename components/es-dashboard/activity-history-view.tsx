@@ -17,17 +17,26 @@ import {
 import { BottomNavigation } from "@/components/es-dashboard/bottom-navigation"
 import { DashboardHeader } from "@/components/es-dashboard/dashboard-header"
 import { DashboardShell } from "@/components/es-dashboard/dashboard-shell"
+import { Button } from "@/components/ui/button"
 import type { UserTodoSummary } from "@/lib/tasks/todo-service"
 import { cn } from "@/lib/utils"
 
-type MainTab = "COMPLETED" | "OVERDUE"
+type MainTab = "COMPLETED" | "OVERDUE" | "REVISION"
 type ObjectFilter = "ALL" | "EQUIPMENT" | "ROOM"
 
 interface ActivityHistoryViewProps {
   todoData: UserTodoSummary
   userEmail: string
   userRole: string
-  initialTab?: "completed" | "overdue"
+  initialTab?: "completed" | "overdue" | "revision"
+  revisions: {
+    id: string
+    reportCode: string
+    formCode: string | null
+    isRoutine: boolean
+    periodKey: string | null
+    target: string
+  }[]
 }
 
 export function ActivityHistoryView({
@@ -35,14 +44,20 @@ export function ActivityHistoryView({
   userEmail,
   userRole,
   initialTab,
+  revisions,
 }: ActivityHistoryViewProps) {
   const [activeTab, setActiveTab] = React.useState<MainTab>(
-    initialTab === "overdue" ? "OVERDUE" : "COMPLETED"
+    initialTab === "revision" ? "REVISION" : initialTab === "overdue" ? "OVERDUE" : "COMPLETED"
   )
   const [objectFilter, setObjectFilter] = React.useState<ObjectFilter>("ALL")
   const [searchQuery, setSearchQuery] = React.useState("")
 
   const { tasks, completed, overdue } = todoData
+  const isRevisionTab = activeTab === "REVISION"
+  const query = searchQuery.trim().toLowerCase()
+  const filteredRevisions = revisions.filter((report) =>
+    [report.reportCode, report.target, report.formCode].some((value) => value?.toLowerCase().includes(query))
+  )
 
   // Filter tasks based on activeTab (COMPLETED vs OVERDUE)
   const tabTasks = React.useMemo(() => {
@@ -112,7 +127,7 @@ export function ActivityHistoryView({
           email={userEmail}
           role={userRole}
           title="Aktivitas"
-          countBadge={`${filteredTasks.length}`}
+          countBadge={`${isRevisionTab ? filteredRevisions.length : filteredTasks.length}`}
         />
 
         <div className="mt-5 space-y-4 pb-12">
@@ -123,7 +138,7 @@ export function ActivityHistoryView({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari tugas, alat, ruangan, kode..."
+              placeholder={isRevisionTab ? "Cari nomor laporan, alat, atau ruangan" : "Cari tugas, alat, ruangan, kode..."}
               className="h-9 md:h-10 w-full rounded-lg md:rounded-xl border border-slate-200 bg-white pl-8.5 md:pl-10 pr-8 text-xs md:text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-[#ff8a2a] focus:outline-none focus:ring-1 focus:ring-[#ff8a2a]"
             />
             {searchQuery && (
@@ -138,48 +153,45 @@ export function ActivityHistoryView({
             )}
           </div>
 
-          {/* 4 Equal-width Filter Buttons (rata kiri-kanan, soft orange on select) */}
-          <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5 md:gap-3 w-full">
-            {/* Selesai */}
-            <button
-              type="button"
-              onClick={() => setActiveTab("COMPLETED")}
-              className={cn(
-                "h-8 md:h-9 w-full inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
-                activeTab === "COMPLETED"
-                  ? "bg-orange-50 text-orange-700 border-orange-300 font-semibold shadow-2xs ring-1 ring-orange-300/50"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium"
-              )}
-            >
-              <CheckCircle2
-                className={cn(
-                  "size-3.5 md:size-4 shrink-0",
-                  activeTab === "COMPLETED" ? "text-orange-500" : "text-slate-400"
-                )}
-              />
-              <span className="truncate">Selesai</span>
-            </button>
+          <div className="grid grid-cols-3 gap-2" aria-label="Status aktivitas" role="group">
+            {([
+              ["COMPLETED", "Selesai"],
+              ["OVERDUE", "Terlewat"],
+              ["REVISION", `Perlu Revisi (${revisions.length})`],
+            ] as const).map(([tab, label]) => (
+              <Button
+                key={tab}
+                type="button"
+                variant={activeTab === tab ? "default" : "outline"}
+                aria-pressed={activeTab === tab}
+                size="lg"
+                onClick={() => setActiveTab(tab)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
 
-            {/* Terlewat */}
-            <button
-              type="button"
-              onClick={() => setActiveTab("OVERDUE")}
-              className={cn(
-                "h-8 md:h-9 w-full inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
-                activeTab === "OVERDUE"
-                  ? "bg-orange-50 text-orange-700 border-orange-300 font-semibold shadow-2xs ring-1 ring-orange-300/50"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium"
-              )}
-            >
-              <AlertCircle
-                className={cn(
-                  "size-3.5 md:size-4 shrink-0",
-                  activeTab === "OVERDUE" ? "text-orange-500" : "text-slate-400"
-                )}
-              />
-              <span className="truncate">Terlewat</span>
-            </button>
+          {isRevisionTab && (
+            <section aria-label="Laporan Perlu Revisi" className="space-y-2">
+              {filteredRevisions.length ? filteredRevisions.map((report) => (
+                <Link
+                  key={report.id}
+                  href={`/dashboard/reports/${report.reportCode}`}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm hover:border-orange-300"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p className="font-semibold text-slate-900">{report.target}</p>
+                    <p className="break-words text-xs text-slate-700">{report.reportCode} · {report.isRoutine ? "Rutin" : "Non-rutin"}</p>
+                    <p className="text-xs text-slate-600">{[report.formCode, report.periodKey].filter(Boolean).join(" · ")}</p>
+                  </div>
+                  <ChevronRight className="size-4 shrink-0 text-slate-500" aria-hidden="true" />
+                </Link>
+              )) : <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">{query ? "Laporan tidak ditemukan." : "Tidak ada laporan perlu revisi."}</p>}
+            </section>
+          )}
 
+          <div hidden={isRevisionTab} className={cn("flex-wrap gap-2", !isRevisionTab && "flex")}>
             {/* Equipment */}
             <button
               type="button"
@@ -189,7 +201,7 @@ export function ActivityHistoryView({
                 )
               }
               className={cn(
-                "h-8 md:h-9 w-full inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
+                "h-8 md:h-9 inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
                 objectFilter === "EQUIPMENT"
                   ? "bg-orange-50 text-orange-700 border-orange-300 font-semibold shadow-2xs ring-1 ring-orange-300/50"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium"
@@ -213,7 +225,7 @@ export function ActivityHistoryView({
                 )
               }
               className={cn(
-                "h-8 md:h-9 w-full inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
+                "h-8 md:h-9 inline-flex items-center justify-center gap-1 rounded-lg md:rounded-xl px-1.5 text-[11px] sm:text-xs md:text-sm transition-all cursor-pointer border",
                 objectFilter === "ROOM"
                   ? "bg-orange-50 text-orange-700 border-orange-300 font-semibold shadow-2xs ring-1 ring-orange-300/50"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium"
@@ -230,7 +242,7 @@ export function ActivityHistoryView({
           </div>
 
           {/* Looping dari shape history (List of history cards matching mobile invoice reference) */}
-          <div className="space-y-3 pt-1">
+          <div hidden={isRevisionTab} className="space-y-3 pt-1">
             {filteredTasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-7 text-center shadow-2xs">
                 {activeTab === "COMPLETED" ? (

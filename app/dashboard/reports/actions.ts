@@ -3,48 +3,39 @@
 import { revalidatePath } from "next/cache"
 import { getPrisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
+import { saveChecklistReview } from "@/lib/reports/checklist-review"
 
 export async function reviewReportDecision(
   reportId: string,
   decision: "approve" | "reject_revision" | "reject",
-  notes?: string
+  notes: string,
+  version: string,
 ) {
   try {
     const session = await getSession()
-    const prisma = getPrisma()
-
-    const currentReport = await prisma.checklistReport.findUnique({
-      where: { id: reportId },
-    })
-
-    if (!currentReport) {
-      return { error: "Laporan tidak ditemukan." }
+    if (typeof session?.userId !== "string" || !session.userId) {
+      return { error: "Sesi tidak valid. Silakan login kembali." }
     }
 
-    const userRole = session?.role ?? "MANAGER"
-    let nextStatus: "PENDING_COORD" | "PENDING_MANAGER" | "PENDING_REQUESTER" | "COMPLETED" | "REJECTED" | "DRAFT"
-
-    if (decision === "approve") {
-      if (userRole === "COORD") {
-        nextStatus = "PENDING_MANAGER"
-      } else {
-        nextStatus = "COMPLETED"
-      }
-    } else if (decision === "reject_revision") {
-      nextStatus = "DRAFT"
-    } else {
-      nextStatus = "REJECTED"
+    if (decision !== "approve" && decision !== "reject_revision" && decision !== "reject") {
+      return { error: "Keputusan review tidak valid." }
     }
 
-    await prisma.checklistReport.update({
-      where: { id: reportId },
-      data: {
-        status: nextStatus,
-      },
-    })
+    const decisionNotes = typeof notes === "string" ? notes.trim() : ""
+    if (decision !== "approve" && !decisionNotes) {
+      return { error: "Catatan keputusan wajib diisi." }
+    }
+
+    const result = await saveChecklistReview(getPrisma(), { reportId, version, reviewerId: session.userId, decision, notes: decisionNotes })
+    if (!result.nextStatus) return { error: result.error }
+    const { nextStatus, reportCode } = result
 
     revalidatePath("/dashboard")
     revalidatePath("/dashboard/reports")
+    revalidatePath("/dashboard/activity")
+    if (reportCode) {
+      revalidatePath(`/dashboard/reports/${reportCode}`)
+    }
 
     return {
       success: true,
@@ -55,10 +46,10 @@ export async function reviewReportDecision(
             ? "Laporan telah resmi disetujui final (Selesai)."
             : "Laporan diverifikasi Coordinator dan diteruskan ke Manager."
           : decision === "reject_revision"
-          ? `Laporan dikembalikan untuk revisi: ${notes ?? ""}`
-          : "Laporan telah ditolak.",
+            ? `Laporan dikembalikan untuk revisi: ${decisionNotes}`
+            : "Laporan telah ditolak.",
     }
-  } catch (err: any) {
-    return { error: err.message || "Gagal memproses keputusan laporan." }
+  } catch {
+    return { error: "Gagal memproses keputusan laporan." }
   }
 }

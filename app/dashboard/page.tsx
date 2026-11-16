@@ -15,7 +15,7 @@ import {
 import { getUserTodoTasks } from "@/lib/tasks/todo-service"
 import { getTodayWorkPermitStatus } from "@/lib/actions/work-permit"
 import { getSession } from "@/lib/session"
-import { getRealDashboardStats, getRealAdminReports } from "@/lib/manager-dashboard"
+import { getDashboardReportScope, getRealDashboardStats, getRealAdminReports } from "@/lib/manager-dashboard"
 import { ManagerDashboardView } from "@/components/manager-dashboard/manager-dashboard-view"
 
 interface DashboardPageProps {
@@ -29,10 +29,11 @@ export default async function DashboardPage(props: DashboardPageProps) {
   const forceManagerView = searchParams?.view === "manager"
 
   // If user role is MANAGER, COORD, HO, ADMIN or explicit view=manager is requested
-  if (forceManagerView || role === "MANAGER" || role === "COORD" || role === "HO" || role === "ADMIN") {
+  if ((forceManagerView && role !== "ES") || ["MANAGER", "COORD", "ADMIN_HO", "SUPER_ADMIN", "HO", "ADMIN"].includes(role)) {
+    const reportScope = await getDashboardReportScope(session?.userId)
     const [realStats, realReports] = await Promise.all([
-      getRealDashboardStats("ALL"),
-      getRealAdminReports({}),
+      getRealDashboardStats("ALL", reportScope),
+      getRealAdminReports(reportScope, {}),
     ])
 
     return (

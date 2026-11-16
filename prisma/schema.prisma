@@ -100,6 +100,7 @@ model ChecklistReport {
   equipment         Equipment?       @relation(fields: [equipmentId], references: [id])
   workPermitId      String?
   workPermit        WorkPermit?      @relation(fields: [workPermitId], references: [id])
+  revisions         ChecklistReportRevision[]
 
   @@unique([areaId, roomId, period, periodKey, formCode])
   @@index([authorId])
@@ -109,6 +110,22 @@ model ChecklistReport {
   @@index([workPermitId])
   @@index([status])
   @@index([reportCode])
+}
+
+model ChecklistReportRevision {
+  id                 String          @id @default(cuid())
+  reportId           String
+  report             ChecklistReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reason             String?
+  reviewerId         String?
+  reviewerName       String?
+  reviewStage        ReportStatus?
+  requestedAt        DateTime?       @db.Timestamptz(3)
+  resubmittedAt      DateTime?       @db.Timestamptz(3)
+  previousPayload    Json
+  resubmittedPayload Json?
+
+  @@index([reportId, requestedAt])
 }
 
 model GoogleDriveFolderCache {
@@ -162,6 +179,7 @@ enum ReportStatus {
   COMPLETED
   REJECTED
   DRAFT
+  NEEDS_REVISION
 }
 
 enum ItemCondition {
