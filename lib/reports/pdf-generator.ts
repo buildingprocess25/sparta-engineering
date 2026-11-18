@@ -11,6 +11,18 @@ export type PdfReportPhoto = {
   imageBytes?: Buffer | Uint8Array | null
 }
 
+export type ApprovalHistoryRecord = {
+  reviewerId?: string
+  reviewerName?: string
+  reviewerRole?: string
+  accountRole?: string
+  approvalRole?: string
+  stage?: string
+  decision?: string
+  notes?: string
+  decidedAt?: string | Date
+}
+
 export type PdfReportData = {
   reportCode: string
   formCode: string
@@ -28,6 +40,9 @@ export type PdfReportData = {
   authorName: string
   authorNik: string
   isSafe: boolean
+  status?: string | null
+  approvalHistory?: ApprovalHistoryRecord[] | unknown[] | null
+  checklistPayload?: unknown
   generalNotes?: string | null
   items: Array<{
     id: string
@@ -39,6 +54,88 @@ export type PdfReportData = {
     photosCount?: number
   }>
   photos?: PdfReportPhoto[]
+}
+
+export function isSparePartProposal(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false
+  const p = payload as Record<string, unknown>
+  const items = Array.isArray(p.items) ? (p.items as Array<Record<string, unknown>>) : []
+  for (const item of items) {
+    const f065 = item.followUp065 as Record<string, unknown> | undefined
+    const fData = item.followUpData as Record<string, unknown> | undefined
+    if (f065?.jenis === "PENGGANTIAN_SPARE_PART" || fData?.jenis === "PENGGANTIAN_SPARE_PART") return true
+  }
+  return false
+}
+
+export function isReportFinal(data: PdfReportData): boolean {
+  if (data.status !== "COMPLETED") return false
+  const history = Array.isArray(data.approvalHistory) ? (data.approvalHistory as ApprovalHistoryRecord[]) : []
+  if (history.length === 0) return false
+
+  const lastRevIdx = history.map((h) => h.decision).lastIndexOf("reject_revision")
+  const activeCycle = lastRevIdx >= 0 ? history.slice(lastRevIdx + 1) : history
+
+  const hasCoord = activeCycle.some(
+    (h) => h.decision === "approve" && (h.reviewerRole === "COORD" || h.stage === "PENDING_COORD")
+  )
+  const hasManager = activeCycle.some(
+    (h) => h.decision === "approve" && (h.reviewerRole === "MANAGER" || h.stage === "PENDING_MANAGER")
+  )
+
+  if (isSparePartProposal(data.checklistPayload)) {
+    const hasRequester = activeCycle.some(
+      (h) => h.decision === "approve" && (h.reviewerRole === "REQUESTER" || h.stage === "PENDING_REQUESTER")
+    )
+    return hasCoord && hasManager && hasRequester
+  }
+
+  return hasCoord && hasManager
+}
+
+export function getStatusLabel(status?: string | null): string {
+  switch (status) {
+    case "COMPLETED":
+      return "Selesai"
+    case "PENDING_COORD":
+      return "Menunggu Review Coord"
+    case "PENDING_MANAGER":
+      return "Menunggu Review Manager"
+    case "PENDING_REQUESTER":
+      return "Menunggu Review Requester"
+    case "NEEDS_REVISION":
+      return "Perlu Revisi"
+    case "REJECTED":
+      return "Ditolak"
+    case "WAITING_PB":
+      return "Menunggu Proses PB"
+    case "WAITING_PARTS":
+      return "Menunggu Alokasi Part"
+    case "IN_PROGRESS":
+      return "Sedang Dikerjakan"
+    case "DRAFT":
+      return "Draft"
+    default:
+      return status || "Menunggu Review"
+  }
+}
+
+export function formatWib(dateInput: Date | string | undefined | null): string {
+  if (!dateInput) return "-"
+  const d = new Date(dateInput)
+  if (isNaN(d.getTime())) return "-"
+  const formatter = new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+  const parts = formatter.formatToParts(d)
+  const p = (type: string) => parts.find((x) => x.type === type)?.value || ""
+  return `${p("day")}/${p("month")}/${p("year")} ${p("hour")}:${p("minute")} WIB`
 }
 
 export function getNraForForm(formCode: string): { nra: string; refNra: string } {
@@ -115,7 +212,13 @@ export function getNraForForm(formCode: string): { nra: string; refNra: string }
       refNra: "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH",
     }
   }
-  if (code.includes("FRM_TS_028") || code.includes("FRM_TS_068")) {
+  if (code.includes("FRM_TS_068") || code.includes("TS/068")) {
+    return {
+      nra: "SAT/FRM/TS/068",
+      refNra: "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH",
+    }
+  }
+  if (code.includes("FRM_TS_028") || code.includes("TS/028")) {
     return {
       nra: "SAT/FRM/TS/028_Rev:002_161020",
       refNra: "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH",
@@ -216,6 +319,19 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
     }
 
     // Title Center - Diberi jarak yang lebih lega (agak ke bawah)
+    const isFinal = isReportFinal(data)
+    const docTypeLabel = isFinal ? "Laporan Final" : "Laporan Pemeriksaan"
+    const statusText = getStatusLabel(data.status)
+    const statusLine = `${docTypeLabel} · Status: ${statusText}`
+    const statusLineWidth = fontBold.widthOfTextAtSize(statusLine, 7.5)
+    p.drawText(statusLine, {
+      x: (pageWidth - statusLineWidth) / 2,
+      y: pageHeight - 68,
+      size: 7.5,
+      font: fontBold,
+      color: isFinal ? rgb(0.1, 0.5, 0.2) : rgb(0.85, 0.45, 0.05),
+    })
+
     const formTitle = data.formName || `FORM CHECKLIST ${data.formCode}`
     const titleWidth = fontBold.widthOfTextAtSize(formTitle.toUpperCase(), 10.5)
     p.drawText(formTitle.toUpperCase(), {
@@ -699,7 +815,7 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
   // SECTION: KOTAK TANDA TANGAN 3 TINGKAT
   // (Diletakkan di BAWAH section foto)
   // ==========================================
-  const sigTableHeight = 65
+  const sigTableHeight = 80
   const sigColWidth = contentWidth / 3
 
   // Ensure enough space for signature table, otherwise add new page
@@ -782,11 +898,19 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
   })
   page.drawText(`${data.authorName} (${data.authorNik})`, {
     x: marginX + 8,
-    y: currentY - sigTableHeight + 8,
+    y: currentY - 48,
     size: 7,
     font: fontBold,
     color: rgb(0.08, 0.1, 0.15),
   })
+
+  const history = Array.isArray(data.approvalHistory) ? (data.approvalHistory as ApprovalHistoryRecord[]) : []
+  const coordApproval = history
+    .filter((h) => h.reviewerRole === "COORD" || h.stage === "PENDING_COORD")
+    .slice(-1)[0]
+  const mgrApproval = history
+    .filter((h) => h.reviewerRole === "MANAGER" || h.stage === "PENDING_MANAGER")
+    .slice(-1)[0]
 
   // Diperiksa oleh (Coordinator)
   page.drawText("Diperiksa oleh :", {
@@ -803,13 +927,62 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
     font: fontRegular,
     color: rgb(0.4, 0.45, 0.5),
   })
-  page.drawText("( ................................................ )", {
-    x: marginX + sigColWidth + 8,
-    y: currentY - sigTableHeight + 8,
-    size: 7,
-    font: fontRegular,
-    color: rgb(0.5, 0.55, 0.6),
-  })
+
+  if (coordApproval) {
+    const decText =
+      coordApproval.decision === "approve"
+        ? "Disetujui"
+        : coordApproval.decision === "reject_revision"
+          ? "Minta Revisi"
+          : "Ditolak"
+    const dateText = formatWib(coordApproval.decidedAt)
+    page.drawText(`${coordApproval.reviewerName}`, {
+      x: marginX + sigColWidth + 8,
+      y: currentY - 36,
+      size: 7,
+      font: fontBold,
+      color: rgb(0.08, 0.1, 0.15),
+    })
+    page.drawText(`${coordApproval.reviewerRole || "COORD"} · ${decText}`, {
+      x: marginX + sigColWidth + 8,
+      y: currentY - 47,
+      size: 6.5,
+      font: fontRegular,
+      color: rgb(0.15, 0.2, 0.25),
+    })
+    page.drawText(dateText, {
+      x: marginX + sigColWidth + 8,
+      y: currentY - 58,
+      size: 6.5,
+      font: fontRegular,
+      color: rgb(0.3, 0.35, 0.4),
+    })
+    if (coordApproval.notes) {
+      page.drawText(coordApproval.notes.slice(0, 35), {
+        x: marginX + sigColWidth + 8,
+        y: currentY - 69,
+        size: 6,
+        font: fontRegular,
+        color: rgb(0.7, 0.2, 0.1),
+      })
+    }
+  } else if (data.status === "COMPLETED") {
+    page.drawText("( Belum tercatat )", {
+      x: marginX + sigColWidth + 8,
+      y: currentY - 48,
+      size: 7,
+      font: fontRegular,
+      color: rgb(0.5, 0.55, 0.6),
+    })
+  } else {
+    page.drawText("( ................................................ )", {
+      x: marginX + sigColWidth + 8,
+      y: currentY - sigTableHeight + 8,
+      size: 7,
+      font: fontRegular,
+      color: rgb(0.5, 0.55, 0.6),
+    })
+  }
 
   // Disetujui oleh (Manager)
   page.drawText("Disetujui oleh :", {
@@ -826,13 +999,62 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
     font: fontRegular,
     color: rgb(0.4, 0.45, 0.5),
   })
-  page.drawText("( ................................................ )", {
-    x: marginX + sigColWidth * 2 + 8,
-    y: currentY - sigTableHeight + 8,
-    size: 7,
-    font: fontRegular,
-    color: rgb(0.5, 0.55, 0.6),
-  })
+
+  if (mgrApproval) {
+    const decText =
+      mgrApproval.decision === "approve"
+        ? "Disetujui"
+        : mgrApproval.decision === "reject_revision"
+          ? "Minta Revisi"
+          : "Ditolak"
+    const dateText = formatWib(mgrApproval.decidedAt)
+    page.drawText(`${mgrApproval.reviewerName}`, {
+      x: marginX + sigColWidth * 2 + 8,
+      y: currentY - 36,
+      size: 7,
+      font: fontBold,
+      color: rgb(0.08, 0.1, 0.15),
+    })
+    page.drawText(`${mgrApproval.reviewerRole || "MANAGER"} · ${decText}`, {
+      x: marginX + sigColWidth * 2 + 8,
+      y: currentY - 47,
+      size: 6.5,
+      font: fontRegular,
+      color: rgb(0.15, 0.2, 0.25),
+    })
+    page.drawText(dateText, {
+      x: marginX + sigColWidth * 2 + 8,
+      y: currentY - 58,
+      size: 6.5,
+      font: fontRegular,
+      color: rgb(0.3, 0.35, 0.4),
+    })
+    if (mgrApproval.notes) {
+      page.drawText(mgrApproval.notes.slice(0, 35), {
+        x: marginX + sigColWidth * 2 + 8,
+        y: currentY - 69,
+        size: 6,
+        font: fontRegular,
+        color: rgb(0.7, 0.2, 0.1),
+      })
+    }
+  } else if (data.status === "COMPLETED") {
+    page.drawText("( Belum tercatat )", {
+      x: marginX + sigColWidth * 2 + 8,
+      y: currentY - 48,
+      size: 7,
+      font: fontRegular,
+      color: rgb(0.5, 0.55, 0.6),
+    })
+  } else {
+    page.drawText("( ................................................ )", {
+      x: marginX + sigColWidth * 2 + 8,
+      y: currentY - sigTableHeight + 8,
+      size: 7,
+      font: fontRegular,
+      color: rgb(0.5, 0.55, 0.6),
+    })
+  }
 
   // Final footer on last page
   drawPageFooter(page, nraInfo)

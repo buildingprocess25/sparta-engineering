@@ -162,7 +162,7 @@ export function ActivityHistoryView({
               <Button
                 key={tab}
                 type="button"
-                variant={activeTab === tab ? "default" : "outline"}
+                variant={activeTab === tab ? "default" : "secondary"}
                 aria-pressed={activeTab === tab}
                 size="lg"
                 onClick={() => setActiveTab(tab)}

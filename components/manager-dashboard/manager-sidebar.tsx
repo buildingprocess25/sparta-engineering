@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Mail,
   ShieldCheck,
   X,
 } from "lucide-react"
@@ -57,6 +58,11 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Izin Kerja K3",
         href: "/dashboard/work-permits",
         icon: ShieldCheck,
+      },
+      {
+        label: "Kotak Keluar Email (Demo)",
+        href: "/demo/outbox",
+        icon: Mail,
       },
     ],
   },

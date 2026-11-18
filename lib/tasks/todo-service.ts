@@ -1,4 +1,5 @@
 import { ChecklistPeriod, TaskStatus } from "@/generated/prisma"
+import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
 
 export type UserTodoTaskItem = {
@@ -37,15 +38,18 @@ export function formCodeToSlug(formCode: string): string {
   if (clean.includes("TSM/006")) return "frm-tsm-006"
   if (clean.includes("TSM/007")) return "frm-tsm-007"
   if (clean.includes("TSM/008")) return "frm-tsm-008"
+  if (clean.includes("TSM/013")) return "frm-tsm-013"
   if (clean.includes("TS/016")) return "frm-ts-016"
+  if (clean.includes("TS/022")) return "frm-ts-022"
+  if (clean.includes("TS/029")) return "frm-ts-029"
+  if (clean.includes("TS/041")) return "frm-ts-041"
   if (clean.includes("TS/043")) return "frm-ts-043"
   if (clean.includes("TS/045")) return "frm-ts-045"
   if (clean.includes("TS/062")) return "frm-ts-062"
-  if (clean.includes("TS/041")) return "frm-ts-041"
   if (clean.includes("TS/063")) return "frm-ts-063"
   if (clean.includes("TS/064")) return "frm-ts-064"
-  if (clean.includes("TS/022")) return "frm-tsm-001"
-  if (clean.includes("TS/028") || clean.includes("TS/068")) return "frm-ts-028"
+  if (clean.includes("TS/068")) return "frm-ts-068"
+  if (clean.includes("TS/028")) return "frm-ts-028"
 
   return "frm-tsm-003"
 }
@@ -111,8 +115,46 @@ export async function getUserTodoTasks(
           status: TaskStatus.PENDING,
         },
       })
+    } else if (assign.period === ChecklistPeriod.QUARTERLY) {
+      const quarterKey = getCurrentPeriodKey("QUARTERLY", referenceDate)
+      const qMonth = Math.floor(referenceDate.getMonth() / 3) * 3 + 3
+      const qTargetDate = new Date(year, qMonth, 0, 23, 59, 59)
+      await prisma.checklistTask.upsert({
+        where: {
+          assignmentId_periodKey: {
+            assignmentId: assign.id,
+            periodKey: quarterKey,
+          },
+        },
+        update: {},
+        create: {
+          assignmentId: assign.id,
+          periodKey: quarterKey,
+          targetDate: qTargetDate,
+          status: TaskStatus.PENDING,
+        },
+      })
+    } else if (assign.period === ChecklistPeriod.SEMESTER) {
+      const semKey = getCurrentPeriodKey("SEMESTER", referenceDate)
+      const sMonth = referenceDate.getMonth() < 6 ? 6 : 12
+      const sTargetDate = new Date(year, sMonth, 0, 23, 59, 59)
+      await prisma.checklistTask.upsert({
+        where: {
+          assignmentId_periodKey: {
+            assignmentId: assign.id,
+            periodKey: semKey,
+          },
+        },
+        update: {},
+        create: {
+          assignmentId: assign.id,
+          periodKey: semKey,
+          targetDate: sTargetDate,
+          status: TaskStatus.PENDING,
+        },
+      })
     } else {
-      // Monthly, Quarterly, Semester: buat tugas periode bulan berjalan
+      // Monthly: buat tugas periode bulan berjalan
       await prisma.checklistTask.upsert({
         where: {
           assignmentId_periodKey: {
@@ -131,15 +173,20 @@ export async function getUserTodoTasks(
     }
   }
 
-  // 4. Query seluruh tugas user untuk bulan ini
+  const currentQuarterKey = getCurrentPeriodKey("QUARTERLY", referenceDate)
+  const currentSemesterKey = getCurrentPeriodKey("SEMESTER", referenceDate)
+
+  // 4. Query seluruh tugas user untuk bulan/triwulan/semester aktif ini
   const rawTasks = await prisma.checklistTask.findMany({
     where: {
       assignment: {
         userNik,
       },
-      periodKey: {
-        startsWith: currentMonthKey,
-      },
+      OR: [
+        { periodKey: { startsWith: currentMonthKey } },
+        { periodKey: currentQuarterKey },
+        { periodKey: currentSemesterKey },
+      ],
     },
     include: {
       assignment: {

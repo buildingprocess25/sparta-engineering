@@ -25,6 +25,8 @@ export async function getActiveWorkPermit(user: WorkPermitUser | null, now = new
       createdAt: true,
       safetyPayload: true,
       workDate: true,
+      approvalHistory: true,
+      managerNik: true,
       manager: { select: { name: true } },
     },
   })

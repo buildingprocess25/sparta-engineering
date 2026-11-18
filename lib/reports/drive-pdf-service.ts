@@ -7,7 +7,7 @@ import {
   buildFinalPdfName,
 } from "@/lib/google-drive/hierarchy-policy"
 import { ensureDriveFolderPath, uploadPdfToDrive, downloadFileFromDrive } from "@/lib/google-drive/files"
-import { generateReportPdfBuffer, type PdfReportData, type PdfReportPhoto } from "./pdf-generator"
+import { generateReportPdfBuffer, isReportFinal, type PdfReportData, type PdfReportPhoto } from "./pdf-generator"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
 import { getReportItems } from "./checklist-follow-up"
 
@@ -102,6 +102,9 @@ export async function generateAndUploadReportPdf(
     authorName: report.author.name,
     authorNik: report.author.NIK,
     isSafe: report.isSafe,
+    status: report.status,
+    approvalHistory: ((report as { approvalHistory?: unknown }).approvalHistory as any) || [],
+    checklistPayload: report.checklistPayload,
     generalNotes: rawPayload.generalNotes,
     items: formattedItems,
     photos: photosList,
@@ -135,7 +138,10 @@ export async function generateAndUploadReportPdf(
     const fullDocumentFolderPath = [...reportRelativePath, REPORT_DOCUMENT_FOLDER]
     driveFolderId = await ensureDriveFolderPath(fullDocumentFolderPath)
 
-    const fileName = buildFinalPdfName(report.reportCode || reportCode)
+    const isFinal = isReportFinal(pdfData)
+    const fileName = isFinal
+      ? buildFinalPdfName(report.reportCode || reportCode)
+      : `${report.reportCode || reportCode}-Laporan-Pemeriksaan.pdf`
     const uploadResult = await uploadPdfToDrive({
       fileName,
       folderId: driveFolderId,

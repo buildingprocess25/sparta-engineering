@@ -38,12 +38,13 @@ export type WorkPermitItem = {
   workers: any
   safetyPayload: any
   catatanPasca: string | null
-  status: "PENDING_MANAGER" | "APPROVED" | "REJECTED" | "COMPLETED"
+  status: "PENDING_MANAGER" | "PENDING_P2K3" | "PENDING_SECRETARY" | "APPROVED" | "REJECTED" | "COMPLETED"
   applicantNik: string
   applicantSignedAt: string | Date
   managerNik: string | null
   managerSignedAt: string | Date | null
   managerNotes: string | null
+  approvalHistory?: any
   applicant?: {
     name: string
     NIK: string
@@ -63,7 +64,7 @@ interface WorkPermitsViewProps {
   onToggleSidebar?: () => void
 }
 
-type QuickFilter = "ALL" | "PENDING_MANAGER" | "APPROVED" | "REJECTED"
+type QuickFilter = "ALL" | "PENDING" | "APPROVED" | "REJECTED"
 
 function formatItemsList(items: unknown): string {
   if (!items) return "-"
@@ -99,7 +100,7 @@ export function WorkPermitsView({
   }, [initialPermits])
 
   const pendingCount = React.useMemo(
-    () => permits.filter((p) => p.status === "PENDING_MANAGER").length,
+    () => permits.filter((p) => p.status.startsWith("PENDING_")).length,
     [permits]
   )
   const approvedCount = React.useMemo(
@@ -113,7 +114,9 @@ export function WorkPermitsView({
 
   const filteredPermits = React.useMemo(() => {
     return permits.filter((p) => {
-      if (filter !== "ALL" && p.status !== filter) return false
+      if (filter === "PENDING" && !p.status.startsWith("PENDING_")) return false
+      if (filter === "APPROVED" && p.status !== "APPROVED") return false
+      if (filter === "REJECTED" && p.status !== "REJECTED") return false
       if (search.trim()) {
         const q = search.toLowerCase().trim()
         const matchCode = p.permitCode.toLowerCase().includes(q)
@@ -160,13 +163,14 @@ export function WorkPermitsView({
     try {
       const res = await approveWorkPermitAction(selectedPermit.id, managerNoteInput)
       if (res.ok) {
+        const updatedStatus = (res as any).permit?.status || "APPROVED"
         setPermits((prev) =>
           prev.map((item) =>
             item.id === selectedPermit.id
               ? {
                   ...item,
-                  status: "APPROVED",
-                  managerNotes: managerNoteInput || "Disetujui oleh Manager",
+                  status: updatedStatus,
+                  managerNotes: managerNoteInput || item.managerNotes,
                   managerSignedAt: new Date(),
                 }
               : item
@@ -309,10 +313,10 @@ export function WorkPermitsView({
         </div>
 
         <div
-          onClick={() => setFilter("PENDING_MANAGER")}
+          onClick={() => setFilter("PENDING")}
           className={cn(
             "cursor-pointer rounded-xl border p-4 transition-all shadow-2xs",
-            filter === "PENDING_MANAGER"
+            filter === "PENDING"
               ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500"
               : "border-slate-200 bg-white hover:border-slate-300"
           )}
@@ -373,9 +377,9 @@ export function WorkPermitsView({
           {(
             [
               { key: "ALL", label: "Semua" },
-              { key: "PENDING_MANAGER", label: "Menunggu Review" },
-              { key: "APPROVED", label: "Disetujui" },
-              { key: "REJECTED", label: "Ditolak" },
+              { key: "PENDING", label: `Menunggu Review (${pendingCount})` },
+              { key: "APPROVED", label: `Disetujui (${approvedCount})` },
+              { key: "REJECTED", label: `Ditolak (${rejectedCount})` },
             ] as const
           ).map((item) => (
             <button
@@ -491,6 +495,10 @@ export function WorkPermitsView({
                               ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                               : p.status === "PENDING_MANAGER"
                               ? "bg-amber-100 text-amber-900 border border-amber-200"
+                              : p.status === "PENDING_P2K3"
+                              ? "bg-orange-100 text-orange-900 border border-orange-200"
+                              : p.status === "PENDING_SECRETARY"
+                              ? "bg-purple-100 text-purple-900 border border-purple-200"
                               : p.status === "REJECTED"
                               ? "bg-rose-100 text-rose-900 border border-rose-200"
                               : "bg-slate-100 text-slate-800 border border-slate-200"
@@ -499,7 +507,11 @@ export function WorkPermitsView({
                           {p.status === "APPROVED"
                             ? "Disetujui"
                             : p.status === "PENDING_MANAGER"
-                            ? "Menunggu Approval"
+                            ? "Menunggu Manager"
+                            : p.status === "PENDING_P2K3"
+                            ? "Menunggu P2K3"
+                            : p.status === "PENDING_SECRETARY"
+                            ? "Menunggu Sekretaris"
                             : p.status === "REJECTED"
                             ? "Ditolak"
                             : "Selesai"}
@@ -513,12 +525,12 @@ export function WorkPermitsView({
                           }}
                           className={cn(
                             "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition-colors",
-                            p.status === "PENDING_MANAGER"
+                            p.status.startsWith("PENDING_")
                               ? "bg-[#ff8a2a] text-slate-950 hover:bg-[#e0751d]"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           )}
                         >
-                          <span>{p.status === "PENDING_MANAGER" ? "Review & Sahkan" : "Lihat Detail"}</span>
+                          <span>{p.status.startsWith("PENDING_") ? "Review & Sahkan" : "Lihat Detail"}</span>
                         </button>
                       </td>
                     </tr>
@@ -548,6 +560,10 @@ export function WorkPermitsView({
                         ? "bg-emerald-100 text-emerald-800"
                         : selectedPermit.status === "PENDING_MANAGER"
                         ? "bg-amber-100 text-amber-900"
+                        : selectedPermit.status === "PENDING_P2K3"
+                        ? "bg-orange-100 text-orange-900"
+                        : selectedPermit.status === "PENDING_SECRETARY"
+                        ? "bg-purple-100 text-purple-900"
                         : selectedPermit.status === "REJECTED"
                         ? "bg-rose-100 text-rose-900"
                         : "bg-slate-100 text-slate-800"
@@ -557,6 +573,10 @@ export function WorkPermitsView({
                       ? "Izin Aktif"
                       : selectedPermit.status === "PENDING_MANAGER"
                       ? "Menunggu Approval Manager"
+                      : selectedPermit.status === "PENDING_P2K3"
+                      ? "Menunggu Approval P2K3 / Delegate"
+                      : selectedPermit.status === "PENDING_SECRETARY"
+                      ? "Menunggu Approval Sekretaris P2K3"
                       : selectedPermit.status === "REJECTED"
                       ? "Ditolak"
                       : "Selesai"}
@@ -732,10 +752,38 @@ export function WorkPermitsView({
                 </div>
               </div>
 
-              {/* Catatan / Alasan Manager */}
+              {/* Section 4: Riwayat Persetujuan Multilevel */}
+              {Array.isArray(selectedPermit.approvalHistory) && (selectedPermit.approvalHistory as any[]).length > 0 && (
+                <div>
+                  <h4 className="font-bold text-slate-900 mb-2">Riwayat Persetujuan Multilevel</h4>
+                  <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                    {(selectedPermit.approvalHistory as any[]).map((entry, idx) => (
+                      <div key={idx} className="flex items-start justify-between gap-2 text-xs border-b border-slate-200/60 pb-2 last:border-0 last:pb-0">
+                        <div>
+                          <p className="font-bold text-slate-900">
+                            {entry.approvalRole || entry.role} · {entry.actorName || entry.name} ({entry.actorNik || entry.nik})
+                          </p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Tahap: {entry.stage} · Keputusan:{" "}
+                            <span className={cn("font-bold", entry.decision === "APPROVED" ? "text-emerald-700" : "text-rose-700")}>
+                              {entry.decision === "APPROVED" ? "Disetujui" : "Ditolak"}
+                            </span>
+                            {entry.notes ? ` · "${entry.notes}"` : ""}
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                          {entry.decidedAt ? new Date(entry.decidedAt).toLocaleString("id-ID") : "-"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Catatan / Alasan Penyetuju */}
               <div>
                 <label className="block font-bold text-slate-900 mb-1.5">
-                  Catatan Pengesahan / Arahan Manager (Opsional jika setuju, Wajib jika ditolak)
+                  Catatan Pengesahan / Arahan (Opsional jika setuju, Wajib jika ditolak)
                 </label>
                 <textarea
                   rows={2}
@@ -758,7 +806,7 @@ export function WorkPermitsView({
               </button>
 
               <div className="flex items-center gap-3">
-                {selectedPermit.status === "PENDING_MANAGER" && (
+                {selectedPermit.status.startsWith("PENDING_") && (
                   <>
                     <button
                       type="button"

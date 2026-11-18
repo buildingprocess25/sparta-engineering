@@ -81,7 +81,7 @@ export function FrmTsm004Form({
       formCode,
       formName: "Form Checklist Main Cable",
       areaCode,
-      period: "MONTHLY",
+      period: "QUARTERLY",
       periodKey,
       keterangan,
       panels: FRM_TSM_004_PANELS.map((p) => ({

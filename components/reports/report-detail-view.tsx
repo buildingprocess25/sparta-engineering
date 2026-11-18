@@ -31,13 +31,13 @@ import {
 
 import { cn } from "@/lib/utils"
 import { triggerReportPdfUploadAction } from "@/lib/actions/checklist"
-import { reviewReportDecision } from "@/app/dashboard/reports/actions"
+import { executeReportSparePartAction, reviewReportDecision } from "@/app/dashboard/reports/actions"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
 import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
 import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
 import { GENSET_CATEGORIES } from "@/lib/checklists/frm-ts-022"
 import { getChecklistConfig } from "@/lib/checklists/registry"
-import { getReportItems, needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
+import { getReportItems, hasSparePartReplacement, needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
 import type { ChecklistRevisionHistory } from "@/lib/reports/checklist-revision-history"
 import { RevisionHistory } from "@/components/reports/checklist-revision-history"
 
@@ -80,7 +80,14 @@ export interface ReportDetailViewProps {
       branchName: string | null
     }
     checklistPayload: unknown
+    approvalHistory?: unknown
+    executionHistory?: unknown
     revisions: ChecklistRevisionHistory[]
+    workPermit?: {
+      id: string
+      permitCode: string
+      status: string
+    } | null
   }
   userRole?: string
   currentUser?: {
@@ -273,6 +280,24 @@ export function ReportDetailView({
   const [pdfErrorMessage, setPdfErrorMessage] = React.useState<string | null>(null)
   const [currentPdfUrl, setCurrentPdfUrl] = React.useState<string | null>(report.finalPdfDriveUrl)
   const [selectedPhoto, setSelectedPhoto] = React.useState<{ url: string; title: string } | null>(null)
+  const [isExecutionPending, startExecution] = React.useTransition()
+  const [executionFeedback, setExecutionFeedback] = React.useState<{ message: string; isError: boolean } | null>(null)
+
+  function handleExecuteAction(action: "PROCESS_PB" | "START_WORK" | "FINISH_WORK") {
+    startExecution(async () => {
+      try {
+        const result = await executeReportSparePartAction(report.id, action, "", report.updatedAt)
+        if (!result.success) {
+          setExecutionFeedback({ message: result.error || "Gagal memproses pelaksanaan pekerjaan.", isError: true })
+          return
+        }
+        setExecutionFeedback({ message: result.message || "Aksi berhasil diproses.", isError: false })
+        router.refresh()
+      } catch {
+        setExecutionFeedback({ message: "Gagal memproses pelaksanaan pekerjaan.", isError: true })
+      }
+    })
+  }
 
   const payload = (report.checklistPayload as ChecklistPayload) || {}
 
@@ -493,11 +518,20 @@ export function ReportDetailView({
   const isCompleted = report.status === "COMPLETED"
   const isCoord = report.status === "PENDING_COORD"
   const isManager = report.status === "PENDING_MANAGER"
+  const isPendingRequester = report.status === "PENDING_REQUESTER"
+  const isWaitingPb = report.status === "WAITING_PB"
+  const isWaitingParts = report.status === "WAITING_PARTS"
+  const isInProgress = report.status === "IN_PROGRESS"
   const isDraft = report.status === "DRAFT"
   const needsRevision = report.status === "NEEDS_REVISION"
   const isRejected = report.status === "REJECTED"
-  const isReviewer = ["COORD", "MANAGER", "ADMIN_HO", "SUPER_ADMIN"].includes(userRole || "")
-  const canReview = !needsChecklistFollowUp(payload) && ((userRole === "COORD" && isCoord) || (userRole === "MANAGER" && isManager))
+  const isReviewer = ["COORD", "MANAGER", "REQUESTER", "ADMIN_HO", "SUPER_ADMIN"].includes(userRole || "")
+  const canReview =
+    !needsChecklistFollowUp(payload) &&
+    ((userRole === "COORD" && isCoord) ||
+      (userRole === "MANAGER" && isManager) ||
+      (userRole === "REQUESTER" && isPendingRequester))
+  const isAuthor = currentUser?.NIK === report.author.NIK || userRole === "ES"
 
   return (
     <div className="w-full bg-[#f8fafc] text-slate-800 antialiased">
@@ -570,6 +604,93 @@ export function ReportDetailView({
           </div>
         )}
 
+        {/* Stage & BES Execution Banner */}
+        {isPendingRequester && (
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-xs text-purple-900">
+            <div className="flex items-center gap-2.5">
+              <Clock className="size-4 text-purple-700 animate-pulse shrink-0" />
+              <span>
+                <strong>Tahap Menunggu Review Requester (WHM / DWHM)</strong> — Usulan penggantian spare part Form 065 sedang ditinjau sebelum part dapat dialokasikan dari stok atau diajukan via PB.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {(isWaitingPb || isWaitingParts || isInProgress) && (
+          <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 text-xs text-slate-800 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="rounded-lg bg-blue-100 p-2 text-blue-700 shrink-0">
+                  <Wrench className="size-4" />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">
+                    {isWaitingPb
+                      ? "Tahap: Menunggu PB (Pengadaan Baru)"
+                      : isWaitingParts
+                        ? "Tahap: Menunggu Part (Siap Dialokasikan)"
+                        : "Tahap: Sedang Dikerjakan (Perbaikan Unit)"}
+                  </p>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    {isWaitingPb
+                      ? "Usulan disetujui Requester. Lakukan proses pengadaan part (PB) dengan logistik, lalu konfirmasi setelah part siap."
+                      : isWaitingParts
+                        ? "Part telah siap di stok gudang. Pastikan Izin Kerja (MED/003) bulan berjalan aktif sebelum memulai perbaikan."
+                        : "Pekerjaan perbaikan sedang berlangsung. Setelah seluruh penggantian selesai dan diuji, tutup pekerjaan."}
+                  </p>
+                </div>
+              </div>
+
+              {isAuthor && (
+                <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                  {isWaitingPb && (
+                    <button
+                      type="button"
+                      disabled={isExecutionPending}
+                      onClick={() => handleExecuteAction("PROCESS_PB")}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-600 px-3 text-xs font-bold text-white shadow-2xs hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="size-3.5" />
+                      <span>Konfirmasi PB Diproses</span>
+                    </button>
+                  )}
+                  {isWaitingParts && (
+                    <button
+                      type="button"
+                      disabled={isExecutionPending}
+                      onClick={() => handleExecuteAction("START_WORK")}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <Wrench className="size-3.5" />
+                      <span>Mulai Pekerjaan</span>
+                    </button>
+                  )}
+                  {isInProgress && (
+                    <button
+                      type="button"
+                      disabled={isExecutionPending}
+                      onClick={() => handleExecuteAction("FINISH_WORK")}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="size-3.5" />
+                      <span>Selesaikan Pekerjaan</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {executionFeedback && (
+              <p
+                role={executionFeedback.isError ? "alert" : "status"}
+                className={cn("mt-2.5 text-[11px] font-semibold", executionFeedback.isError ? "text-rose-700" : "text-emerald-700")}
+              >
+                {executionFeedback.message}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* 2. Hero Header Row (matches sparta-maintenance layout) */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2.5">
@@ -593,6 +714,26 @@ export function ReportDetailView({
                 Review Manager
               </span>
             )}
+            {isPendingRequester && (
+              <span className="inline-flex items-center rounded-lg bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-800 border border-purple-200">
+                Review Requester
+              </span>
+            )}
+            {isWaitingPb && (
+              <span className="inline-flex items-center rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900 border border-amber-300">
+                Menunggu PB
+              </span>
+            )}
+            {isWaitingParts && (
+              <span className="inline-flex items-center rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800 border border-blue-200">
+                Menunggu Part
+              </span>
+            )}
+            {isInProgress && (
+              <span className="inline-flex items-center rounded-lg bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-800 border border-indigo-200">
+                Sedang Dikerjakan
+              </span>
+            )}
             {isDraft && (
               <span className="inline-flex items-center rounded-lg bg-slate-200/80 px-2.5 py-1 text-xs font-bold text-slate-700 border border-slate-300">
                 Draft
@@ -606,6 +747,12 @@ export function ReportDetailView({
             {isRejected && (
               <span className="inline-flex items-center rounded-lg bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-800 border border-rose-200">
                 Ditolak
+              </span>
+            )}
+            {report.workPermit && (
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+                <ShieldCheck className="size-3.5 text-emerald-600" />
+                <span>Izin Kerja: {report.workPermit.permitCode}</span>
               </span>
             )}
 
@@ -633,7 +780,7 @@ export function ReportDetailView({
               className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#0b1728] px-3.5 text-xs font-bold text-white shadow-2xs hover:bg-[#15253e] transition-colors"
             >
               <FileText className="size-3.5 text-[#ff8a2a]" />
-              <span>Laporan Final PDF</span>
+              <span>{isCompleted ? "Laporan Final PDF" : "Lihat Draft PDF"}</span>
               <ExternalLink className="size-3 text-slate-400" />
             </a>
 
@@ -1011,6 +1158,7 @@ export function ReportDetailView({
                         return (
                           <tr
                             key={item.id}
+                            id={`item-row-${item.id}`}
                             className="hover:bg-slate-50/80 transition-colors"
                           >
                             <td className="py-3 px-4 font-mono font-bold text-slate-500">
@@ -1239,6 +1387,26 @@ export function ReportDetailView({
                                 </table>
                               </div>
                             )}
+                            <div className="pt-2 border-t border-slate-200">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab("checklist")
+                                  setTimeout(() => {
+                                    const el = document.getElementById(`item-row-${item.id}`)
+                                    if (el) {
+                                      el.scrollIntoView({ behavior: "smooth", block: "center" })
+                                      el.classList.add("bg-amber-100/60")
+                                      setTimeout(() => el.classList.remove("bg-amber-100/60"), 2000)
+                                    }
+                                  }, 60)
+                                }}
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ff8a2a] hover:underline"
+                              >
+                                <ExternalLink className="size-3.5" />
+                                <span>Buka Temuan Checklist Terkait ({item.label})</span>
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1339,6 +1507,59 @@ export function ReportDetailView({
                   </div>
                 )}
 
+                {/* Riwayat Approval Multilevel */}
+                {Array.isArray(report.approvalHistory) && (report.approvalHistory as any[]).map((app: any, idx: number) => {
+                  const isApprove = app.decision === "approve"
+                  const isRevision = app.decision === "reject_revision"
+                  return (
+                    <div key={`approval-${idx}`} className="relative pl-6">
+                      <div className={cn(
+                        "absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white",
+                        isApprove ? "bg-emerald-600" : isRevision ? "bg-amber-500" : "bg-rose-600"
+                      )} />
+                      <p className="text-xs font-bold text-slate-900">
+                        {isApprove
+                          ? `Disetujui oleh ${app.role} (${app.approverName})`
+                          : isRevision
+                            ? `Minta Revisi oleh ${app.role} (${app.approverName})`
+                            : `Ditolak oleh ${app.role} (${app.approverName})`}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Tahap: {app.stage} · NIK: {app.approverNik}
+                        {app.notes ? ` · Catatan: "${app.notes}"` : ""}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                        {formatIndoDateTime(app.decidedAt)}
+                      </p>
+                    </div>
+                  )
+                })}
+
+                {/* Riwayat Pelaksanaan Pekerjaan */}
+                {Array.isArray(report.executionHistory) && (report.executionHistory as any[]).map((ex: any, idx: number) => {
+                  const label =
+                    ex.action === "PROCESS_PB"
+                      ? "Proses Pengadaan PB Dicatat"
+                      : ex.action === "START_WORK"
+                        ? "Pekerjaan Perbaikan Dimulai"
+                        : "Pekerjaan Perbaikan Selesai (Final)"
+                  return (
+                    <div key={`exec-${idx}`} className="relative pl-6">
+                      <div className="absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white bg-blue-600" />
+                      <p className="text-xs font-bold text-slate-900">
+                        {label} · {ex.actorName} ({ex.actorNik})
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Status: {ex.previousStatus} → {ex.nextStatus}
+                        {ex.notes ? ` · Catatan: "${ex.notes}"` : ""}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                        {formatIndoDateTime(ex.performedAt)}
+                      </p>
+                    </div>
+                  )
+                })}
+
                 {isCompleted && (
                   <div className="relative pl-6">
                     <div className="absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white bg-emerald-600" />
@@ -1378,7 +1599,13 @@ export function ReportDetailView({
                     className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                   >
                     <CheckCircle2 className="mr-1.5 size-4" />
-                    {userRole === "COORD" ? "Validasi & Teruskan ke Manager" : "Setujui Final"}
+                    {userRole === "COORD"
+                      ? "Validasi & Teruskan ke Manager"
+                      : userRole === "MANAGER"
+                        ? hasSparePartReplacement(payload)
+                          ? "Setujui & Teruskan ke Requester (WHM/DWHM)"
+                          : "Setujui Final"
+                        : "Setujui Usulan Spare Part"}
                   </button>
                   <button
                     type="button"
@@ -1413,7 +1640,11 @@ export function ReportDetailView({
                     {reviewDecision === "approve"
                       ? userRole === "COORD"
                         ? "Teruskan laporan ini ke Manager?"
-                        : "Setujui laporan ini secara final?"
+                        : userRole === "MANAGER"
+                          ? hasSparePartReplacement(payload)
+                            ? "Setujui usulan dan teruskan ke Requester (WHM/DWHM) untuk konfirmasi spare part?"
+                            : "Setujui laporan ini secara final?"
+                          : "Setujui usulan penggantian spare part ini?"
                       : reviewDecision === "reject_revision"
                         ? "Kembalikan laporan untuk revisi?"
                         : "Tolak laporan ini?"}

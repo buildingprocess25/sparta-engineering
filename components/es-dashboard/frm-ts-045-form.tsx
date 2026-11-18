@@ -84,8 +84,8 @@ type PreviewPhoto = {
 
 function getCurrentWeekId(): string {
   const day = new Date().getDate()
-  // Day 1-7: M1, 8-14: M2, 15-21: M3, 22-28: M4, 29-31: M5
-  const weekNum = Math.min(5, Math.max(1, Math.ceil(day / 7)))
+  // Kalendar CEKLIST dan To-Do: Minggu 1-4 (Day 1-7: M1, 8-14: M2, 15-21: M3, 22+: M4)
+  const weekNum = Math.min(4, Math.max(1, Math.ceil(day / 7)))
   return `M${weekNum}`
 }
 
@@ -94,6 +94,11 @@ const WEEKS = [
   { id: "M2", label: "Minggu 2" },
   { id: "M3", label: "Minggu 3" },
   { id: "M4", label: "Minggu 4" },
+]
+
+// Memastikan riwayat Minggu 5 yang tersimpan di database tetap terbaca
+const ALL_WEEKS_LOOKUP = [
+  ...WEEKS,
   { id: "M5", label: "Minggu 5" },
 ]
 
@@ -287,7 +292,7 @@ export function FrmTs045Form({
         }
       })
 
-      const weekLabel = WEEKS.find((w) => w.id === selectedWeek)?.label || selectedWeek
+      const weekLabel = ALL_WEEKS_LOOKUP.find((w) => w.id === selectedWeek)?.label || selectedWeek
 
       const payload: ChecklistPayload = {
         formCode,
@@ -413,7 +418,7 @@ export function FrmTs045Form({
               Minggu Pelaksanaan <span className="text-red-500">*</span>
             </label>
             <div className="flex h-11 items-center justify-center rounded-xl border border-[#ff8a2a] bg-[#fff0e3] text-sm font-bold text-[#ff8a2a] shadow-xs select-none">
-              {WEEKS.find((w) => w.id === currentWeekId)?.label || "Minggu 4"} Berjalan
+              {ALL_WEEKS_LOOKUP.find((w) => w.id === currentWeekId)?.label || "Minggu 4"} Berjalan
             </div>
           </div>
 

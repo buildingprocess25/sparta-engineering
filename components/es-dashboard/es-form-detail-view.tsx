@@ -37,6 +37,7 @@ import { getChecklistConfig } from "@/lib/checklists/registry"
 import { getReportItems } from "@/lib/reports/checklist-follow-up"
 import type { ChecklistRevisionHistory } from "@/lib/reports/checklist-revision-history"
 import { RevisionHistory } from "@/components/reports/checklist-revision-history"
+import { executeReportSparePartAction } from "@/app/dashboard/reports/actions"
 
 export interface EsFormDetailViewProps {
   report: {
@@ -77,6 +78,11 @@ export interface EsFormDetailViewProps {
     }
     checklistPayload: unknown
     revisions: ChecklistRevisionHistory[]
+    workPermit?: {
+      id: string
+      permitCode: string
+      status: string
+    } | null
   }
   userRole?: string
   revisionUrl?: string | null
@@ -103,6 +109,24 @@ export function EsFormDetailView({
   const [previewPhoto, setPreviewPhoto] = React.useState<PreviewPhoto | null>(null)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [openCategories, setOpenCategories] = React.useState<Record<string, boolean>>({})
+  const [isExecutionPending, startExecution] = React.useTransition()
+  const [executionFeedback, setExecutionFeedback] = React.useState<{ message: string; isError: boolean } | null>(null)
+
+  function handleExecuteAction(action: "PROCESS_PB" | "START_WORK" | "FINISH_WORK") {
+    startExecution(async () => {
+      try {
+        const result = await executeReportSparePartAction(report.id, action, "", report.updatedAt)
+        if (!result.success) {
+          setExecutionFeedback({ message: result.error || "Gagal memproses aksi pelaksanaan.", isError: true })
+          return
+        }
+        setExecutionFeedback({ message: result.message || "Aksi berhasil diproses.", isError: false })
+        router.refresh()
+      } catch {
+        setExecutionFeedback({ message: "Gagal memproses aksi pelaksanaan.", isError: true })
+      }
+    })
+  }
 
   const payload = (report.checklistPayload as ChecklistPayload) || {}
   const rawItems: ChecklistPayloadItem[] = React.useMemo(() => getReportItems(report.checklistPayload), [report.checklistPayload])
@@ -114,6 +138,9 @@ export function EsFormDetailView({
     PENDING_COORD: "Review Coord",
     PENDING_MANAGER: "Review Manager",
     PENDING_REQUESTER: "Review Requester",
+    WAITING_PB: "Menunggu PB",
+    WAITING_PARTS: "Menunggu Part",
+    IN_PROGRESS: "Sedang Dikerjakan",
     COMPLETED: "Selesai",
     REJECTED: "Ditolak",
   }
@@ -335,6 +362,65 @@ export function EsFormDetailView({
           </section>
         )}
         <RevisionHistory revisions={report.revisions.filter((entry) => entry.resubmittedAt)} />
+        {(report.status === "WAITING_PB" || report.status === "WAITING_PARTS" || report.status === "IN_PROGRESS") && (
+          <section className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/80 p-4">
+            <div className="flex items-start gap-3">
+              <div className="rounded-lg bg-blue-100 p-2 text-blue-700 shrink-0">
+                <Wrench className="size-5" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-slate-900">
+                  {report.status === "WAITING_PB"
+                    ? "Tindak Lanjut Pengadaan Spare Part (PB)"
+                    : report.status === "WAITING_PARTS"
+                      ? "Penyiapan Spare Part & Mulai Perbaikan"
+                      : "Pekerjaan Perbaikan Unit"}
+                </h2>
+                <p className="mt-1 text-xs text-slate-700">
+                  {report.status === "WAITING_PB"
+                    ? "Usulan penggantian spare part telah disetujui Requester. Lakukan proses pengadaan (PB) bersama logistik dan klik tombol di bawah setelah part siap."
+                    : report.status === "WAITING_PARTS"
+                      ? "Seluruh spare part telah dialokasikan dan siap di gudang. Pastikan Izin Kerja (MED/003) bulan berjalan aktif sebelum memulai perbaikan unit."
+                      : "Pekerjaan perbaikan sedang berlangsung. Setelah seluruh penggantian selesai dan diuji coba, selesaikan pekerjaan."}
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  {report.status === "WAITING_PB" && (
+                    <Button
+                      disabled={isExecutionPending}
+                      onClick={() => handleExecuteAction("PROCESS_PB")}
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs"
+                    >
+                      Konfirmasi PB Diproses / Part Siap
+                    </Button>
+                  )}
+                  {report.status === "WAITING_PARTS" && (
+                    <Button
+                      disabled={isExecutionPending}
+                      onClick={() => handleExecuteAction("START_WORK")}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs"
+                    >
+                      Mulai Pekerjaan Perbaikan
+                    </Button>
+                  )}
+                  {report.status === "IN_PROGRESS" && (
+                    <Button
+                      disabled={isExecutionPending}
+                      onClick={() => handleExecuteAction("FINISH_WORK")}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                    >
+                      Selesaikan Pekerjaan (Selesai)
+                    </Button>
+                  )}
+                </div>
+                {executionFeedback && (
+                  <p className={cn("mt-2 text-xs font-semibold", executionFeedback.isError ? "text-rose-700" : "text-emerald-700")}>
+                    {executionFeedback.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
         {/* Form Identity Card */}
         <div className="overflow-hidden rounded-2xl border border-[#dedede] bg-white p-4 shadow-xs">
           <div className="flex items-start justify-between gap-3 border-b border-[#f0f0f0] pb-3">
@@ -397,6 +483,19 @@ export function EsFormDetailView({
                   <span>Buka di Drive</span>
                   <ExternalLink className="size-2.5" />
                 </a>
+              </div>
+            )}
+            {report.workPermit && (
+              <div className="col-span-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-2.5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-medium text-emerald-800">Izin Kerja K3 Terkait</span>
+                  <p className="mt-0.5 font-mono font-bold text-emerald-950 text-xs">
+                    {report.workPermit.permitCode}
+                  </p>
+                </div>
+                <span className="rounded-md bg-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-900 border border-emerald-300">
+                  {report.workPermit.status}
+                </span>
               </div>
             )}
           </div>

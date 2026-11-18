@@ -14,6 +14,7 @@ import {
   Building2,
   Wrench,
   Lock,
+  ArrowUp,
 } from "lucide-react"
 
 import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service"
@@ -377,6 +378,10 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                   <p className="font-bold text-amber-950">
                     {workPermitStatus?.status === "PENDING_MANAGER"
                       ? "Daftar Tugas Terkunci (Menunggu Persetujuan Manager)"
+                      : workPermitStatus?.status === "PENDING_P2K3"
+                      ? "Daftar Tugas Terkunci (Menunggu Persetujuan P2K3)"
+                      : workPermitStatus?.status === "PENDING_SECRETARY"
+                      ? "Daftar Tugas Terkunci (Menunggu Persetujuan Sekretaris P2K3)"
                       : workPermitStatus?.status === "REJECTED"
                       ? "Daftar Tugas Terkunci (Izin Kerja Perlu Revisi)"
                       : workPermitStatus?.status === "EXPIRED"
@@ -385,26 +390,35 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                   </p>
                   <p className="mt-0.5 text-amber-800 leading-relaxed">
                     {workPermitStatus?.status === "PENDING_MANAGER"
-                      ? "Pengajuan Form Izin Kerja (SAT/FRM/MED/003) sedang ditinjau Manager. Kartu checklist akan otomatis terbuka setelah disetujui."
+                      ? "Pengajuan Form Izin Kerja (SAT/FRM/MED/003) sedang ditinjau Manager. Kartu checklist akan otomatis terbuka setelah seluruh persetujuan disetujui."
+                      : workPermitStatus?.status === "PENDING_P2K3"
+                      ? "Form Izin Kerja telah disetujui Manager dan sedang menunggu verifikasi P2K3/Delegate. Kartu checklist akan otomatis terbuka setelah seluruh persetujuan lengkap."
+                      : workPermitStatus?.status === "PENDING_SECRETARY"
+                      ? "Form Izin Kerja sedang menunggu persetujuan akhir Sekretaris P2K3. Kartu checklist akan otomatis terbuka setelah disetujui."
                       : workPermitStatus?.status === "REJECTED"
-                      ? "Pengajuan izin kerja ditolak oleh Manager. Silakan periksa catatan revisi dan ajukan kembali."
+                      ? "Pengajuan izin kerja ditolak. Silakan periksa catatan revisi dan ajukan kembali."
                       : workPermitStatus?.status === "EXPIRED"
                       ? "Masa berlaku izin kerja periode sebelumnya telah habis. Silakan perbarui Form Izin Kerja untuk bulan ini agar tugas checklist terbuka."
-                      : "Sesuai prosedur K3/SMK3, Anda harus melengkapi Form Izin Kerja (SAT/FRM/MED/003) dan disetujui Manager sebelum dapat memulai tugas rutin."}
+                      : "Sesuai prosedur K3/SMK3, Anda harus melengkapi Form Izin Kerja (SAT/FRM/MED/003) dan disetujui sebelum dapat memulai tugas rutin."}
                   </p>
                 </div>
               </div>
               <a
                 href="#work-permit-section"
-                className="shrink-0 self-start sm:self-center rounded-lg bg-amber-500/20 border border-amber-300/80 px-2.5 py-1.5 text-xs font-bold text-amber-900 transition-colors hover:bg-amber-500/30 whitespace-nowrap"
+                className="shrink-0 self-start sm:self-center inline-flex items-center gap-1.5 rounded-lg bg-amber-500/20 border border-amber-300/80 px-2.5 py-1.5 text-xs font-bold text-amber-900 transition-colors hover:bg-amber-500/30 whitespace-nowrap"
               >
-                {workPermitStatus?.status === "PENDING_MANAGER"
-                  ? "Lihat Status &uarr;"
-                  : workPermitStatus?.status === "REJECTED"
-                  ? "Revisi Izin Kerja &uarr;"
-                  : workPermitStatus?.status === "EXPIRED"
-                  ? "Perbarui Izin Kerja &uarr;"
-                  : "Isi Izin Kerja &uarr;"}
+                <span>
+                  {workPermitStatus?.status === "PENDING_MANAGER" ||
+                  workPermitStatus?.status === "PENDING_P2K3" ||
+                  workPermitStatus?.status === "PENDING_SECRETARY"
+                    ? "Lihat Status"
+                    : workPermitStatus?.status === "REJECTED"
+                    ? "Revisi Izin Kerja"
+                    : workPermitStatus?.status === "EXPIRED"
+                    ? "Perbarui Izin Kerja"
+                    : "Isi Izin Kerja"}
+                </span>
+                <ArrowUp className="size-3.5" />
               </a>
             </div>
           )}

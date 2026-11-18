@@ -39,12 +39,13 @@ export type WorkPermitFullData = {
   workers: any
   safetyPayload: any
   catatanPasca: string | null
-  status: "PENDING_MANAGER" | "APPROVED" | "REJECTED" | "COMPLETED"
+  status: "PENDING_MANAGER" | "PENDING_P2K3" | "PENDING_SECRETARY" | "APPROVED" | "REJECTED" | "COMPLETED"
   applicantNik: string
   applicantSignedAt: string
   managerNik: string | null
   managerSignedAt: string | null
   managerNotes: string | null
+  approvalHistory?: any
   applicant?: {
     name: string
     NIK: string
@@ -426,15 +427,23 @@ export function FrmMed003Form({
                       ? "bg-emerald-100 text-emerald-800 border-emerald-200"
                       : initialData.status === "PENDING_MANAGER"
                       ? "bg-amber-100 text-amber-900 border-amber-200"
+                      : initialData.status === "PENDING_P2K3"
+                      ? "bg-orange-100 text-orange-900 border-orange-200"
+                      : initialData.status === "PENDING_SECRETARY"
+                      ? "bg-purple-100 text-purple-900 border-purple-200"
                       : initialData.status === "REJECTED"
                       ? "bg-rose-100 text-rose-900 border-rose-200"
                       : "bg-slate-100 text-slate-800 border-slate-200"
                   )}
                 >
                   {initialData.status === "APPROVED"
-                    ? "Disetujui Manager"
+                    ? "Disetujui Lengkap"
                     : initialData.status === "PENDING_MANAGER"
                     ? "Menunggu Approval Manager"
+                    : initialData.status === "PENDING_P2K3"
+                    ? "Menunggu Approval P2K3 / Delegate"
+                    : initialData.status === "PENDING_SECRETARY"
+                    ? "Menunggu Approval Sekretaris P2K3"
                     : initialData.status === "REJECTED"
                     ? "Ditolak / Perlu Revisi"
                     : "Selesai"}

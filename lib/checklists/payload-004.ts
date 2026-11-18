@@ -17,7 +17,7 @@ export type FrmTsm004Payload = {
   formCode: "FRM_TSM_004" | "FRM_TSM_004_REPAIR"
   formName: string
   areaCode: string
-  period: "MONTHLY" | "WEEKLY"
+  period: "MONTHLY" | "WEEKLY" | "QUARTERLY"
   periodKey: string
   panels: FrmTsm004Panel[]
   keterangan: string
@@ -60,7 +60,7 @@ export function isFrmTsm004Payload(value: unknown): value is FrmTsm004Payload {
     (value.formCode === "FRM_TSM_004" || value.formCode === "FRM_TSM_004_REPAIR") &&
     typeof value.formName === "string" &&
     typeof value.areaCode === "string" &&
-    (value.period === "MONTHLY" || value.period === "WEEKLY") &&
+    (value.period === "MONTHLY" || value.period === "WEEKLY" || value.period === "QUARTERLY") &&
     typeof value.periodKey === "string" &&
     typeof value.keterangan === "string"
   )

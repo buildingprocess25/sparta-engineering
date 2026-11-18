@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPrisma } from "@/lib/prisma"
-import { generateReportPdfBuffer, type PdfReportData } from "@/lib/reports/pdf-generator"
+import { generateReportPdfBuffer, isReportFinal, type PdfReportData } from "@/lib/reports/pdf-generator"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
 
 import { downloadFileFromDrive } from "@/lib/google-drive/files"
@@ -86,6 +86,9 @@ export async function GET(
     authorName: report.author.name,
     authorNik: report.author.NIK,
     isSafe: report.isSafe,
+    status: report.status,
+    approvalHistory: ((report as { approvalHistory?: unknown }).approvalHistory as any) || [],
+    checklistPayload: report.checklistPayload,
     generalNotes: rawPayload.generalNotes,
     items: formattedItems,
     photos: photosList,
@@ -93,12 +96,15 @@ export async function GET(
 
   try {
     const pdfBuffer = await generateReportPdfBuffer(pdfData)
+    const isFinal = isReportFinal(pdfData)
+    const filename = `${reportCode}-${isFinal ? "Laporan-Final" : "Laporan-Pemeriksaan"}.pdf`
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${reportCode}-Laporan-Final.pdf"`,
+        "Content-Disposition": `inline; filename="${filename}"`,
+        "Cache-Control": "private, no-store",
       },
     })
   } catch (err: unknown) {

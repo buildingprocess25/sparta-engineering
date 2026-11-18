@@ -30,6 +30,7 @@ export default async function ReportDetailPage({
       room: true,
       equipment: true,
       author: { select: { NIK: true, name: true, role: true, branchName: true } },
+      workPermit: { select: { id: true, permitCode: true, status: true } },
       revisions: { orderBy: [{ requestedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }] },
     },
   })
@@ -44,7 +45,7 @@ export default async function ReportDetailPage({
   })
 
   if (!user) notFound()
-  const isBranchReviewer = user.role === "COORD" || user.role === "MANAGER"
+  const isBranchReviewer = user.role === "COORD" || user.role === "MANAGER" || user.role === "REQUESTER"
   const isReviewer = isBranchReviewer || user.role === "ADMIN_HO" || user.role === "SUPER_ADMIN"
   const branch = user.branchName.trim().toUpperCase()
   if (isBranchReviewer && (!branch || branch !== report.author.branchName.trim().toUpperCase())) notFound()

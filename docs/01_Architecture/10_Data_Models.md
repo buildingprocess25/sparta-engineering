@@ -22,6 +22,12 @@ di proyek ini.
 
 ## Model
 
+### Revisi audit laporan 17 November 2026
+
+`ChecklistReport.approvalHistory` dan `executionHistory` adalah Json array dengan default `[]`, hanya ditulis server dalam transaksi perubahan status. Keputusan menyimpan `reviewerId`, `reviewerName`, `reviewerRole`, `stage`, `decision`, `decidedAt`, dan `notes`. Pelaksanaan menyimpan `actorId`, `actorName`, `action`, `fromStatus`, `toStatus`, `occurredAt`, dan `notes`. Data ini terpisah dari jawaban checklist agar tidak dapat dipalsukan melalui payload form.
+
+`ReportStatus` ditambah `WAITING_PB`, `WAITING_PARTS`, dan `IN_PROGRESS`. Penggantian spare part 065 wajib melalui `PENDING_REQUESTER` sebelum status pelaksanaan. Data lama tidak diberi identitas persetujuan fiktif; riwayat kosong tetap kosong. Lihat [spesifikasi Form 065](../02_Features/SparePartFollowUp/00_Spec.md).
+
 ### User
 | Field | Tipe | Keterangan |
 |---|---|---|
@@ -206,4 +212,78 @@ Relasi:
 - `belongsTo User` sebagai `manager` (`managerNik`)
 - `hasMany ChecklistReport` via `workPermitId` (opsional)
 
+
+
+### Revisi MED/003: persetujuan berjenjang
+
+`WorkPermitStatus` menambahkan `PENDING_P2K3`, `PENDING_SECRETARY`. Alur wajib
+Manager → P2K3 atau Delegate → Sekretaris P2K3 → APPROVED. `APPROVED` saja tanpa
+bukti ketiga tahap tidak cukup untuk menjadi izin aktif.
+
+| Field WorkPermit | Tipe | Keterangan |
+|---|---|---|
+| applicantName | String? | Snapshot nama akun saat pengajuan; nullable untuk data lama |
+| approvalHistory | Json, default [] | Audit server: stage, actorNik, actorName, accountRole, approvalRole, decision, notes, decidedAt |
+
+Kolom managerNik/managerSignedAt/managerNotes tetap kompatibel dengan riwayat lama;
+managerSignedAt mencatat waktu keputusan akun, bukan tanda tangan elektronik.
+Semua perubahan audit dan status dilakukan dengan pemeriksaan versi/status atomik.
+
+### WorkPermitApprover
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| branchName | String | Cabang akun/pemohon, dibandingkan tanpa membedakan kapital |
+| userNik | String | Relasi User.NIK yang sudah ada |
+| name | String? | Nama kontak approver (snapshot / kontak untuk email) |
+| email | String? | Email kontak approver untuk pengiriman notifikasi |
+| approvalRole | WorkPermitApprovalRole | P2K3, DELEGATE, SECRETARY |
+| isActive | Boolean, default true | Hak persetujuan aktif |
+| createdAt, updatedAt | DateTime | Waktu konfigurasi |
+
+Unik `(branchName, userNik, approvalRole)`; indeks userNik dan branchName. Tidak
+mengubah UserRole atau memberi hak otomatis pada role aplikasi yang sudah ada.
+Manager menggunakan pemetaan User.branchName yang sudah ada. Migration tidak
+menciptakan pemetaan orang. Izin APPROVED lama hanya dipindahkan ke tahap P2K3
+jika bukti Manager tersedia; selain itu menunggu Manager kembali. Persetujuan
+manual di kertas tidak diisi atau dipalsukan oleh aplikasi.
+
+### WorkPermitApprovalToken
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| token | String (unique) | Token acak kriptografis URL-safe |
+| permitId | String | Relasi ke WorkPermit (Cascade delete) |
+| approverNik | String | NIK akun approver yang berwenang |
+| approverName | String | Nama approver saat token diterbitkan |
+| approverEmail | String | Email approver tujuan notifikasi |
+| approvalRole | WorkPermitApprovalRole | P2K3, DELEGATE, SECRETARY |
+| targetStage | WorkPermitStatus | PENDING_P2K3 atau PENDING_SECRETARY |
+| expiresAt | DateTime | Batas waktu kedaluwarsa tautan |
+| usedAt | DateTime? | Timestamp saat token digunakan (menjamin single-use) |
+| decision | String? | Keputusan yang diambil (APPROVED / REJECTED) |
+| notes | String? | Catatan saat pengambilan keputusan |
+| createdAt | DateTime | Waktu pembuatan token |
+
+Indeks: `token`, `permitId`, `targetStage`.
+
+### DemoOutboxEmail
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String (cuid) | Primary key |
+| toEmail | String | Alamat email penerima |
+| toName | String? | Nama penerima |
+| subject | String | Judul subjek email |
+| bodyHtml | Text | Isi email dalam format HTML |
+| bodyText | Text? | Isi email teks cadangan |
+| actionUrl | String? | Tautan aksi utama (cth: halaman persetujuan) |
+| metadata | Json? | Informasi kontekstual (permitId, stage, token, dll.) |
+| sentAt | DateTime | Waktu pengiriman email simulasi |
+| readAt | DateTime? | Waktu email dibuka di kotak keluar demo |
+| createdAt | DateTime | Waktu pembuatan |
+
+Indeks: `toEmail`, `sentAt`.
 

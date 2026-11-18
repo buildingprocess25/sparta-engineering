@@ -7,7 +7,7 @@ import { validateFrmTsm004Payload, type FrmTsm004Payload } from "../checklists/p
 import { asPayloadRecord, completeChecklistFollowUp, FORM_014, FORM_065, getReportItems, needsChecklistFollowUp, retainChecklistFollowUp } from "./checklist-follow-up"
 import { describeRevisionChanges, getChecklistRevisionUrl } from "./checklist-revision-history"
 import type { PrismaClient, ReportStatus } from "../../generated/prisma"
-import { saveChecklistReview } from "./checklist-review"
+import { executeReportSparePartWork, saveChecklistReview } from "./checklist-review"
 import { saveChecklistFollowUp, saveChecklistSubmission } from "./checklist-submission"
 
 const periodKey = "2026-11"
@@ -140,7 +140,8 @@ test("revision with 065 returns the same routine report to COORD and then Manage
   const tx = {
     user: {
       findUnique: async ({ where }: { where: { NIK: string } }) => ({
-        role: where.NIK === "manager" ? "MANAGER" : "COORD",
+        NIK: where.NIK,
+        role: where.NIK === "manager" ? "MANAGER" : where.NIK === "requester" ? "REQUESTER" : where.NIK === "ES-OWNER" ? "ES" : "COORD",
         name: where.NIK, branchName: where.NIK === "other-branch" ? "OTHER" : "HO",
       }),
     },
@@ -166,6 +167,23 @@ test("revision with 065 returns the same routine report to COORD and then Manage
         return revision
       },
       update: async ({ data }: { data: Record<string, unknown> }) => { Object.assign(revision!, data) },
+    },
+    workPermit: {
+      findMany: async () => [
+        {
+          id: "permit-1",
+          status: "APPROVED",
+          safetyPayload: { targetPeriod: periodKey },
+          workDate: now,
+          managerNik: "mgr-01",
+          managerSignedAt: now,
+          approvalHistory: [
+            { approvalRole: "MANAGER", decision: "APPROVED" },
+            { approvalRole: "P2K3", decision: "APPROVED" },
+            { approvalRole: "SECRETARY", decision: "APPROVED" },
+          ],
+        },
+      ],
     },
   }
   const prisma = { $transaction: (work: (client: typeof tx) => unknown) => work(tx) } as unknown as PrismaClient
@@ -202,5 +220,92 @@ test("revision with 065 returns the same routine report to COORD and then Manage
   assert.deepEqual(getReportItems(revision?.resubmittedPayload)[0].followUp065, details065)
   assert.ok((await review("coord", "approve", revisionVersion)).error)
   assert.equal((await review("coord", "approve")).nextStatus, "PENDING_MANAGER")
-  assert.equal((await review("manager", "approve")).nextStatus, "COMPLETED")
+
+  // Form 065 PENGGANTIAN_SPARE_PART: ACC Manager forwards to PENDING_REQUESTER (not completed)
+  assert.equal((await review("manager", "approve")).nextStatus, "PENDING_REQUESTER")
+  assert.equal(report.status, "PENDING_REQUESTER")
+
+  // Requester (WHM/DWHM) reviews Form 065 proposal: stock parts result in WAITING_PARTS
+  assert.equal((await review("requester", "approve")).nextStatus, "WAITING_PARTS")
+  assert.equal(report.status, "WAITING_PARTS")
+
+  // BES execution: Start work (verified active permit) -> IN_PROGRESS
+  const exec = (actorId: string, action: "PROCESS_PB" | "START_WORK" | "FINISH_WORK", version = report.updatedAt.toISOString()) =>
+    executeReportSparePartWork(prisma, { reportId: report.id, version, actorId, action, notes: "Catatan eksekusi" })
+
+  assert.equal((await exec("ES-OWNER", "START_WORK")).nextStatus, "IN_PROGRESS")
+  assert.equal(report.status, "IN_PROGRESS")
+
+  // BES execution: Finish work -> COMPLETED (Selesai)
+  assert.equal((await exec("ES-OWNER", "FINISH_WORK")).nextStatus, "COMPLETED")
+  assert.equal(report.status, "COMPLETED")
+})
+
+test("report with 065 PERBAIKAN completes directly on Manager approval", async () => {
+  const detailsPerbaikan = { ...details065, jenis: "PERBAIKAN" as const, parts: [] }
+  const payload = { ...base, formCode: "FRM_TS_063", items: [{ ...item, followUp065: detailsPerbaikan }], followUpCompleted: true }
+  const r = {
+    id: "rep-perbaikan", reportCode: "ENG-REP-01", authorId: "ES-OWNER",
+    status: "PENDING_MANAGER" as ReportStatus, formCode: payload.formCode, period: payload.period,
+    periodKey, updatedAt: now, checklistPayload: payload, area: { code: areaCode }, author: { branchName: "HO" },
+  }
+  const tx = {
+    user: {
+      findUnique: async ({ where }: { where: { NIK: string } }) => ({
+        role: "MANAGER", name: where.NIK, branchName: "HO",
+      }),
+    },
+    checklistReport: {
+      findUnique: async () => ({ ...r }),
+      updateMany: async ({ data }: { data: Partial<typeof r> }) => {
+        Object.assign(r, data)
+        return { count: 1 }
+      },
+    },
+  }
+  const prisma = { $transaction: (work: (client: typeof tx) => unknown) => work(tx) } as unknown as PrismaClient
+  const res = await saveChecklistReview(prisma, {
+    reportId: r.id, version: r.updatedAt.toISOString(), reviewerId: "manager", decision: "approve", notes: "ACC",
+  })
+  assert.equal(res.nextStatus, "COMPLETED")
+  assert.equal(r.status, "COMPLETED")
+})
+
+test("report with 065 PB moves to WAITING_PB on Requester approval and advances to WAITING_PARTS when PB processed", async () => {
+  const detailsPb = { ...details065, parts: [{ id: "p1", namaPart: "Belt", nomorPart: "B-12", asalPart: "PB" as const, jumlahPart: 1 }] }
+  const payload = { ...base, formCode: "FRM_TS_063", items: [{ ...item, followUp065: detailsPb }], followUpCompleted: true }
+  const r = {
+    id: "rep-pb", reportCode: "ENG-REP-PB", authorId: "ES-OWNER",
+    status: "PENDING_REQUESTER" as ReportStatus, formCode: payload.formCode, period: payload.period,
+    periodKey, updatedAt: now, checklistPayload: payload, area: { code: areaCode }, author: { branchName: "HO" },
+  }
+  const tx = {
+    user: {
+      findUnique: async ({ where }: { where: { NIK: string } }) => ({
+        NIK: where.NIK,
+        role: where.NIK === "requester" ? "REQUESTER" : "ES",
+        name: where.NIK, branchName: "HO",
+      }),
+    },
+    checklistReport: {
+      findUnique: async () => ({ ...r }),
+      updateMany: async ({ data }: { data: Partial<typeof r> }) => {
+        Object.assign(r, data)
+        return { count: 1 }
+      },
+    },
+    workPermit: { findMany: async () => [] },
+  }
+  const prisma = { $transaction: (work: (client: typeof tx) => unknown) => work(tx) } as unknown as PrismaClient
+  const res = await saveChecklistReview(prisma, {
+    reportId: r.id, version: r.updatedAt.toISOString(), reviewerId: "requester", decision: "approve", notes: "ACC PB",
+  })
+  assert.equal(res.nextStatus, "WAITING_PB")
+  assert.equal(r.status, "WAITING_PB")
+
+  const pbRes = await executeReportSparePartWork(prisma, {
+    reportId: r.id, version: r.updatedAt.toISOString(), actorId: "ES-OWNER", action: "PROCESS_PB", notes: "PB diajukan",
+  })
+  assert.equal(pbRes.nextStatus, "WAITING_PARTS")
+  assert.equal(r.status, "WAITING_PARTS")
 })

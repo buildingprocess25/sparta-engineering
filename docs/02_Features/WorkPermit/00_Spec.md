@@ -1,89 +1,110 @@
-# Feature Spec: Form Izin Kerja (FRM_MED_003) & Manager Approval
+# Feature Spec: Form Izin Kerja (FRM_MED_003)
 
-## 1. Ringkasan Fitur
-Fitur Izin Kerja (`FRM_MED_003` - SAT/FRM/MED/003_Rev:000_180225) adalah implementasi digital dari Sistem Manajemen K3 (SMK3) SAT/KEB/MED/001 untuk memastikan setiap kegiatan pemeliharaan atau perbaikan oleh teknisi Branch Engineering Support (BES) maupun kontraktor memenuhi standar keselamatan kerja sebelum dimulai.
+## Perilaku yang disepakati
 
-Fitur ini mencakup alur pengajuan oleh PIC / Teknisi ES, penyimpanan persisten di database, dan proses review & persetujuan (*approval*) oleh Branch Building & Maintenance Manager melalui menu khusus di dashboard Manager.
+Sumber: `docs/FRM_MED_003 (Form izin kerja).xlsx`, SAT/FRM/MED/003_Rev:000_180225.
+Izin bulanan Branch Engineering Support (BES/ES) berlaku untuk semua pekerjaan
+rutin dan non-rutin pemohon pada bulan target. Tidak perlu mengajukan ulang
+untuk setiap pekerjaan. Pengajuan bulan berikutnya tersedia kapan saja, tanpa
+batas tanggal 20. Periode kalender mulai tanggal 1 hingga akhir bulan; persetujuan
+lebih awal tidak membuka pekerjaan sebelum periode mulai.
 
----
+Alur wajib: `PENDING_MANAGER` → `PENDING_P2K3` → `PENDING_SECRETARY` → `APPROVED`.
+Tahap kedua dapat diputuskan **P2K3 atau Delegate** yang ditugaskan, bukan keduanya.
+Semua tahap dapat menolak dengan alasan wajib dan mengakhiri pengajuan sebagai
+`REJECTED`. Penolakan tidak menghapus keputusan sebelumnya.
 
-## 2. Alur Pengguna (User Journey)
+Catatan sumber: P2K3/Delegate diisi apabila pekerjaan dilakukan di Branch
+(Office, Warehouse, Depo, Bulky). Izin bulanan BES meliputi pekerjaan Branch
+tersebut sehingga seluruh tahap berlaku untuk izin bulanan; teks lokasi bebas
+pada form tidak dapat dipakai untuk melewati persetujuan.
 
-### A. Sisi Pemohon (Teknisi BES / PIC)
-1. **Pemeriksaan Status Izin Kerja & Masa Berlaku 1 Bulan**:
-   - Saat teknisi masuk ke Dashboard ES, sistem mengecek ke database apakah teknisi memiliki `WorkPermit` berstatus `APPROVED` yang aktif untuk **periode bulan berjalan** (`targetPeriod = YYYY-MM`).
-   - **Masa Berlaku Bulanan**: Izin kerja yang telah disetujui oleh Manager (`status = APPROVED`) berlaku selama **1 bulan kalender penuh** (dari tanggal 1 pukul 00:00 hingga akhir bulan berjalan pukul 23:59).
-   - **Mekanisme Pengajuan H- Bulan Sebelumnya**:
-     - Mulai tanggal 20 ke atas setiap bulan, jendela pengajuan izin kerja untuk **bulan berikutnya (H-)** dibuka.
-     - Teknisi dapat mengajukan form izin kerja lebih awal sehingga Manager dapat meninjau dan menyetujui sebelum tanggal 1 tiba.
-     - Begitu pergantian bulan terjadi (tanggal 1), izin kerja yang telah disetujui langsung aktif secara otomatis (*seamless handoff*) tanpa membuat kartu tugas terkunci.
-   - **Status Kedaluwarsa & Kunci Tugas**:
-     - Jika izin kerja bulan sebelumnya berakhir dan belum ada izin kerja `APPROVED` untuk bulan berjalan, status menjadi `EXPIRED` (Kedaluwarsa).
-     - Kartu tugas checklist rutin terkunci (`disabled`) demi kepatuhan K3 sampai izin kerja bulan berjalan disetujui Manager.
-   - Pada alur checklist non-rutin (`/dashboard/reports/new`), card/tombol Form Izin Kerja pada Langkah 1 tetap dipertahankan; jika teknisi sudah memiliki izin kerja `APPROVED` untuk periode aktif, status otomatis terdeteksi terisi dan pilihan Langkah 2 langsung terbuka.
-   - Server menggunakan periode yang sama untuk status di dashboard, membuka form checklist atau perbaikan, mengirim laporan, dan membuka atau menyimpan isian tindak lanjut 014/065. Izin aktif harus berstatus `APPROVED`, milik ES yang sedang login, dan berlaku pada bulan berjalan. Untuk izin lama tanpa `safetyPayload.targetPeriod`, periode diambil dari `workDate`.
-   - Jika belum ada izin aktif, alur rutin kembali ke Dashboard ES dan alur non-rutin kembali ke langkah Izin Kerja pada Buat Laporan. Pengiriman dari tab yang masih terbuka ditolak jika izin sudah tidak aktif.
-2. **Pengisian Form `FRM_MED_003`**:
-   - Teknisi membuka form izin kerja (`/dashboard/reports/new/work-permit`).
-   - Identitas pekerjaan terisi otomatis (auto-fill):
-     - **PIC SAT**: Otomatis terisi nama teknisi yang sedang login.
-     - **Kegiatan / Pekerjaan**: Default terisi `"Checklist Rutinan"` jika dibuka dari Todo List dashboard, atau deskripsi non-rutin jika dari alur laporan non-rutin.
-     - **Lokasi Pekerjaan**: Otomatis terisi sesuai konteks Branch, Area, dan Ruangan kerja yang dipilih.
-     - **Lama Pekerjaan / Jam**: Menggunakan format jam terstruktur (Jam Mulai & Jam Selesai via input time) dengan kalkulasi durasi otomatis.
-     - **Daftar Pekerja**: Pekerja pertama otomatis terisi teknisi pemohon.
-   - Memilih checklist K3: Administrasi/JSA, APD khusus (Hot Work, Ketinggian, Ruang Terbatas, Listrik Tegangan Tinggi, APAR).
-   - Menekan tombol **"Simpan & Ajukan Izin Kerja"**.
-3. **Status Pengajuan & Tampilan Detail Read-Only**:
-   - Izin kerja tersimpan di database dengan status `PENDING_MANAGER`.
-   - Di dashboard ES muncul banner informatif: *"Izin Kerja Menunggu Persetujuan Manager (Diajukan [Waktu])"*.
-   - Saat izin kerja sudah di-ACC (`status = APPROVED`), tombol pada card izin kerja bertuliskan **"Lihat Izin Kerja"**.
-   - Ketika teknisi mengklik **"Lihat Izin Kerja"**, sistem membuka formulir izin kerja (`FrmMed003Form`) persis sama seperti tampilan formulir pengisian aslinya namun dalam mode **Read-Only**: seluruh input, pilihan, dan checkbox terisi sesuai data pengajuan database dalam status terkunci (*disabled*), dilengkapi banner status persetujuan Manager, serta tombol navigasi "Kembali ke Dashboard" dan "Ajukan Izin Kerja Baru".
-4. **Tampilan Responsif Tablet Form Izin Kerja (`/dashboard/reports/new/work-permit`)**:
-   - Halaman formulir izin kerja ES dibuat responsif adaptif terhadap layar tablet/iPad (`md:max-w-3xl lg:max-w-4xl px-4 sm:px-6 md:px-8`).
-   - Header shell, informasi umum pekerjaan (grid 2-kolom), checklist APD (grid 3-4 kolom), dan tombol aksi (tata letak horizontal berdampingan di mode read-only) memanfaatkan lebar viewport tablet secara proporsional.
-   - Halaman pembuatan laporan/flow lain tetap menggunakan batas default sampai ada instruksi lanjutan.
-5. **Riwayat Izin Kerja**:
-   - Dari kartu Izin Kerja di Dashboard ES, tautan **Riwayat Izin Kerja** membuka `/dashboard/work-permits/history`. Daftar menampilkan seluruh pengajuan milik NIK ES yang masuk, terbaru lebih dulu, dengan 10 pengajuan per halaman.
-   - Setiap pengajuan menampilkan nomor izin, kegiatan, lokasi, periode izin, tanggal pengajuan, dan status keputusan. Periode izin memakai `safetyPayload.targetPeriod` dengan `workDate` sebagai acuan untuk data lama.
-   - Pengajuan yang dipilih membuka formulir MED/003 sesuai nomor izin, dengan data tersimpan dan catatan Manager dalam mode baca. Tautan kembali membuka halaman riwayat asal. Detail izin yang dibuka berdasarkan nomor izin selalu dalam mode baca, termasuk izin yang sedang diproses, ditolak, atau berasal dari periode lama. Status **Disetujui Manager** mencatat keputusan pada dokumen tersebut.
+## Identitas dan hak akses
 
-### B. Sisi Manajer (Branch Building & Maintenance Manager)
-1. **Notifikasi & Antrean Approval**:
-   - Di sidebar Manager terdapat menu baru: **"Izin Kerja K3"** (`/dashboard/work-permits`) dengan badge angka antrean pending.
-2. **Review Detail K3**:
-   - Manajer melihat daftar pengajuan izin kerja lengkap dengan indikator risiko tinggi (*Hot Work*, *Ketinggian*, *Listrik*).
-   - Manajer membuka drawer/modal detail untuk memeriksa daftar pekerja, JSA, dan APD yang disiapkan.
-3. **Pemberian Keputusan**:
-   - **Setujui (Approve)**: Manajer mengklik "Setujui Izin Kerja", status berubah menjadi `APPROVED`, timestamp `managerSignedAt` tersimpan, dan kartu To-Do List teknisi otomatis terbuka (unlocked).
-   - **Tolak / Revisi (Reject)**: Manajer memasukkan catatan arahan (misal: "Harap lengkapi body harness untuk pekerjaan rak tinggi"). Status berubah menjadi `REJECTED`.
+- Pemohon diambil dari sesi ES. NIK dan nama akun dicatat pada pengajuan.
+- Manager tetap mengikuti pemetaan yang sudah tersedia: akun `MANAGER` dan
+  `User.branchName` sama dengan cabang pemohon, tanpa membedakan kapital.
+- Tidak ditemukan pemetaan P2K3/Delegate/Sekretaris dalam skema atau seed lama.
+  `WorkPermitApprover` menghubungkan NIK akun yang sudah ada, cabang, dan fungsi
+  `P2K3`, `DELEGATE`, atau `SECRETARY`. Tidak ada identitas atau pemetaan otomatis.
+- Konfigurasi awal melalui `scripts/configure-work-permit-approver.ts`; operator
+  harus memilih target environment dan NIK nyata. Pemetaan kosong menahan izin
+  pada tahap terkait; COORD/REQUESTER/admin tidak otomatis menjadi approver.
+- Antrean `/dashboard/work-permits` tersedia bagi Manager atau akun dengan
+  penugasan aktif. Aksi dibatasi cabang dan tahap saat ini. ES yang juga diberi
+  penugasan dapat membuka antrean, tetapi tidak menyetujui izinnya sendiri.
+- Setiap keputusan menyimpan NIK, nama akun, role akun, fungsi persetujuan,
+  keputusan, catatan, dan waktu server dalam `approvalHistory` di luar payload
+  isian. Nama/role adalah snapshot saat keputusan, bukan nama terkini saja.
+- Status, timestamp versi, dan scope diperiksa dalam update yang sama. Dua
+  keputusan bersamaan tidak dapat menimpa atau melewati tahap.
+- Persetujuan adalah catatan keputusan akun. Tanda tangan tetap manual; tidak
+  ada tanda tangan digital, gambar tanda tangan, atau klaim tanda tangan elektronik.
 
-### C. Hak Akses & Konsistensi Keputusan
+## Aktivasi dan tampilan
 
-- Server mengambil NIK, role, dan cabang dari akun yang terhubung ke sesi aktif. Teknisi (`ES`) dapat mengajukan izin atas NIK sendiri serta membaca status dan detail izinnya. Kode izin pada tautan detail tetap diperiksa terhadap NIK pemohon.
-- Menu dan antrean Izin Kerja K3 tersedia untuk `MANAGER`. Daftar dan aksi keputusan dibatasi pada cabang pemohon yang cocok dengan `User.branchName` Manager, dengan pencocokan tanpa membedakan kapital. Manager tanpa cabang tidak mendapat akses antrean. Koordinator meninjau laporan maintenance sesuai alur terpisah.
-- Persetujuan dan penolakan hanya berlaku untuk `PENDING_MANAGER`. Pembatasan cabang dan status diterapkan dalam satu operasi database agar keputusan yang sudah tercatat tidak tertimpa jika dua Manager memproses pengajuan bersamaan. Catatan penolakan wajib diisi.
-- Pada tautan detail, kode izin yang tidak ditemukan atau berada di luar hak akses menghasilkan halaman tidak ditemukan. Konteks tugas rutin hanya diambil dari tugas milik ES yang sedang login.
+- `getActiveWorkPermit` hanya menerima `APPROVED` dengan tiga keputusan persetujuan
+  berurutan dan periode bulan berjalan, milik ES sesi. Berlaku sama untuk halaman
+  rutin/non-rutin, pengiriman laporan dan tindak lanjut 014/065.
+- Browser storage dan parameter URL bukan bukti persetujuan. Tanpa status server
+  yang aktif, kartu pekerjaan tetap terkunci. Pengiriman dari tab lama diperiksa
+  ulang oleh server.
+- Detail dan riwayat menampilkan tahap saat ini serta nama, fungsi, keputusan,
+  catatan dan waktu setiap persetujuan. Izin disetujui bulan depan disebut belum
+  aktif, bukan kedaluwarsa atau aktif bulan ini.
+- Riwayat ES di `/dashboard/work-permits/history` tetap dibatasi NIK sesi dan
+  dipaginasi 10 per halaman. Detail berdasarkan kode selalu mode baca.
+- Form memakai bulan target yang dipilih, termasuk pengajuan bulan depan. Izin
+  baru tidak menyalin isian/status izin lama. Nomor dokumen dan kolom sumber
+  dipertahankan; periode tidak dibatasi tanggal 20.
 
----
+## Migrasi dan konfigurasi
 
-## 3. Skema Data & Relasi
-Lihat dokumentasi lengkap di [10_Data_Models.md](../../01_Architecture/10_Data_Models.md).
+Skema di `docs/01_Architecture/10_Data_Models.md`. Migration menambahkan dua status,
+`approvalHistory`, snapshot nama pemohon, dan tabel pemetaan approver. Izin lama
+`APPROVED` yang hanya memiliki keputusan Manager dikembalikan ke `PENDING_P2K3`;
+keputusan Manager lama disalin hanya jika NIK dan waktu tercatat. Tidak ada
+persetujuan P2K3/Sekretaris buatan. Jika bukti Manager tidak lengkap, kembali ke
+`PENDING_MANAGER`. Dokumen lama `COMPLETED` tetap historis, tidak aktif.
 
-- Model: `WorkPermit`
-- Enum Status: `WorkPermitStatus` (`PENDING_MANAGER`, `APPROVED`, `REJECTED`, `COMPLETED`)
-- Relasi:
-  - `applicant`: `User` (BES)
-  - `manager`: `User` (Manager)
-  - `reports`: `ChecklistReport[]`, ditautkan ke izin aktif saat laporan dikirim.
+Konfigurasi (setelah migration pada environment terkonfirmasi):
 
----
+```powershell
+pnpm exec tsx scripts/configure-work-permit-approver.ts --environment development --branch BANDUNG --nik <NIK_AKUN> --role P2K3
+pnpm exec tsx scripts/configure-work-permit-approver.ts --environment development --branch BANDUNG --nik <NIK_AKUN> --role SECRETARY
+```
 
-## 4. Rute & Komponen Baru / Diperbarui
-1. `prisma/schema.prisma`: Penambahan model `WorkPermit`.
-2. `lib/actions/work-permit.ts`: Pengajuan, keputusan Manager, serta pembacaan antrean, status, dan detail izin kerja dari server.
-3. `components/es-dashboard/frm-med-003-form.tsx`: Pengiriman data langsung ke database.
-4. `components/es-dashboard/work-permit-card.tsx` & `todo-list-panel.tsx`: Integrasi status approval dinamis dari database.
-5. `app/dashboard/work-permits/page.tsx`: Halaman workbench approval Manager.
-6. `components/manager-dashboard/work-permits-view.tsx`: Komponen tabel dan modal review Manager.
-7. `components/manager-dashboard/manager-sidebar.tsx`: Penambahan navigasi "Izin Kerja K3".
-8. `app/dashboard/work-permits/history/page.tsx`: Riwayat pengajuan ES dan navigasi ke detail izin.
+`--role DELEGATE` adalah alternatif tahap P2K3; `--disable` menonaktifkan penugasan
+persis tersebut. Script memverifikasi akun dan cabang, tidak membuat akun baru.
+Database tidak diubah atau migration diterapkan tanpa konfirmasi environment.
+
+## P1 MED/003: Alur Email Outbox, Persetujuan Token, & Integrasi Checklist
+
+Keputusan P1 MED/003:
+1. **Dua Kontak Approver Cabang**:
+   - Cabang Warehouse (seperti WH Parung) memiliki penugasan kontak terdaftar: satu kontak untuk tahap `P2K3` / `DELEGATE`, dan satu kontak untuk `SECRETARY`.
+   - Data kontak menyimpan nama, email, cabang, NIK, dan approvalRole pada tabel `WorkPermitApprover` (didukung akun `User` terkait) sehingga dapat dikelola melalui dashboard Admin di iterasi berikutnya.
+2. **Kotak Keluar Email Demo (Simulasi seperti VP)**:
+   - Ketika BNM Manager menyetujui izin kerja (`PENDING_MANAGER` → `PENDING_P2K3`), sistem membuat email simulasi di tabel `DemoOutboxEmail` untuk kontak `P2K3` / `DELEGATE` yang ditugaskan di cabang pemohon.
+   - Email berisi detail pengajuan (pemohon, lokasi, kegiatan, periode, APD) dan tombol **Buka halaman persetujuan** yang memuat tautan ber-token aman.
+   - Setelah P2K3/Delegate menyetujui (`PENDING_P2K3` → `PENDING_SECRETARY`), sistem membuat email simulasi berikutnya untuk kontak `SECRETARY` cabang tersebut dengan token baru.
+   - Riwayat pengiriman email dapat dipantau melalui halaman Kotak Keluar Email Demo (`/demo/outbox`).
+3. **Halaman Persetujuan Berbasis Token (Tanpa Login)**:
+   - Akses via `/work-permits/approve?token=<TOKEN>`.
+   - Menampilkan detail satu dokumen MED/003: pemohon, lokasi, periode, kegiatan, APD, dan riwayat persetujuan sebelumnya.
+   - Tautan memiliki masa berlaku (`expiresAt`) dan bersifat *single-use* (hanya dapat digunakan untuk satu kali keputusan).
+   - Dilindungi transaksi atomik: klik ulang atau dua permintaan bersamaan tidak akan mencatat keputusan ganda atau memicu pengiriman email duplikat.
+   - Jika token sudah pernah dipakai, halaman menampilkan konfirmasi waktu dan keputusan yang telah dicatat sebelumnya.
+4. **Notifikasi BES & Tampilan Nomor Izin di Checklist**:
+   - Setelah seluruh tahap persetujuan lengkap (`APPROVED`), dashboard BES menampilkan notifikasi konfirmasi persetujuan aktif lengkap dengan nomor izin kerja.
+   - Saat BES membuka form checklist rutin (dari To-Do) maupun perbaikan/non-rutin (dari Buat Laporan), nomor MED/003 aktif otomatis ditampilkan secara jelas.
+   - Hubungan laporan dengan izin kerja tersimpan persisten melalui `ChecklistReport.workPermitId` sehingga tetap terlihat saat detail laporan dibuka kembali.
+   - Pemeriksaan keabsahan izin aktif tetap diwajibkan untuk pekerjaan rutin maupun non-rutin (perbaikan by AHO / Temuan ES).
+
+## Validasi
+
+Tes perilaku mencakup urutan tiga tahap, substitusi Delegate, penolakan,
+self-approval dan lintas cabang, keputusan kedaluwarsa, nama/role/waktu audit,
+izin lama tidak lengkap, pergantian bulan/tahun, pengajuan awal, dan gating
+rutin/non-rutin tanpa storage/URL bypass. Jalankan Prisma validate/generate,
+typecheck, serta tes terfokus sebelum penyelesaian.

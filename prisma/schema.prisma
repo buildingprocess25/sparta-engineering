@@ -8,20 +8,21 @@ datasource db {
 }
 
 model User {
-  NIK                String            @id
-  name               String
-  email              String?           @unique
-  branchName         String
-  location           String?
-  role               UserRole          @default(ES)
-  passwordHash       String
-  mustChangePassword Boolean           @default(true)
-  createdAt          DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt          DateTime          @updatedAt @db.Timestamptz(3)
-  reports            ChecklistReport[] @relation("ReportAuthor")
-  assignments        PicAssignment[]
-  appliedWorkPermits WorkPermit[]      @relation("WorkPermitApplicant")
-  approvedWorkPermits WorkPermit[]     @relation("WorkPermitManager")
+  NIK                 String               @id
+  name                String
+  email               String?              @unique
+  branchName          String
+  location            String?
+  role                UserRole             @default(ES)
+  passwordHash        String
+  mustChangePassword  Boolean              @default(true)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
+  reports             ChecklistReport[]    @relation("ReportAuthor")
+  assignments         PicAssignment[]
+  appliedWorkPermits  WorkPermit[]         @relation("WorkPermitApplicant")
+  approvedWorkPermits WorkPermit[]         @relation("WorkPermitManager")
+  workPermitApprovals WorkPermitApprover[]
 }
 
 model Area {
@@ -73,33 +74,35 @@ model RoomFormAvailability {
 }
 
 model ChecklistReport {
-  id                String           @id @default(cuid())
+  id                String                    @id @default(cuid())
   areaId            String
   roomId            String?
   authorId          String
-  status            ReportStatus     @default(DRAFT)
-  isSafe            Boolean          @default(false)
-  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
-  category          ReportCategory   @default(PREVENTIVE)
+  status            ReportStatus              @default(DRAFT)
+  isSafe            Boolean                   @default(false)
+  createdAt         DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                  @updatedAt @db.Timestamptz(3)
+  category          ReportCategory            @default(PREVENTIVE)
   period            ChecklistPeriod?
   periodKey         String?
-  checklistPayload  Json             @default("{}")
-  drivePhotoFileIds Json             @default("[]")
+  checklistPayload  Json                      @default("{}")
+  approvalHistory   Json                      @default("[]")
+  executionHistory  Json                      @default("[]")
+  drivePhotoFileIds Json                      @default("[]")
   finalPdfDriveUrl  String?
   finalPdfFolderUrl String?
   formCode          String?
-  reportCode        String?          @unique
+  reportCode        String?                   @unique
   items             ChecklistItem[]
-  area              Area             @relation(fields: [areaId], references: [id])
-  room              Room?            @relation(fields: [roomId], references: [id])
-  author            User             @relation("ReportAuthor", fields: [authorId], references: [NIK])
-  taskId            String?          @unique
-  task              ChecklistTask?   @relation(fields: [taskId], references: [id])
+  area              Area                      @relation(fields: [areaId], references: [id])
+  room              Room?                     @relation(fields: [roomId], references: [id])
+  author            User                      @relation("ReportAuthor", fields: [authorId], references: [NIK])
+  taskId            String?                   @unique
+  task              ChecklistTask?            @relation(fields: [taskId], references: [id])
   equipmentId       String?
-  equipment         Equipment?       @relation(fields: [equipmentId], references: [id])
+  equipment         Equipment?                @relation(fields: [equipmentId], references: [id])
   workPermitId      String?
-  workPermit        WorkPermit?      @relation(fields: [workPermitId], references: [id])
+  workPermit        WorkPermit?               @relation(fields: [workPermitId], references: [id])
   revisions         ChecklistReportRevision[]
 
   @@unique([areaId, roomId, period, periodKey, formCode])
@@ -180,6 +183,9 @@ enum ReportStatus {
   REJECTED
   DRAFT
   NEEDS_REVISION
+  WAITING_PB
+  WAITING_PARTS
+  IN_PROGRESS
 }
 
 enum ItemCondition {
@@ -280,13 +286,16 @@ model WorkPermit {
   catatanPasca      String?
   status            WorkPermitStatus  @default(PENDING_MANAGER)
   applicantNik      String
+  applicantName     String?
   applicant         User              @relation("WorkPermitApplicant", fields: [applicantNik], references: [NIK])
   applicantSignedAt DateTime          @default(now()) @db.Timestamptz(3)
   managerNik        String?
   manager           User?             @relation("WorkPermitManager", fields: [managerNik], references: [NIK])
   managerSignedAt   DateTime?         @db.Timestamptz(3)
   managerNotes      String?
+  approvalHistory   Json              @default("[]")
   reports           ChecklistReport[]
+  approvalTokens    WorkPermitApprovalToken[]
   createdAt         DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
 
@@ -296,10 +305,72 @@ model WorkPermit {
   @@index([status])
 }
 
+model WorkPermitApprover {
+  id           String                 @id @default(cuid())
+  branchName   String
+  userNik      String
+  user         User                   @relation(fields: [userNik], references: [NIK])
+  name         String?
+  email        String?
+  approvalRole WorkPermitApprovalRole
+  isActive     Boolean                @default(true)
+  createdAt    DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime               @updatedAt @db.Timestamptz(3)
+
+  @@unique([branchName, userNik, approvalRole])
+  @@index([branchName])
+  @@index([userNik])
+}
+
+model WorkPermitApprovalToken {
+  id            String                 @id @default(cuid())
+  token         String                 @unique
+  permitId      String
+  permit        WorkPermit             @relation(fields: [permitId], references: [id], onDelete: Cascade)
+  approverNik   String
+  approverName  String
+  approverEmail String
+  approvalRole  WorkPermitApprovalRole
+  targetStage   WorkPermitStatus
+  expiresAt     DateTime               @db.Timestamptz(3)
+  usedAt        DateTime?              @db.Timestamptz(3)
+  decision      String?
+  notes         String?
+  createdAt     DateTime               @default(now()) @db.Timestamptz(3)
+
+  @@index([token])
+  @@index([permitId])
+  @@index([targetStage])
+}
+
+model DemoOutboxEmail {
+  id          String    @id @default(cuid())
+  toEmail     String
+  toName      String?
+  subject     String
+  bodyHtml    String    @db.Text
+  bodyText    String?   @db.Text
+  actionUrl   String?
+  metadata    Json?
+  sentAt      DateTime  @default(now()) @db.Timestamptz(3)
+  readAt      DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([toEmail])
+  @@index([sentAt])
+}
+
 enum WorkPermitStatus {
   PENDING_MANAGER
+  PENDING_P2K3
+  PENDING_SECRETARY
   APPROVED
   REJECTED
   COMPLETED
 }
 
+enum WorkPermitApprovalRole {
+  P2K3
+  DELEGATE
+  SECRETARY
+}

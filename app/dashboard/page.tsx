@@ -1,4 +1,5 @@
 import { ProfileMenu } from "@/components/auth/profile-menu"
+import { CheckCircle2 } from "lucide-react"
 import { BottomNavigation } from "@/components/es-dashboard/bottom-navigation"
 import { DashboardHeader } from "@/components/es-dashboard/dashboard-header"
 import { DashboardShell } from "@/components/es-dashboard/dashboard-shell"
@@ -59,6 +60,24 @@ export default async function DashboardPage(props: DashboardPageProps) {
         <DashboardShell contentClassName="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl sm:px-6 md:px-8">
           <DashboardHeader email={session?.email as string} role={role} />
           <WelcomePanel user={userContext} />
+          {workPermitStatus?.status === "APPROVED" && (
+            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-transparent p-4 text-xs shadow-2xs">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                <CheckCircle2 className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-emerald-950">Notifikasi K3: Izin Kerja Disetujui Lengkap</span>
+                  <span className="rounded bg-emerald-200/80 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-900 border border-emerald-300">
+                    {workPermitStatus.permitCode}
+                  </span>
+                </div>
+                <p className="mt-1 text-emerald-900/85 leading-relaxed">
+                  Formulir SAT/FRM/MED/003 periode <strong>{workPermitStatus.targetPeriod}</strong> telah disahkan lengkap (Manager → P2K3/Delegate → Sekretaris P2K3). Nomor izin ini otomatis terhubung saat Anda mengerjakan checklist rutin &amp; perbaikan.
+                </p>
+              </div>
+            </div>
+          )}
           <WorkPermitCard userNik={session?.userId as string} initialStatus={workPermitStatus} />
           <TodoListPanel
             todoData={todoData}

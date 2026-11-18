@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation"
 
+import { getPrisma } from "@/lib/prisma"
 import { ManagerSidebar } from "@/components/manager-dashboard/manager-sidebar"
 import { getManagerWorkPermits } from "@/lib/actions/work-permit"
 import { WorkPermitsView } from "@/components/manager-dashboard/work-permits-view"
-import { getManagerWorkPermitScope } from "@/lib/work-permits/access"
 import { getWorkPermitUser } from "@/lib/work-permits/current-user"
 
 export const dynamic = "force-dynamic"
@@ -19,7 +19,16 @@ export default async function WorkPermitsPage() {
   if (user.role === "ES") {
     redirect("/dashboard/reports/new/work-permit")
   }
-  if (!getManagerWorkPermitScope(user)) redirect("/dashboard")
+
+  const isManager = user.role === "MANAGER"
+  const isApprover = await getPrisma().workPermitApprover.findFirst({
+    where: {
+      branchName: { equals: user.branchName.trim(), mode: "insensitive" },
+      userNik: user.NIK,
+      isActive: true,
+    },
+  })
+  if (!isManager && !isApprover) redirect("/dashboard")
 
   const permits = await getManagerWorkPermits()
 

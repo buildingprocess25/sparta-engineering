@@ -116,6 +116,23 @@ function withoutFollowUpDetails(item: FollowUpItem) {
   return answer
 }
 
+export function hasSparePartReplacement(payload: unknown): boolean {
+  const items = getReportItems(payload)
+  return items.some((item) => {
+    const f065 = (item.followUp065 ?? (item.repairForm === FORM_065 ? item.followUpData : undefined)) as Details065 | undefined
+    return item.repairForm === FORM_065 && f065?.jenis === "PENGGANTIAN_SPARE_PART"
+  })
+}
+
+export function needsPbProcurement(payload: unknown): boolean {
+  const items = getReportItems(payload)
+  return items.some((item) => {
+    const f065 = (item.followUp065 ?? (item.repairForm === FORM_065 ? item.followUpData : undefined)) as Details065 | undefined
+    if (item.repairForm !== FORM_065 || f065?.jenis !== "PENGGANTIAN_SPARE_PART") return false
+    return Array.isArray(f065.parts) && f065.parts.some((part) => part.asalPart === "PB")
+  })
+}
+
 export function completeChecklistFollowUp(payload: unknown, submitted: unknown, completedAt: Date) {
   const items = getReportItems(payload)
   if (!Array.isArray(submitted) || submitted.length !== items.length || !needsChecklistFollowUp(payload)) return null

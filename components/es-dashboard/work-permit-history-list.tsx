@@ -15,6 +15,8 @@ type WorkPermitHistoryListProps = {
 
 const statuses = {
   PENDING_MANAGER: { label: "Menunggu Manager", color: "bg-amber-100 text-amber-900" },
+  PENDING_P2K3: { label: "Menunggu P2K3", color: "bg-orange-100 text-orange-900" },
+  PENDING_SECRETARY: { label: "Menunggu Sekretaris", color: "bg-purple-100 text-purple-900" },
   APPROVED: { label: "Disetujui", color: "bg-emerald-100 text-emerald-900" },
   REJECTED: { label: "Ditolak", color: "bg-rose-100 text-rose-900" },
   COMPLETED: { label: "Selesai", color: "bg-muted text-foreground" },

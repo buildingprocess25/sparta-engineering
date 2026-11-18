@@ -10,7 +10,7 @@ import { getWorkPermitHistoryHref } from "@/lib/work-permits/history"
 export type WorkPermitStatusData = {
   id: string
   permitCode: string
-  status: "PENDING_MANAGER" | "APPROVED" | "REJECTED" | "COMPLETED" | "EXPIRED" | null
+  status: "PENDING_MANAGER" | "PENDING_P2K3" | "PENDING_SECRETARY" | "APPROVED" | "REJECTED" | "COMPLETED" | "EXPIRED" | null
   kegiatan: string
   lokasi: string
   managerNotes?: string | null
@@ -24,7 +24,7 @@ export type WorkPermitStatusData = {
   nextMonthPermit?: {
     id: string
     permitCode: string
-    status: "PENDING_MANAGER" | "APPROVED" | "REJECTED" | "COMPLETED"
+    status: "PENDING_MANAGER" | "PENDING_P2K3" | "PENDING_SECRETARY" | "APPROVED" | "REJECTED" | "COMPLETED"
     targetPeriod: string
   } | null
 } | null
@@ -88,13 +88,34 @@ export function WorkPermitCard({ userNik, initialStatus }: WorkPermitCardProps =
   const permitCode = dbPermit?.permitCode || (mounted ? sessionPermit?.permitCode : null) || null
 
   const isApproved = effectiveStatus === "APPROVED"
-  const isPending = effectiveStatus === "PENDING_MANAGER"
+  const isPending =
+    effectiveStatus === "PENDING_MANAGER" ||
+    effectiveStatus === "PENDING_P2K3" ||
+    effectiveStatus === "PENDING_SECRETARY"
   const isRejected = effectiveStatus === "REJECTED"
   const isExpired = effectiveStatus === "EXPIRED"
 
   const targetPeriodLabel = formatMonthLabel(dbPermit?.targetPeriod)
   const pastPeriodLabel = formatMonthLabel(dbPermit?.pastPeriod)
   const nextMonthPeriodLabel = formatMonthLabel(dbPermit?.nextMonthPeriod)
+
+  const pendingStageLabel =
+    effectiveStatus === "PENDING_MANAGER"
+      ? "Menunggu Approval Manager"
+      : effectiveStatus === "PENDING_P2K3"
+        ? "Menunggu Approval P2K3 / Delegate"
+        : effectiveStatus === "PENDING_SECRETARY"
+          ? "Menunggu Approval Sekretaris P2K3"
+          : "Menunggu Persetujuan"
+
+  const pendingStageDescription =
+    effectiveStatus === "PENDING_MANAGER"
+      ? `Pengajuan izin kerja periode ${targetPeriodLabel} sedang dalam antrean review Manager.`
+      : effectiveStatus === "PENDING_P2K3"
+        ? `Pengajuan telah disetujui Manager dan sedang menunggu persetujuan P2K3 / Delegate cabang.`
+        : effectiveStatus === "PENDING_SECRETARY"
+          ? `Pengajuan telah disetujui P2K3 dan sedang menunggu persetujuan akhir Sekretaris P2K3.`
+          : `Pengajuan izin kerja periode ${targetPeriodLabel} sedang dalam proses verifikasi berjenjang.`
 
   return (
     <section id="work-permit-section" className="mt-8 scroll-mt-20">
@@ -158,9 +179,9 @@ export function WorkPermitCard({ userNik, initialStatus }: WorkPermitCardProps =
                   }`}
                 >
                   {isApproved
-                    ? `Disetujui Manager (${targetPeriodLabel || "Bulan Ini"})`
+                    ? `Disetujui Lengkap (${targetPeriodLabel || "Bulan Ini"})`
                     : isPending
-                    ? `Menunggu Approval Manager (${targetPeriodLabel || "Bulan Ini"})`
+                    ? `${pendingStageLabel} (${targetPeriodLabel || "Bulan Ini"})`
                     : isRejected
                     ? "Ditolak / Perlu Revisi"
                     : isExpired
@@ -177,14 +198,14 @@ export function WorkPermitCard({ userNik, initialStatus }: WorkPermitCardProps =
 
               <p className="mt-1 text-xs leading-relaxed text-slate-600 max-w-xl">
                 {isApproved
-                  ? `Izin kerja periode ${targetPeriodLabel} telah disahkan oleh ${dbPermit?.managerName || "Manager"}. Seluruh checklist rutin bulanan Anda kini dapat dikerjakan.`
+                  ? `Izin kerja periode ${targetPeriodLabel} telah disahkan lengkap (Manager → P2K3/Delegate → Sekretaris P2K3). Seluruh checklist bulanan Anda kini dapat dikerjakan.`
                   : isPending
-                  ? `Pengajuan izin kerja periode ${targetPeriodLabel} telah terkirim ke antrean Manager. Checklist rutin akan otomatis terbuka segera setelah disetujui.`
+                  ? `${pendingStageDescription} Checklist rutin akan otomatis terbuka segera setelah seluruh persetujuan lengkap.`
                   : isRejected
-                  ? `Catatan Manager: ${dbPermit?.managerNotes || "Perbaiki kelengkapan APD / prasyarat K3 sebelum mengajukan kembali."}`
+                  ? `Catatan Penolakan: ${dbPermit?.managerNotes || "Perbaiki kelengkapan APD / prasyarat K3 sebelum mengajukan kembali."}`
                   : isExpired
                   ? `Masa berlaku izin kerja periode ${pastPeriodLabel || "sebelumnya"} telah berakhir. Sesuai prosedur K3 bulanan, ajukan Form Izin Kerja baru untuk melanjutkan checklist periode ini.`
-                  : "Pastikan Form Izin Kerja (SMK3) telah dilengkapi dan disetujui Manager sebelum melaksanakan kegiatan inspeksi atau pemeliharaan."}
+                  : "Pastikan Form Izin Kerja (SMK3) telah dilengkapi dan disahkan sebelum melaksanakan kegiatan inspeksi atau pemeliharaan."}
               </p>
             </div>
           </div>

@@ -142,13 +142,13 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
   },
   "frm-ts-028": {
     eyebrow: "FRM_TS_028",
-    title: "Checklist Baterai Bulanan",
-    description: "Inspeksi bulanan baterai forklift & pallet mover: 14 item inspeksi fisik dan pengukuran B.J serta tegangan statis per sel.",
+    title: "Checklist Baterai Pallet Mover",
+    description: "Inspeksi bulanan baterai pallet mover: 14 item inspeksi fisik dan pengukuran B.J serta tegangan statis per sel.",
   },
   "frm-ts-068": {
-    eyebrow: "FRM_TS_028",
-    title: "Checklist Baterai Bulanan",
-    description: "Inspeksi bulanan baterai forklift & pallet mover: 14 item inspeksi fisik dan pengukuran B.J serta tegangan statis per sel.",
+    eyebrow: "FRM_TS_068",
+    title: "Checklist Baterai Forklift",
+    description: "Inspeksi bulanan baterai forklift: 14 item inspeksi fisik dan pengukuran B.J serta tegangan statis per sel.",
   },
 }
 
@@ -204,7 +204,8 @@ export default async function DynamicFormPage({
   if (queryParams.revision && (!revision || (revision.formCode ?? asPayloadRecord(revision.checklistPayload).formCode) !== formCode)) {
     notFound()
   }
-  if (!(await getActiveWorkPermit(user))) {
+  const activePermit = await getActiveWorkPermit(user)
+  if (!activePermit) {
     redirect(revision
       ? `/dashboard/reports/${queryParams.revision}`
       : queryParams.taskId ? "/dashboard" : "/dashboard/reports/new")
@@ -384,6 +385,19 @@ export default async function DynamicFormPage({
         <div className="mb-4 space-y-1 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-slate-800">
           <p className="font-semibold">{roomName || area.name} · {periodKey}</p>
           <p className="whitespace-pre-wrap break-words">{revision.revisions[0]?.reason ?? "Alasan revisi sebelumnya tidak tersimpan."}</p>
+        </div>
+      )}
+      {activePermit && (
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-2.5 text-xs text-emerald-900 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-700">Nomor Izin Kerja K3 (MED/003):</span>
+            <span className="font-mono font-bold text-emerald-950 bg-emerald-100/90 px-2 py-0.5 rounded border border-emerald-300">
+              {activePermit.permitCode}
+            </span>
+          </div>
+          <span className="inline-flex items-center self-start sm:self-auto rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+            Terverifikasi (Disetujui Lengkap)
+          </span>
         </div>
       )}
       {formId === "frm-tsm-001" ? (
