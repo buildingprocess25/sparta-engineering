@@ -8,12 +8,12 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
-  Mail,
   ShieldCheck,
   X,
 } from "lucide-react"
 
 import { logoutAction } from "@/app/login/actions"
+import { useDemoMode } from "@/components/auth/demo-mode-context"
 import { cn } from "@/lib/utils"
 
 interface ManagerSidebarProps {
@@ -59,11 +59,6 @@ const NAV_SECTIONS: NavSection[] = [
         href: "/dashboard/work-permits",
         icon: ShieldCheck,
       },
-      {
-        label: "Kotak Keluar Email (Demo)",
-        href: "/demo/outbox",
-        icon: Mail,
-      },
     ],
   },
 ]
@@ -76,6 +71,17 @@ export function ManagerSidebar({
   isCollapsed = false,
 }: ManagerSidebarProps) {
   const pathname = usePathname()
+  const demoMode = useDemoMode()
+  const logoutLabel = demoMode ? "Ganti Pengguna" : "Logout dari SPARTA"
+
+  function clearDemoState() {
+    if (!demoMode) return
+    try {
+      window.sessionStorage.clear()
+    } catch {
+      // The server still clears the session when browser storage is unavailable.
+    }
+  }
 
   const initials = React.useMemo(() => {
     return userRole
@@ -220,22 +226,25 @@ export function ManagerSidebar({
                   {userEmail}
                 </span>
               </div>
-              <form action={logoutAction} className="shrink-0">
+              <form action={logoutAction} onSubmit={clearDemoState} className="shrink-0">
                 <button
                   type="submit"
-                  title="Logout dari SPARTA"
-                  className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
+                  title={logoutLabel}
+                  aria-label={logoutLabel}
+                  className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-1.5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
                 >
                   <LogOut className="size-4" />
+                  {demoMode && <span className="text-xs">Ganti Pengguna</span>}
                 </button>
               </form>
             </>
           ) : (
-            <form action={logoutAction} className="mt-2 flex justify-center">
+            <form action={logoutAction} onSubmit={clearDemoState} className="mt-2 flex justify-center">
               <button
                 type="submit"
-                title="Logout dari SPARTA"
-                className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
+                title={logoutLabel}
+                aria-label={logoutLabel}
+                className="flex size-11 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
               >
                 <LogOut className="size-4" />
               </button>

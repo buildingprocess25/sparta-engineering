@@ -1,16 +1,45 @@
-"use client"
-
-import * as React from "react"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2, Clock, History, ShieldAlert, XCircle } from "lucide-react"
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Download,
+  History,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { formatWorkPermitMonth } from "@/lib/work-permits/active-period"
 import { getWorkPermitHistoryHref } from "@/lib/work-permits/history"
+import {
+  getWorkPermitDetailHref,
+  getWorkPermitPdfHref,
+} from "@/lib/work-permits/links"
 
 export type WorkPermitStatusData = {
   id: string
   permitCode: string
-  status: "PENDING_MANAGER" | "PENDING_P2K3" | "PENDING_SECRETARY" | "APPROVED" | "REJECTED" | "COMPLETED" | "EXPIRED" | null
+  status:
+    | "PENDING_MANAGER"
+    | "PENDING_P2K3"
+    | "PENDING_SECRETARY"
+    | "APPROVED"
+    | "REJECTED"
+    | "COMPLETED"
+    | "EXPIRED"
+    | null
+  pdfAvailable?: boolean
   kegiatan: string
   lokasi: string
   managerNotes?: string | null
@@ -24,280 +53,189 @@ export type WorkPermitStatusData = {
   nextMonthPermit?: {
     id: string
     permitCode: string
-    status: "PENDING_MANAGER" | "PENDING_P2K3" | "PENDING_SECRETARY" | "APPROVED" | "REJECTED" | "COMPLETED"
+    status:
+      | "PENDING_MANAGER"
+      | "PENDING_P2K3"
+      | "PENDING_SECRETARY"
+      | "APPROVED"
+      | "REJECTED"
+      | "COMPLETED"
     targetPeriod: string
   } | null
 } | null
 
-type WorkPermitCardProps = {
-  userNik?: string
-  initialStatus?: WorkPermitStatusData
-}
+const stages = {
+  PENDING_MANAGER: "Menunggu Manager",
+  PENDING_P2K3: "Menunggu P2K3 / Delegate",
+  PENDING_SECRETARY: "Menunggu Sekretaris P2K3",
+  APPROVED: "Disetujui lengkap",
+  COMPLETED: "Selesai",
+  REJECTED: "Perlu revisi",
+  EXPIRED: "Kedaluwarsa",
+} as const
 
-function formatMonthLabel(period?: string | null): string {
-  if (!period) return ""
-  try {
-    const [year, month] = period.split("-").map(Number)
-    if (!year || !month) return period
-    const date = new Date(year, month - 1, 1)
-    return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" })
-  } catch {
-    return period
-  }
-}
+const permitFormHref =
+  "/dashboard/reports/new/work-permit?source=todo&next=dashboard"
 
-export function WorkPermitCard({ userNik, initialStatus }: WorkPermitCardProps = {}) {
-  const [mounted, setMounted] = React.useState(false)
-  const [dbPermit, setDbPermit] = React.useState<WorkPermitStatusData>(initialStatus ?? null)
-  const [sessionPermit, setSessionPermit] = React.useState<any>(null)
-
-  React.useEffect(() => {
-    setMounted(true)
-    if (initialStatus !== undefined) {
-      setDbPermit(initialStatus)
-    }
-  }, [initialStatus])
-
-  React.useEffect(() => {
-    if (!mounted) return
-    try {
-      if (typeof window !== "undefined") {
-        const permitRaw = userNik
-          ? window.sessionStorage.getItem(`sparta_work_permit_${userNik}`)
-          : window.sessionStorage.getItem("sparta_work_permit")
-
-        if (permitRaw) {
-          try {
-            const parsed = JSON.parse(permitRaw)
-            if (!userNik || !parsed.userNik || parsed.userNik === userNik) {
-              setSessionPermit(parsed)
-              return
-            }
-          } catch {
-            // ignore
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }, [userNik, mounted])
-
-  // Tentukan state efektif: Prioritas dari Database, fallback ke session jika sudah mounted
-  const effectiveStatus = dbPermit?.status || (mounted ? sessionPermit?.status : null) || null
-  const permitCode = dbPermit?.permitCode || (mounted ? sessionPermit?.permitCode : null) || null
-
-  const isApproved = effectiveStatus === "APPROVED"
+export function WorkPermitCard({
+  initialStatus: permit,
+}: {
+  initialStatus: WorkPermitStatusData
+}) {
+  const status = permit?.status
   const isPending =
-    effectiveStatus === "PENDING_MANAGER" ||
-    effectiveStatus === "PENDING_P2K3" ||
-    effectiveStatus === "PENDING_SECRETARY"
-  const isRejected = effectiveStatus === "REJECTED"
-  const isExpired = effectiveStatus === "EXPIRED"
+    status === "PENDING_MANAGER" ||
+    status === "PENDING_P2K3" ||
+    status === "PENDING_SECRETARY"
+  const isFinal = status === "APPROVED" || status === "COMPLETED"
+  const canReview = isPending || isFinal
+  const code = status === "EXPIRED" ? undefined : permit?.permitCode
+  const period = formatWorkPermitMonth(permit?.targetPeriod)
+  const nextPeriod = formatWorkPermitMonth(permit?.nextMonthPeriod)
+  const Icon = isFinal
+    ? CheckCircle2
+    : status === "REJECTED"
+      ? XCircle
+      : isPending || status === "EXPIRED"
+        ? Clock
+        : ShieldCheck
 
-  const targetPeriodLabel = formatMonthLabel(dbPermit?.targetPeriod)
-  const pastPeriodLabel = formatMonthLabel(dbPermit?.pastPeriod)
-  const nextMonthPeriodLabel = formatMonthLabel(dbPermit?.nextMonthPeriod)
-
-  const pendingStageLabel =
-    effectiveStatus === "PENDING_MANAGER"
-      ? "Menunggu Approval Manager"
-      : effectiveStatus === "PENDING_P2K3"
-        ? "Menunggu Approval P2K3 / Delegate"
-        : effectiveStatus === "PENDING_SECRETARY"
-          ? "Menunggu Approval Sekretaris P2K3"
-          : "Menunggu Persetujuan"
-
-  const pendingStageDescription =
-    effectiveStatus === "PENDING_MANAGER"
-      ? `Pengajuan izin kerja periode ${targetPeriodLabel} sedang dalam antrean review Manager.`
-      : effectiveStatus === "PENDING_P2K3"
-        ? `Pengajuan telah disetujui Manager dan sedang menunggu persetujuan P2K3 / Delegate cabang.`
-        : effectiveStatus === "PENDING_SECRETARY"
-          ? `Pengajuan telah disetujui P2K3 dan sedang menunggu persetujuan akhir Sekretaris P2K3.`
-          : `Pengajuan izin kerja periode ${targetPeriodLabel} sedang dalam proses verifikasi berjenjang.`
+  let description =
+    "Lengkapi izin kerja sebelum memulai checklist atau perbaikan."
+  let action = "Isi Form Izin Kerja"
+  let href = permitFormHref
+  if (canReview && code) {
+    action = isPending ? "Buka Pengajuan" : "Lihat Izin Kerja"
+    href = getWorkPermitDetailHref(code)
+    description = isPending
+      ? "Checklist dapat dimulai setelah seluruh persetujuan lengkap dan periode izin berlaku."
+      : "Gunakan izin ini untuk checklist dan perbaikan pada periode yang tercantum."
+  } else if (status === "REJECTED") {
+    action = "Revisi Izin Kerja"
+    description =
+      permit?.managerNotes ||
+      "Periksa kembali isian izin sebelum mengajukan ulang."
+  } else if (status === "EXPIRED") {
+    action = "Ajukan Izin Baru"
+    href = `${permitFormHref}&mode=new&period=${encodeURIComponent(permit?.targetPeriod || "")}`
+    description = `Izin periode ${formatWorkPermitMonth(permit?.pastPeriod) || "sebelumnya"} telah berakhir.`
+  }
 
   return (
-    <section id="work-permit-section" className="mt-8 scroll-mt-20">
-      <div
-        className={`rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${
-          isApproved
-            ? "border-emerald-200/90 bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-emerald-50/70"
-            : isPending
-            ? "border-amber-300 bg-gradient-to-r from-amber-50/95 via-orange-50/60 to-amber-50/80"
-            : isRejected
-            ? "border-rose-300 bg-gradient-to-r from-rose-50/95 via-red-50/50 to-rose-50/80"
-            : isExpired
-            ? "border-amber-400 bg-gradient-to-r from-amber-50/95 via-orange-50/70 to-amber-50/90"
-            : "border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-amber-50/70"
-        }`}
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3.5">
-            <div
-              className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${
-                isApproved
-                  ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-700"
-                  : isPending
-                  ? "bg-amber-500/20 border-amber-500/35 text-amber-800"
-                  : isRejected
-                  ? "bg-rose-500/20 border-rose-500/35 text-rose-800"
-                  : isExpired
-                  ? "bg-amber-500/25 border-amber-500/40 text-amber-900"
-                  : "bg-amber-500/15 border-amber-500/25 text-amber-700"
-              }`}
+    <section
+      id="work-permit-section"
+      className="permit-workspace mt-6 scroll-mt-20"
+      aria-labelledby="work-permit-heading"
+    >
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#fff0e3] text-[#9e4715]">
+                <Icon className="size-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <CardTitle>
+                  <h2
+                    id="work-permit-heading"
+                    className="text-lg font-semibold tracking-tight"
+                  >
+                    Izin Kerja K3
+                  </h2>
+                </CardTitle>
+                <CardDescription>SAT/FRM/MED/003</CardDescription>
+              </div>
+            </div>
+            <Badge
+              variant={status === "REJECTED" ? "destructive" : "secondary"}
+              className={isFinal ? "bg-emerald-50 text-emerald-800" : undefined}
             >
-              {isApproved ? (
-                <CheckCircle2 className="size-5 text-emerald-600" />
-              ) : isPending ? (
-                <Clock className="size-5 text-amber-700 animate-pulse" />
-              ) : isRejected ? (
-                <XCircle className="size-5 text-rose-600" />
-              ) : isExpired ? (
-                <Clock className="size-5 text-amber-800" />
-              ) : (
-                <ShieldAlert className="size-5 text-amber-600" />
+              {status ? stages[status] : "Perlu diajukan"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3">
+            {(code || period) && (
+              <dl className="grid gap-3 rounded-lg bg-muted/55 p-3 sm:grid-cols-2">
+                {code && (
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      Nomor izin
+                    </dt>
+                    <dd className="font-semibold break-words">{code}</dd>
+                  </div>
+                )}
+                {period && (
+                  <div
+                    className={
+                      code
+                        ? "flex min-w-0 flex-col gap-0.5 sm:border-l sm:border-border sm:pl-4"
+                        : "flex min-w-0 flex-col gap-0.5"
+                    }
+                  >
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      Periode izin
+                    </dt>
+                    <dd className="font-semibold">{period}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
+            <p className="text-sm leading-6 text-muted-foreground">
+              {description}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link href={href} className={buttonVariants({ size: "lg" })}>
+                {action}
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+              {permit?.pdfAvailable && code && (
+                <a
+                  href={getWorkPermitPdfHref(code)}
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                >
+                  <Download data-icon="inline-start" /> Unduh PDF
+                </a>
+              )}
+              <Link
+                href={getWorkPermitHistoryHref()}
+                className={buttonVariants({ variant: "ghost", size: "lg" })}
+              >
+                <History data-icon="inline-start" /> Riwayat Izin Kerja
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+        {permit?.isHMinusWindow && nextPeriod && (
+          <CardFooter>
+            <div className="flex w-full flex-wrap items-center justify-between gap-2">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <CalendarDays
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+                <div>
+                  <p className="font-medium">Izin {nextPeriod}</p>
+                  <p className="text-muted-foreground">
+                    {permit.nextMonthPermit
+                      ? stages[permit.nextMonthPermit.status]
+                      : "Pengajuan periode berikutnya dibuka."}
+                  </p>
+                </div>
+              </div>
+              {!permit.nextMonthPermit && (
+                <Link
+                  href={`${permitFormHref}&mode=new&period=${encodeURIComponent(permit.nextMonthPeriod || "")}`}
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  Ajukan Lebih Awal <ArrowRight data-icon="inline-end" />
+                </Link>
               )}
             </div>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-bold text-slate-900">
-                  Form Izin Kerja (SAT/FRM/MED/003)
-                </h3>
-                <span
-                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ${
-                    isApproved
-                      ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                      : isPending
-                      ? "bg-amber-200/90 text-amber-950 border border-amber-300"
-                      : isRejected
-                      ? "bg-rose-100 text-rose-900 border border-rose-200"
-                      : isExpired
-                      ? "bg-amber-200 text-amber-950 border border-amber-300 font-bold"
-                      : "bg-amber-100 text-amber-900 border border-amber-200"
-                  }`}
-                >
-                  {isApproved
-                    ? `Disetujui Lengkap (${targetPeriodLabel || "Bulan Ini"})`
-                    : isPending
-                    ? `${pendingStageLabel} (${targetPeriodLabel || "Bulan Ini"})`
-                    : isRejected
-                    ? "Ditolak / Perlu Revisi"
-                    : isExpired
-                    ? `Kedaluwarsa (${pastPeriodLabel || "Bulan Lalu"} Berakhir)`
-                    : "Prasyarat K3"}
-                </span>
-
-                {permitCode && !isExpired && (
-                  <span className="font-mono text-[11px] font-semibold text-slate-500">
-                    {permitCode}
-                  </span>
-                )}
-              </div>
-
-              <p className="mt-1 text-xs leading-relaxed text-slate-600 max-w-xl">
-                {isApproved
-                  ? `Izin kerja periode ${targetPeriodLabel} telah disahkan lengkap (Manager → P2K3/Delegate → Sekretaris P2K3). Seluruh checklist bulanan Anda kini dapat dikerjakan.`
-                  : isPending
-                  ? `${pendingStageDescription} Checklist rutin akan otomatis terbuka segera setelah seluruh persetujuan lengkap.`
-                  : isRejected
-                  ? `Catatan Penolakan: ${dbPermit?.managerNotes || "Perbaiki kelengkapan APD / prasyarat K3 sebelum mengajukan kembali."}`
-                  : isExpired
-                  ? `Masa berlaku izin kerja periode ${pastPeriodLabel || "sebelumnya"} telah berakhir. Sesuai prosedur K3 bulanan, ajukan Form Izin Kerja baru untuk melanjutkan checklist periode ini.`
-                  : "Pastikan Form Izin Kerja (SMK3) telah dilengkapi dan disahkan sebelum melaksanakan kegiatan inspeksi atau pemeliharaan."}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 flex-wrap items-center gap-2 self-start sm:flex-col sm:items-end sm:self-center">
-            <Link
-              href={
-                isApproved || isPending
-                  ? `/dashboard/reports/new/work-permit?view=readonly&source=todo&next=dashboard${
-                      permitCode ? `&permitCode=${encodeURIComponent(permitCode)}` : ""
-                    }`
-                  : isExpired
-                  ? `/dashboard/reports/new/work-permit?source=todo&next=dashboard&mode=new${
-                      dbPermit?.targetPeriod ? `&period=${encodeURIComponent(dbPermit.targetPeriod)}` : ""
-                    }`
-                  : `/dashboard/reports/new/work-permit?source=todo&next=dashboard`
-              }
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all shadow-xs ${
-                isApproved
-                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                  : isPending
-                  ? "bg-white text-slate-800 border border-slate-300 hover:bg-slate-50"
-                  : isRejected
-                  ? "bg-rose-600 text-white hover:bg-rose-700"
-                  : isExpired
-                  ? "bg-amber-600 text-white hover:bg-amber-700"
-                  : "bg-[#ff8a2a] text-black hover:bg-[#e0751d]"
-              }`}
-            >
-              <span>
-                {isApproved
-                  ? "Lihat Izin Kerja"
-                  : isPending
-                  ? "Buka Pengajuan"
-                  : isRejected
-                  ? "Revisi Izin Kerja"
-                  : isExpired
-                  ? "Perbarui Izin Kerja"
-                  : "Isi Form Izin Kerja"}
-              </span>
-              <ArrowRight className="size-3.5" />
-            </Link>
-            <Link href={getWorkPermitHistoryHref()} className={buttonVariants({ variant: "outline", size: "lg" })}>
-              <History data-icon="inline-start" aria-hidden="true" />
-              Riwayat Izin Kerja
-            </Link>
-          </div>
-        </div>
-
-        {/* H- Bulan Depan Callout Banner */}
-        {dbPermit?.isHMinusWindow && nextMonthPeriodLabel && (
-          <div className="mt-3.5 pt-3 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            {dbPermit.nextMonthPermit ? (
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-700">
-                  Izin Periode {nextMonthPeriodLabel}:
-                </span>
-                <span
-                  className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-bold ${
-                    dbPermit.nextMonthPermit.status === "APPROVED"
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-amber-100 text-amber-900"
-                  }`}
-                >
-                  {dbPermit.nextMonthPermit.status === "APPROVED"
-                    ? "Disetujui (Siap Aktif Tgl 1)"
-                    : "Menunggu Approval Manager"}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-amber-900">
-                <Clock className="size-3.5 text-amber-700 shrink-0" />
-                <span>
-                  Jendela pengajuan izin kerja <strong>{nextMonthPeriodLabel} (H-)</strong> sudah dibuka.
-                </span>
-              </div>
-            )}
-
-            {!dbPermit.nextMonthPermit && (
-              <Link
-                href={`/dashboard/reports/new/work-permit?source=todo&next=dashboard&mode=new&period=${encodeURIComponent(
-                  dbPermit.nextMonthPeriod || ""
-                )}`}
-                className="inline-flex items-center gap-1 font-bold text-[#d97706] hover:text-[#b45309] hover:underline"
-              >
-                <span>Ajukan Lebih Awal</span>
-                <ArrowRight className="size-3" />
-              </Link>
-            )}
-          </div>
+          </CardFooter>
         )}
-      </div>
+      </Card>
     </section>
   )
 }

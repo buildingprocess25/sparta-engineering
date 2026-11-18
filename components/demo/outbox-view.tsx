@@ -1,246 +1,245 @@
 "use client"
 
-import * as React from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import {
-  Mail,
-  RefreshCw,
-  Trash2,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  Inbox,
-  Clock,
-  ShieldCheck,
-} from "lucide-react"
+import { ArrowLeft, ArrowUpRight, Inbox, RefreshCw, Trash2 } from "lucide-react"
+
 import { clearOutboxAction } from "@/app/demo/outbox/actions"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
 import type { SimulatedEmailItem } from "@/lib/work-permits/email-approval"
 
-interface OutboxViewProps {
-  initialEmails: SimulatedEmailItem[]
-}
+type OutboxMessage = Pick<
+  SimulatedEmailItem,
+  "id" | "toEmail" | "toName" | "subject" | "bodyText" | "actionUrl" | "sentAt"
+>
 
-export function OutboxView({ initialEmails }: OutboxViewProps) {
+const sentDate = new Intl.DateTimeFormat("id-ID", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Jakarta",
+})
+
+export function OutboxView({ emails }: { emails: OutboxMessage[] }) {
   const router = useRouter()
-  const [emails, setEmails] = React.useState<SimulatedEmailItem[]>(initialEmails)
-  const [expandedId, setExpandedId] = React.useState<string | null>(
-    initialEmails.length > 0 ? initialEmails[0].id : null
-  )
-  const [isRefreshing, setIsRefreshing] = React.useState(false)
-  const [isClearing, setIsClearing] = React.useState(false)
+  const [selectedId, setSelectedId] = useState<string>()
+  const [mobileReading, setMobileReading] = useState(false)
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [feedback, setFeedback] = useState("")
+  const [isPending, startTransition] = useTransition()
+  const selected = emails.find((email) => email.id === selectedId) ?? emails[0]
 
-  React.useEffect(() => {
-    setEmails(initialEmails)
-  }, [initialEmails])
-
-  const handleRefresh = () => {
-    setIsRefreshing(true)
-    router.refresh()
-    setTimeout(() => setIsRefreshing(false), 500)
-  }
-
-  const handleClear = async () => {
-    if (!window.confirm("Hapus seluruh riwayat email outbox simulasi ini?")) {
-      return
-    }
-    setIsClearing(true)
-    try {
-      await clearOutboxAction()
-      setEmails([])
-      setExpandedId(null)
-      router.refresh()
-    } finally {
-      setIsClearing(false)
-    }
-  }
-
-  const toggleExpand = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id))
+  function clearMessages() {
+    startTransition(async () => {
+      try {
+        const result = await clearOutboxAction()
+        if (!result.ok) throw new Error()
+        setConfirmationOpen(false)
+        setSelectedId(undefined)
+        setMobileReading(false)
+        setFeedback("")
+        router.refresh()
+      } catch {
+        setConfirmationOpen(false)
+        setFeedback("Kotak keluar belum bisa dikosongkan. Coba lagi.")
+      }
+    })
   }
 
   return (
-    <div className="space-y-6">
-      {/* Action Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-        <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-orange-100 text-[#ff8a2a]">
-            <Inbox className="size-4" />
-          </span>
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">
-              Daftar Email Terkirim (Simulasi)
-            </h2>
-            <p className="text-xs text-slate-500">
-              Total {emails.length} email dalam antrean pengiriman lokal
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-center">
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs disabled:opacity-50"
-          >
-            <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span>Muat Ulang</span>
-          </button>
-
-          {emails.length > 0 && (
-            <button
-              type="button"
-              onClick={handleClear}
-              disabled={isClearing}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-all shadow-2xs disabled:opacity-50"
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => startTransition(() => router.refresh())}
+          disabled={isPending}
+        >
+          <RefreshCw
+            data-icon="inline-start"
+            className={isPending ? "animate-spin" : undefined}
+          />{" "}
+          Muat ulang
+        </Button>
+        {emails.length > 0 && (
+          <Dialog open={confirmationOpen} onOpenChange={setConfirmationOpen}>
+            <DialogTrigger
+              render={<Button variant="ghost" disabled={isPending} />}
             >
-              <Trash2 className="size-3.5" />
-              <span>Bersihkan</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Empty State */}
-      {emails.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-            <Mail className="size-7" />
-          </div>
-          <h3 className="mt-4 text-sm font-bold text-slate-800">
-            Kotak Keluar Masih Kosong
-          </h3>
-          <p className="mt-1.5 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-            Belum ada email simulasi yang dikirim. Jalankan alur persetujuan: saat BNM Manager ACC
-            pengajuan MED/003, email persetujuan untuk P2K3 / Delegate akan otomatis muncul di sini.
-          </p>
-        </div>
-      ) : (
-        /* Email List */
-        <div className="space-y-4">
-          {emails.map((email) => {
-            const isExpanded = expandedId === email.id
-            const meta = (email.metadata || {}) as Record<string, any>
-            const stage = meta.stage as string | undefined
-            const permitCode = meta.permitCode as string | undefined
-
-            const stageBadge =
-              stage === "PENDING_P2K3"
-                ? "P2K3 / Delegate"
-                : stage === "PENDING_SECRETARY"
-                ? "Sekretaris P2K3"
-                : "Approval K3"
-
-            return (
-              <div
-                key={email.id}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs transition-all hover:border-slate-300"
-              >
-                {/* Email Item Header */}
-                <div
-                  onClick={() => toggleExpand(email.id)}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 cursor-pointer bg-slate-50/40 hover:bg-slate-50 transition-colors"
+              <Trash2 data-icon="inline-start" /> Kosongkan email
+            </DialogTrigger>
+            <DialogContent className="permit-workspace" showCloseButton={false}>
+              <DialogHeader>
+                <DialogTitle>Kosongkan kotak keluar demo?</DialogTitle>
+                <DialogDescription>
+                  Pesan simulasi akan dihapus. Data pengajuan izin kerja tetap
+                  tersimpan.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose
+                  render={<Button variant="outline" disabled={isPending} />}
                 >
-                  <div className="flex items-start gap-3.5">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 border border-orange-200 text-[#ff8a2a]">
-                      <Mail className="size-5" />
-                    </div>
+                  Batal
+                </DialogClose>
+                <Button
+                  variant="destructive"
+                  onClick={clearMessages}
+                  disabled={isPending}
+                >
+                  {isPending ? "Mengosongkan…" : "Kosongkan email"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+      {feedback && (
+        <Alert variant="destructive">
+          <AlertDescription>{feedback}</AlertDescription>
+        </Alert>
+      )}
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-slate-900 text-sm">
-                          {email.toName || "Penerima"}
-                        </span>
-                        <span className="text-xs text-slate-500 font-mono">
-                          &lt;{email.toEmail}&gt;
-                        </span>
-                        <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-200">
-                          {stageBadge}
-                        </span>
-                        {permitCode && (
-                          <span className="font-mono text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                            {permitCode}
-                          </span>
-                        )}
-                      </div>
-
-                      <h4 className="mt-1 text-xs font-bold text-slate-800 line-clamp-1">
-                        {email.subject}
-                      </h4>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                      <Clock className="size-3.5" />
-                      <span>
-                        {new Date(email.sentAt).toLocaleString("id-ID", {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        })}
+      {selected ? (
+        <div className="grid items-start gap-5 md:grid-cols-[minmax(15rem,1fr)_minmax(0,2.1fr)]">
+          <Card className={mobileReading ? "hidden md:flex" : undefined}>
+            <CardHeader className="border-b">
+              <h2 className="text-base font-semibold">Pesan terkirim</h2>
+              <CardDescription>{emails.length} pesan terbaru</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul aria-label="Pesan terkirim" className="space-y-1">
+                {emails.map((email) => (
+                  <li key={email.id}>
+                    <button
+                      type="button"
+                      aria-current={
+                        email.id === selected.id ? "true" : undefined
+                      }
+                      className="w-full rounded-lg border border-transparent px-3 py-3 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring aria-current:border-[#eac4a3] aria-current:bg-[#fff3e9]"
+                      onClick={() => {
+                        setSelectedId(email.id)
+                        setMobileReading(true)
+                      }}
+                    >
+                      <span className="block text-sm font-semibold break-words">
+                        {email.toName || email.toEmail}
                       </span>
+                      <span className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
+                        {email.subject}
+                      </span>
+                      <time
+                        dateTime={email.sentAt.toISOString()}
+                        className="mt-1.5 block text-xs text-muted-foreground"
+                      >
+                        {sentDate.format(email.sentAt)}
+                      </time>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+          <Card
+            className={mobileReading ? "min-w-0" : "hidden min-w-0 md:flex"}
+          >
+            <CardHeader className="border-b">
+              <div className="mb-2 md:hidden">
+                <Button variant="ghost" onClick={() => setMobileReading(false)}>
+                  <ArrowLeft data-icon="inline-start" /> Kembali ke pesan
+                </Button>
+              </div>
+              <h2 className="text-lg leading-snug font-semibold break-words sm:text-xl">
+                {selected.subject}
+              </h2>
+              <CardDescription className="break-words">
+                Kepada {selected.toName ? `${selected.toName} · ` : ""}
+                {selected.toEmail}
+              </CardDescription>
+              <time
+                dateTime={selected.sentAt.toISOString()}
+                className="text-sm text-muted-foreground"
+              >
+                {sentDate.format(selected.sentAt)}
+              </time>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-5">
+                <p className="text-base leading-7 break-words whitespace-pre-line">
+                  {messageContent(selected.bodyText)}
+                </p>
+                {selected.actionUrl && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <Button
+                        size="lg"
+                        nativeButton={false}
+                        render={
+                          <a
+                            href={selected.actionUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          />
+                        }
+                      >
+                        Buka halaman persetujuan{" "}
+                        <ArrowUpRight data-icon="inline-end" />
+                      </Button>
+                      <p className="text-sm text-muted-foreground">
+                        Tautan berlaku untuk satu keputusan dan bisa dibuka
+                        tanpa login.
+                      </p>
                     </div>
-
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-500">
-                      {isExpanded ? (
-                        <ChevronUp className="size-4" />
-                      ) : (
-                        <ChevronDown className="size-4" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Email Item Expanded Details */}
-                {isExpanded && (
-                  <div className="border-t border-slate-200 p-5 bg-white space-y-4">
-                    {/* Action Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50/60 p-3.5 rounded-xl border border-amber-200/80">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="size-4 text-emerald-600" />
-                        <span className="text-xs font-semibold text-slate-800">
-                          Tautan Persetujuan Cepat (Tanpa Login):
-                        </span>
-                      </div>
-
-                      {email.actionUrl ? (
-                        <a
-                          href={email.actionUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#ff8a2a] px-4 py-2 text-xs font-bold text-black hover:bg-[#e0751d] shadow-2xs transition-all"
-                        >
-                          <span>Buka halaman persetujuan</span>
-                          <ExternalLink className="size-3.5" />
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-400 italic">Tidak ada tautan aksi</span>
-                      )}
-                    </div>
-
-                    {/* Email Body Preview */}
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-slate-600">
-                        <Eye className="size-3.5" />
-                        <span>Pratinjau Tampilan Email:</span>
-                      </div>
-                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-2">
-                        <iframe
-                          title={`Email Preview ${email.id}`}
-                          srcDoc={email.bodyHtml}
-                          className="w-full h-[480px] bg-white rounded-lg border-0"
-                          sandbox="allow-same-origin allow-popups allow-forms"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  </>
                 )}
               </div>
-            )
-          })}
+            </CardContent>
+          </Card>
         </div>
+      ) : (
+        <Card>
+          <CardContent>
+            <div className="py-10 text-center">
+              <Inbox
+                className="mx-auto mb-3 size-7 text-muted-foreground"
+                aria-hidden
+              />
+              <h2 className="text-base font-semibold">Belum ada email demo</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Email pertama muncul setelah BNM Manager menyetujui pengajuan
+                izin kerja demo.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
+  )
+}
+
+function messageContent(bodyText: string | null) {
+  return (
+    bodyText
+      ?.trim()
+      .replace(/^\[Persetujuan Izin Kerja K3\]\s*/, "")
+      .split(/\n\s*Buka halaman persetujuan berikut/)[0]
+      ?.trim() || "Isi pesan tidak tersedia."
   )
 }

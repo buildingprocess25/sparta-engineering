@@ -1,4 +1,5 @@
 import "dotenv/config"
+import { DEMO_COORDINATOR } from "../lib/demo-accounts"
 import { getPrisma } from "../lib/prisma"
 import { verifyLocalCredentials } from "../lib/local-auth"
 import { encrypt } from "../lib/session"
@@ -14,7 +15,7 @@ const DEMO_PASSWORD = "12345678"
 // Daftar akun demo
 const DEMO_ACCOUNTS = [
   { roleName: "BES", email: "bes.whparung@admin.com", NIK: "WHP-BES-001", expectedRole: "ES" },
-  { roleName: "BEC / Koordinator", email: "eko.dwianto@sat.co.id", NIK: "8090222", expectedRole: "COORD" },
+  { roleName: "BEC / Koordinator", email: DEMO_COORDINATOR.email, NIK: DEMO_COORDINATOR.nik, expectedRole: "COORD" },
   { roleName: "Manager", email: "manager.whparung@admin.com", NIK: "WHP-MGR-001", expectedRole: "MANAGER" },
   { roleName: "P2K3 / Delegate", email: "p2k3.whparung@admin.com", NIK: "WHP-P2K3-001", expectedRole: "COORD" },
   { roleName: "Sekretaris P2K3", email: "sekretaris.whparung@admin.com", NIK: "WHP-SEC-001", expectedRole: "COORD" },
@@ -296,7 +297,7 @@ async function runTests() {
   const r1 = await saveChecklistReview(prisma, {
     reportId: reportNRAfterSubmit.id,
     version: reportNRAfterSubmit.updatedAt.toISOString(),
-    reviewerId: "8090222",
+    reviewerId: DEMO_COORDINATOR.nik,
     decision: "approve",
     notes: "Diverifikasi BEC, roller perlu segera diganti",
   })
@@ -469,7 +470,7 @@ async function runTests() {
   const rtR1 = await saveChecklistReview(prisma, {
     reportId: reportRTAfterSubmit.id,
     version: reportRTAfterSubmit.updatedAt.toISOString(),
-    reviewerId: "8090222",
+    reviewerId: DEMO_COORDINATOR.nik,
     decision: "approve",
     notes: "Wajib ganti motor exhaust",
   })

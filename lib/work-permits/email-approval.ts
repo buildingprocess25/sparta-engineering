@@ -1,5 +1,6 @@
 import crypto from "crypto"
 import { getPrisma } from "@/lib/prisma"
+import { getSpartaAppMode } from "@/lib/sparta-app-mode"
 import type { Prisma, WorkPermitApprovalRole, WorkPermitStatus } from "@/generated/prisma"
 
 const DEFAULT_BASE_URL = "http://localhost:3000"
@@ -27,10 +28,51 @@ export type SimulatedEmailItem = {
   createdAt: Date
 }
 
+function approverRolesFor(stage: WorkPermitStatus): WorkPermitApprovalRole[] {
+  if (stage === "PENDING_P2K3") return ["P2K3", "DELEGATE"]
+  if (stage === "PENDING_SECRETARY") return ["SECRETARY"]
+  return []
+}
+
+async function hasActiveTokenAssignment(
+  client: Pick<Prisma.TransactionClient, "workPermitApprover">,
+  token: {
+    approvalRole: WorkPermitApprovalRole
+    targetStage: WorkPermitStatus
+    approverNik: string
+    permit: { applicant: { NIK: string; branchName: string } }
+  }
+) {
+  const applicant = token.permit.applicant
+  const branch = applicant.branchName.trim()
+  if (
+    !branch ||
+    token.approverNik === applicant.NIK ||
+    !approverRolesFor(token.targetStage).includes(token.approvalRole)
+  ) return false
+
+  const branchScope = { equals: branch, mode: "insensitive" } as const
+  const assignment = await client.workPermitApprover.findFirst({
+    where: {
+      userNik: token.approverNik,
+      approvalRole: token.approvalRole,
+      isActive: true,
+      branchName: branchScope,
+      user: { branchName: branchScope },
+    },
+    select: { id: true },
+  })
+  return Boolean(assignment)
+}
+
 export async function sendApprovalEmail(
   permitId: string,
   targetStage: "PENDING_P2K3" | "PENDING_SECRETARY"
 ): Promise<{ ok: boolean; emailId?: string; token?: string; error?: string }> {
+  if (getSpartaAppMode() !== "demo") {
+    return { ok: false, error: "Pengiriman email simulasi hanya tersedia dalam mode demo." }
+  }
+
   const prisma = getPrisma()
 
   const permit = await prisma.workPermit.findUnique({
@@ -44,16 +86,18 @@ export async function sendApprovalEmail(
     return { ok: false, error: "Izin kerja tidak ditemukan." }
   }
 
-  const applicantBranch = (permit.applicant?.branchName || "WH PARUNG").trim().toUpperCase()
-  const targetRole: WorkPermitApprovalRole =
-    targetStage === "PENDING_P2K3" ? "P2K3" : "SECRETARY"
+  const applicantBranch = permit.applicant.branchName.trim()
+  if (!applicantBranch) {
+    return { ok: false, error: "Cabang pemohon belum dikonfigurasi." }
+  }
 
   // 1. Cari approver yang ditugaskan di cabang pemohon
-  let approver = await prisma.workPermitApprover.findFirst({
+  const approver = await prisma.workPermitApprover.findFirst({
     where: {
       branchName: { equals: applicantBranch, mode: "insensitive" },
-      approvalRole:
-        targetStage === "PENDING_P2K3" ? { in: ["P2K3", "DELEGATE"] } : "SECRETARY",
+      approvalRole: { in: approverRolesFor(targetStage) },
+      userNik: { not: permit.applicant.NIK },
+      user: { branchName: { equals: applicantBranch, mode: "insensitive" } },
       isActive: true,
     },
     include: {
@@ -61,29 +105,21 @@ export async function sendApprovalEmail(
     },
   })
 
-  let approverNik = approver?.userNik || ""
-  let approverName = approver?.name || approver?.user?.name || ""
-  let approverEmail = approver?.email || approver?.user?.email || ""
-  const assignedRole: WorkPermitApprovalRole = approver?.approvalRole || targetRole
-
-  // Fallback default jika approver belum ada di database untuk WH Parung
-  if (!approverNik || !approverEmail) {
-    if (targetStage === "PENDING_P2K3") {
-      approverNik = "WHP-P2K3-001"
-      approverName = "Demo P2K3 WH Parung"
-      approverEmail = "p2k3.whparung@admin.com"
-    } else {
-      approverNik = "WHP-SEC-001"
-      approverName = "Demo Sekretaris P2K3 WH Parung"
-      approverEmail = "sekretaris.whparung@admin.com"
-    }
+  const approverEmail = approver?.email?.trim() || approver?.user.email?.trim()
+  if (!approver || !approverEmail) {
+    return { ok: false, error: "Kontak penyetuju untuk cabang ini belum dikonfigurasi." }
   }
+  const approverNik = approver.userNik
+  const approverName = approver.name || approver.user.name
+  const assignedRole = approver.approvalRole
 
   // 2. Cegah token ganda yang masih aktif
   const existingActiveToken = await prisma.workPermitApprovalToken.findFirst({
     where: {
       permitId: permit.id,
       targetStage,
+      approverNik,
+      approvalRole: assignedRole,
       usedAt: null,
       expiresAt: { gt: new Date() },
     },
@@ -274,6 +310,10 @@ export async function getApprovalTokenDetails(token: string) {
     return { ok: false, error: "Tautan token tidak valid atau tidak ditemukan." }
   }
 
+  if (!(await hasActiveTokenAssignment(prisma, tokenRecord))) {
+    return { ok: false, error: "Tautan ini tidak lagi memiliki penugasan aktif untuk cabang pemohon." }
+  }
+
   const now = new Date()
   const isUsed = Boolean(tokenRecord.usedAt)
   const isExpired = now > tokenRecord.expiresAt
@@ -312,6 +352,10 @@ export async function submitTokenDecision(input: {
 }): Promise<SubmitTokenDecisionResult> {
   const { token, decision, notes } = input
   const prisma = getPrisma()
+
+  if (decision !== "APPROVED" && decision !== "REJECTED") {
+    return { ok: false, error: "Keputusan persetujuan tidak valid." }
+  }
 
   const decisionNotes = typeof notes === "string" ? notes.trim() : ""
   if (decision === "REJECTED" && !decisionNotes) {
@@ -357,6 +401,10 @@ export async function submitTokenDecision(input: {
           ok: false as const,
           error: `Status izin kerja saat ini (${tokenRecord.permit.status}) tidak sesuai dengan tahap token ini (${tokenRecord.targetStage}).`,
         }
+      }
+
+      if (!(await hasActiveTokenAssignment(tx, tokenRecord))) {
+        return { ok: false as const, error: "Tautan ini tidak lagi memiliki penugasan aktif untuk cabang pemohon." }
       }
 
       // Kunci penggunaan token secara atomic untuk mencegah concurrency race condition
@@ -413,7 +461,7 @@ export async function submitTokenDecision(input: {
       }
 
       const updatedPermit = await tx.workPermit.update({
-        where: { id: tokenRecord.permitId },
+        where: { id: tokenRecord.permitId, status: tokenRecord.targetStage },
         data: {
           status: nextStatus,
           updatedAt: now,

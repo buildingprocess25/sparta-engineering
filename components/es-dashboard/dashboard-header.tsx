@@ -1,6 +1,8 @@
-import { Bell } from "lucide-react"
-
 import { ProfileMenu } from "@/components/auth/profile-menu"
+import {
+  WorkPermitNotifications,
+  type WorkPermitNotificationData,
+} from "./work-permit-notifications"
 
 type DashboardHeaderProps = {
   email?: string
@@ -8,6 +10,7 @@ type DashboardHeaderProps = {
   title?: string
   subtitle?: string
   countBadge?: string | number
+  workPermitNotifications?: WorkPermitNotificationData | null
 }
 
 export function DashboardHeader({
@@ -16,6 +19,7 @@ export function DashboardHeader({
   title = "Dashboard",
   subtitle = "SPARTA",
   countBadge,
+  workPermitNotifications,
 }: DashboardHeaderProps) {
   return (
     <header className="flex items-center justify-between gap-4">
@@ -35,16 +39,9 @@ export function DashboardHeader({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Notifikasi"
-          className="relative grid size-10 place-items-center rounded-full border border-[#dedede] bg-white text-[#111111] shadow-sm"
-        >
-          <Bell aria-hidden="true" />
-          <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#ff8a2a] text-[10px] font-semibold text-black">
-            1
-          </span>
-        </button>
+        {workPermitNotifications !== undefined && (
+          <WorkPermitNotifications initialData={workPermitNotifications} />
+        )}
         <ProfileMenu initials={getInitials(role)} email={email} />
       </div>
     </header>

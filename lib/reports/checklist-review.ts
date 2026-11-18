@@ -6,7 +6,7 @@ import {
 } from "./checklist-follow-up"
 import { nextChecklistVersion } from "./checklist-submission"
 import { selectActiveWorkPermit } from "../work-permits/active-period"
-import { getCurrentPeriodKey } from "../date-utils"
+import { getWorkPermitCalendarPeriod } from "../work-permits/calendar"
 
 export type ReportReviewDecision = "approve" | "reject_revision" | "reject"
 export type SparePartExecutionAction = "PROCESS_PB" | "START_WORK" | "FINISH_WORK"
@@ -187,7 +187,7 @@ export async function executeReportSparePartWork(
 
     // Periksa izin kerja aktif untuk aksi START_WORK dan FINISH_WORK
     if (input.action === "START_WORK" || input.action === "FINISH_WORK") {
-      const currentPeriod = getCurrentPeriodKey("MONTHLY", new Date())
+      const currentPeriod = getWorkPermitCalendarPeriod()
       const activeCandidates = await tx.workPermit.findMany({
         where: {
           applicantNik: actor.NIK,

@@ -294,6 +294,7 @@ model WorkPermit {
   managerSignedAt   DateTime?         @db.Timestamptz(3)
   managerNotes      String?
   approvalHistory   Json              @default("[]")
+  applicantNotificationReadAt DateTime? @db.Timestamptz(3)
   reports           ChecklistReport[]
   approvalTokens    WorkPermitApprovalToken[]
   createdAt         DateTime          @default(now()) @db.Timestamptz(3)

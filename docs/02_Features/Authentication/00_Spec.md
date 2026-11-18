@@ -41,6 +41,35 @@ Kode SSO tetap dipertahankan untuk kelanjutan integrasi:
 - `/login` tidak menampilkan tombol SSO pada iterasi ini.
 - Tidak ada redirect otomatis ke `login-sparta` dari jalur login utama.
 
+## 2.2 Mode demo dan production
+
+`SPARTA_APP_MODE=demo` mengaktifkan pemilihan akun sekali klik di `/login`.
+Pilihan BES, BEC/Koordinator, dan BNM Manager WH Parung berasal dari data uji di database.
+Server mencocokkan identitas dummy, peran, dan cabang sebelum membuat sesi.
+Tombol **Ganti Pengguna** menghapus sesi lalu membuka halaman pilih akun.
+
+Mode demo memakai database dan secret sesi khusus development. Kotak keluar
+`/demo/outbox`, aksi reset, serta pembuatan email simulasi hanya aktif di mode
+ini. Penyetuju tetap bisa mengambil keputusan lewat tautan dokumen tanpa sesi.
+
+`SPARTA_APP_MODE=production` memakai tautan `SPARTA_LOGIN_URL` ke portal SSO.
+Callback yang sudah ada membuat sesi SPARTA Engineering setelah pertukaran
+token dengan portal. Server menolak login lokal dan hanya menerima sesi
+yang diterbitkan dari callback SSO. Sesi akun demo tidak berlaku setelah
+mode demo dimatikan. Pengiriman email persetujuan sungguhan perlu disiapkan
+dan diuji sebelum P1 dipakai secara operasional.
+
+Jika `SPARTA_APP_MODE` kosong atau tidak dikenal, jalur email/password lokal
+yang lama tetap tersedia dan fitur demo mati. Atur mode pada deployment,
+serta isi `SPARTA_API_URL`, `SPARTA_LOGIN_URL`, dan `APP_BASE_URL` saat
+menyiapkan SSO. Gunakan HTTPS dan database terpisah untuk production.
+
+Untuk demo di laptop, isi `SPARTA_APP_MODE=demo` pada `.env.local` dan gunakan
+database dummy. Pada PowerShell, set `$env:SPARTA_APP_MODE = 'demo'` sebelum
+menjalankan `pnpm exec tsx scripts/seed-wh-demo-accounts.ts`. Skrip membaca
+`DATABASE_URL` dari environment atau `.env`. Pakai `APP_BASE_URL` yang sesuai
+dengan alamat demo untuk membuat tautan persetujuan.
+
 ## 3. Manajemen Sesi Lokal (Session Management)
 Sesi lokal diatur secara mandiri menggunakan **JSON Web Token (JWT)**.
 - **Library**: `jose`
@@ -58,6 +87,8 @@ bagian dari jalur login aktif pagi ini.
 Implementasi tidak boleh di-hardcode. Harus ada variabel berikut:
 - `SESSION_SECRET`: Kunci enkripsi untuk JWT sesi lokal.
 - `SPARTA_API_URL`: URL utama menuju SPARTA Login Portal.
+- `SPARTA_LOGIN_URL`: Alamat halaman masuk SPARTA yang dibuka dari mode production.
+- `SPARTA_APP_MODE`: Mode runtime `demo` atau `production`.
 - `APP_BASE_URL`: URL lokal modul Engineering.
 - `LOGIN_DATABASE_URL`: URL database `login-sparta`, hanya dipakai ketika
   sinkronisasi SSO diaktifkan kembali.

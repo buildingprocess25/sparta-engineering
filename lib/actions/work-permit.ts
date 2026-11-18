@@ -2,16 +2,21 @@
 
 import { revalidatePath } from "next/cache"
 import { WorkPermitStatus, type Prisma } from "@/generated/prisma"
-import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
 import {
   getApplicantWorkPermitScope,
   getManagerWorkPermitScope,
   getPendingWorkPermitDecisionScope,
 } from "@/lib/work-permits/access"
-import { getWorkPermitPeriod } from "@/lib/work-permits/active-period"
+import { getWorkPermitPeriod, hasRequiredApprovals } from "@/lib/work-permits/active-period"
+import {
+  getNextWorkPermitPeriod,
+  getWorkPermitCalendarPeriod,
+  resolveRequestedWorkPermitDate,
+} from "@/lib/work-permits/calendar"
 import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
 import { getWorkPermitUser } from "@/lib/work-permits/current-user"
+import { getFinalWorkPermitApproval } from "@/lib/work-permits/final-approval"
 import { getWorkPermitHistoryHref } from "@/lib/work-permits/history"
 import { sendApprovalEmail } from "@/lib/work-permits/email-approval"
 
@@ -44,30 +49,18 @@ export async function submitWorkPermitAction(data: WorkPermitInput) {
     return { ok: false, error: "Hanya teknisi ES yang dapat mengajukan izin kerja." }
   }
 
-  const now = new Date()
-  let targetPeriod = data.targetPeriod
-  if (!targetPeriod) {
-    if (data.workDate) {
-      targetPeriod = data.workDate.slice(0, 7)
-    } else {
-      targetPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
-    }
+  const requestedDate = resolveRequestedWorkPermitDate(
+    data.workDate,
+    data.targetPeriod
+  )
+  if (!requestedDate) {
+    return { ok: false, error: "Tanggal kerja atau periode izin tidak valid." }
   }
 
-  // Tentukan workDate yang disimpan di database
-  let workDateToSave = new Date()
-  if (data.workDate) {
-    workDateToSave = new Date(data.workDate)
-  } else if (targetPeriod) {
-    const [y, m] = targetPeriod.split("-").map(Number)
-    workDateToSave = new Date(y, m - 1, 1)
-  }
-  workDateToSave.setHours(0, 0, 0, 0)
-
+  const { date: workDateToSave, targetPeriod, codeDate } = requestedDate
   const branchCode = (user.branchName || "SAT").substring(0, 3).toUpperCase()
-  const dateStr = workDateToSave.toISOString().slice(0, 10).replace(/-/g, "")
   const randomSuffix = Math.floor(1000 + Math.random() * 9000)
-  const permitCode = `WP-${branchCode}-${dateStr}-${randomSuffix}`
+  const permitCode = `WP-${branchCode}-${codeDate}-${randomSuffix}`
 
   const safetyPayload = {
     targetPeriod,
@@ -159,6 +152,10 @@ async function decideWorkPermit(permitId: string, decision: "APPROVED" | "REJECT
 
       const userBranch = (user.branchName || "").trim().toUpperCase()
       const applicantBranch = (permit.applicant?.branchName || "").trim().toUpperCase()
+
+      if (!applicantBranch) {
+        return { ok: false as const, error: "Cabang pemohon belum dikonfigurasi." }
+      }
 
       let nextStatus: WorkPermitStatus
       let approvalRole: string
@@ -271,14 +268,13 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
     if (!where) return null
 
     const now = new Date()
-    const currentPeriod = getCurrentPeriodKey("MONTHLY", now)
+    const currentPeriod = getWorkPermitCalendarPeriod(now)
 
     // Bulan berikutnya (H- pengajuan bulan depan, dibuka kapan saja tanpa batas tanggal 20)
-    const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    const nextPeriod = getCurrentPeriodKey("MONTHLY", nextDate)
+    const nextPeriod = getNextWorkPermitPeriod(currentPeriod)
     const isHMinusWindow = true
 
-    const [approvedCurrent, userPermits] = await Promise.all([
+    const [approvedCurrent, candidatePermits] = await Promise.all([
       getActiveWorkPermit(user, now),
       getPrisma().workPermit.findMany({
         where,
@@ -289,6 +285,10 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
         },
       }),
     ])
+
+    const userPermits = candidatePermits.filter(
+      (permit) => permit.status !== "APPROVED" || hasRequiredApprovals(permit)
+    )
 
     if (!approvedCurrent && userPermits.length === 0) {
       return {
@@ -323,6 +323,7 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
         id: approvedCurrent.id,
         permitCode: approvedCurrent.permitCode,
         status: approvedCurrent.status,
+        pdfAvailable: Boolean(getFinalWorkPermitApproval(approvedCurrent)),
         kegiatan: approvedCurrent.kegiatan,
         lokasi: approvedCurrent.lokasi,
         managerNotes: approvedCurrent.managerNotes,
@@ -346,6 +347,7 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
         id: latestCurrent.id,
         permitCode: latestCurrent.permitCode,
         status: latestCurrent.status,
+        pdfAvailable: Boolean(getFinalWorkPermitApproval(latestCurrent)),
         kegiatan: latestCurrent.kegiatan,
         lokasi: latestCurrent.lokasi,
         managerNotes: latestCurrent.managerNotes,
@@ -387,6 +389,7 @@ export async function getTodayWorkPermitStatus(userNik?: string) {
       id: fallbackLatest.id,
       permitCode: fallbackLatest.permitCode,
       status: fallbackLatest.status,
+      pdfAvailable: Boolean(getFinalWorkPermitApproval(fallbackLatest)),
       kegiatan: fallbackLatest.kegiatan,
       lokasi: fallbackLatest.lokasi,
       managerNotes: fallbackLatest.managerNotes,

@@ -214,3 +214,23 @@
   background: #a1a1aa;
 }
 
+
+/* Standalone work permit pages use the same light surface as the dashboard. */
+.permit-workspace {
+    --background: #f5f7fa;
+    --foreground: #111d30;
+    --card: #ffffff;
+    --card-foreground: #111d30;
+    --popover: #ffffff;
+    --popover-foreground: #111d30;
+    --muted: #edf1f6;
+    --muted-foreground: #46566c;
+    --secondary: #edf1f6;
+    --secondary-foreground: #20324b;
+    --accent: #edf1f6;
+    --accent-foreground: #111d30;
+    --border: #dce3ec;
+    --input: #a8b5c5;
+    --destructive: #a91932;
+    --ring: #b7540c;
+}

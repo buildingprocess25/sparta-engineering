@@ -2,6 +2,18 @@ import type { Prisma, WorkPermit } from "@/generated/prisma"
 
 type PermitPeriodFields = Pick<WorkPermit, "safetyPayload" | "workDate">
 
+const monthFormatter = new Intl.DateTimeFormat("id-ID", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+})
+
+export function formatWorkPermitMonth(period?: string | null) {
+  if (!period) return ""
+  const date = new Date(`${period}-01T00:00:00Z`)
+  return Number.isFinite(date.getTime()) ? monthFormatter.format(date) : period
+}
+
 export function getWorkPermitPeriod(permit: PermitPeriodFields): string {
   const payload = permit.safetyPayload
   if (payload && typeof payload === "object" && !Array.isArray(payload)) {
@@ -20,7 +32,10 @@ export function hasRequiredApprovals(permit: {
 }): boolean {
   if (permit.status !== "APPROVED") return false
   const history = Array.isArray(permit.approvalHistory)
-    ? (permit.approvalHistory as Array<Record<string, unknown>>)
+    ? permit.approvalHistory.filter(
+        (item): item is Record<string, unknown> =>
+          item !== null && typeof item === "object" && !Array.isArray(item)
+      )
     : []
 
   if (history.length > 0) {
@@ -43,7 +58,7 @@ export function hasRequiredApprovals(permit: {
     return Boolean(hasMgr && hasP2K3 && hasSec)
   }
 
-  return true
+  return false
 }
 
 export function getActiveWorkPermitWhere(applicantNik: string, period: string): Prisma.WorkPermitWhereInput {

@@ -224,6 +224,7 @@ bukti ketiga tahap tidak cukup untuk menjadi izin aktif.
 |---|---|---|
 | applicantName | String? | Snapshot nama akun saat pengajuan; nullable untuk data lama |
 | approvalHistory | Json, default [] | Audit server: stage, actorNik, actorName, accountRole, approvalRole, decision, notes, decidedAt |
+| applicantNotificationReadAt | DateTime? (@db.Timestamptz(3)) | Waktu BES menandai notifikasi persetujuan akhir sebagai dibaca. Null berarti belum dibaca untuk izin yang telah mendapat persetujuan lengkap. |
 
 Kolom managerNik/managerSignedAt/managerNotes tetap kompatibel dengan riwayat lama;
 managerSignedAt mencatat waktu keputusan akun, bukan tanda tangan elektronik.

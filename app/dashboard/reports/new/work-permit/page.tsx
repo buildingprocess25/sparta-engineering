@@ -1,10 +1,14 @@
 import { Suspense } from "react"
+import { Download } from "lucide-react"
+import { buttonVariants } from "@/components/ui/button"
 import { notFound, redirect } from "next/navigation"
 import { FrmMed003Form } from "@/components/es-dashboard/frm-med-003-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getPrisma } from "@/lib/prisma"
 import { getUserFullWorkPermit } from "@/lib/actions/work-permit"
 import { getWorkPermitUser } from "@/lib/work-permits/current-user"
+import { getFinalWorkPermitApproval } from "@/lib/work-permits/final-approval"
+import { getWorkPermitPdfHref } from "@/lib/work-permits/links"
 import { getWorkPermitHistoryHref } from "@/lib/work-permits/history"
 
 export const dynamic = "force-dynamic"
@@ -134,6 +138,13 @@ export default async function WorkPermitPage({
       backHref={historyHref}
       backLabel={historyHref ? "Kembali ke Riwayat" : undefined}
     >
+      {showReadOnlyView && fullPermit && getFinalWorkPermitApproval(fullPermit) && (
+        <div className="permit-workspace mb-4">
+          <a href={getWorkPermitPdfHref(fullPermit.permitCode)} className={buttonVariants({ size: "lg" })}>
+            <Download data-icon="inline-start" /> Unduh PDF Izin Kerja
+          </a>
+        </div>
+      )}
       <Suspense fallback={<div className="p-4 text-center text-sm text-gray-500">Memuat formulir...</div>}>
         <FrmMed003Form
           key={showReadOnlyView ? fullPermit?.id : "new"}

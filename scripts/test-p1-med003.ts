@@ -14,12 +14,14 @@ import {
   submitTokenDecision,
 } from "../lib/work-permits/email-approval"
 import { saveChecklistSubmission } from "../lib/reports/checklist-submission"
+import { getSpartaAppMode } from "../lib/sparta-app-mode"
 
 const TARGET_BRANCH = "WH PARUNG"
 const BES_NIK = "WHP-BES-001"
 const MGR_NIK = "WHP-MGR-001"
 
 async function runP1Med003Tests() {
+  assert.equal(getSpartaAppMode(), "demo", "Tes P1 memerlukan mode demo dan database development")
   const prisma = getPrisma()
   console.log("=== STARTING P1 MED/003 E2E TESTS ===")
 

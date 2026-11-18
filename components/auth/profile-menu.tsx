@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { KeyRound, LogOut } from "lucide-react"
 
 import { logoutAction } from "@/app/login/actions"
+import { useDemoMode } from "@/components/auth/demo-mode-context"
 
 type ProfileMenuProps = {
   initials: string
@@ -11,6 +12,7 @@ type ProfileMenuProps = {
 }
 
 export function ProfileMenu({ initials, email }: ProfileMenuProps) {
+  const demoMode = useDemoMode()
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -48,14 +50,16 @@ export function ProfileMenu({ initials, email }: ProfileMenuProps) {
             </div>
           ) : null}
 
-          <button
-            type="button"
-            disabled
-            className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm text-[#111111] opacity-60"
-          >
-            <KeyRound className="size-4" />
-            Ganti Password
-          </button>
+          {!demoMode && (
+            <button
+              type="button"
+              disabled
+              className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm text-[#111111] opacity-60"
+            >
+              <KeyRound className="size-4" />
+              Ganti Password
+            </button>
+          )}
 
           <form action={logoutAction} className="border-t border-[#eeeeee]">
             <button
@@ -72,7 +76,7 @@ export function ProfileMenu({ initials, email }: ProfileMenuProps) {
               className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
             >
               <LogOut className="size-4" />
-              Logout
+              {demoMode ? "Ganti Pengguna" : "Logout"}
             </button>
           </form>
         </div>

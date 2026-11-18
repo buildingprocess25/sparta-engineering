@@ -1,11 +1,17 @@
 import "dotenv/config"
 import { hash } from "bcryptjs"
 import { getPrisma } from "../lib/prisma"
+import { DEMO_BRANCH, DEMO_COORDINATOR } from "../lib/demo-accounts"
+import { getSpartaAppMode } from "../lib/sparta-app-mode"
 
-const TARGET_BRANCH = "WH PARUNG"
+const TARGET_BRANCH = DEMO_BRANCH
 const DEMO_PASSWORD = "12345678"
 
 export async function seedWhDemoAccounts() {
+  if (getSpartaAppMode() !== "demo") {
+    throw new Error("Jalankan seed hanya dengan SPARTA_APP_MODE=demo dan database development.")
+  }
+
   const prisma = getPrisma()
   const passwordHash = await hash(DEMO_PASSWORD, 10)
 
@@ -36,17 +42,22 @@ export async function seedWhDemoAccounts() {
   })
   console.log(`✔ BES: ${bes.name} (${bes.email})`)
 
-  // 2. BEC / Koordinator (Gunakan akun yang sudah ada NIK 8090222 / EKO DWIANTO, update passwordHash agar mudah login)
+  // 2. BEC / Koordinator
   const bec = await prisma.user.upsert({
-    where: { NIK: "8090222" },
+    where: { NIK: DEMO_COORDINATOR.nik },
     update: {
+      name: DEMO_COORDINATOR.name,
+      email: DEMO_COORDINATOR.email,
+      branchName: TARGET_BRANCH,
+      location: TARGET_BRANCH,
+      role: "COORD",
       passwordHash,
       mustChangePassword: false,
     },
     create: {
-      NIK: "8090222",
-      name: "EKO DWIANTO",
-      email: "eko.dwianto@sat.co.id",
+      NIK: DEMO_COORDINATOR.nik,
+      name: DEMO_COORDINATOR.name,
+      email: DEMO_COORDINATOR.email,
       branchName: TARGET_BRANCH,
       location: TARGET_BRANCH,
       role: "COORD",

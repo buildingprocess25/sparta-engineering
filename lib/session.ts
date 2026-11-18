@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose"
 import { cookies } from "next/headers"
+import { allowsSessionInMode, type SessionAuthSource } from "@/lib/sparta-app-mode"
 
 const secretKey = process.env.SESSION_SECRET
 const encodedKey = new TextEncoder().encode(secretKey)
@@ -9,6 +10,7 @@ export type SessionPayload = {
   email: string
   role: string
   expiresAt: Date
+  authSource?: SessionAuthSource
 }
 
 export async function encrypt(payload: SessionPayload) {
@@ -24,15 +26,20 @@ export async function decrypt(session: string | undefined = "") {
     const { payload } = await jwtVerify(session, encodedKey, {
       algorithms: ["HS256"],
     })
-    return payload
+    return allowsSessionInMode(payload.authSource) ? payload : null
   } catch {
     return null
   }
 }
 
-export async function createSession(userId: string, email: string, role: string) {
+export async function createSession(
+  userId: string,
+  email: string,
+  role: string,
+  authSource: SessionAuthSource = "local",
+) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  const session = await encrypt({ userId, email, role, expiresAt })
+  const session = await encrypt({ userId, email, role, expiresAt, authSource })
 
   const cookieStore = await cookies()
   cookieStore.set("sparta_engineering_session", session, {

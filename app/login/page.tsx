@@ -1,10 +1,24 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, BadgeCheck } from "lucide-react"
+import { ArrowLeft, ArrowRight, BadgeCheck, Mail } from "lucide-react"
 
+import { demoLoginAction } from "@/app/login/actions"
 import { LocalLoginForm } from "@/components/auth/local-login-form"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { DEMO_ACCOUNTS } from "@/lib/demo-accounts"
+import { getSpartaAppMode } from "@/lib/sparta-app-mode"
 
-export default function LoginPage() {
+export const dynamic = "force-dynamic"
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const mode = getSpartaAppMode()
+  const { error } = await searchParams
+  const portalUrl = process.env.SPARTA_LOGIN_URL
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,var(--muted),var(--background)_42rem)] font-sans text-white">
       <header className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
@@ -71,14 +85,66 @@ export default function LoginPage() {
               AKSES MODUL
             </p>
             <h2 className="mt-2 text-2xl font-black text-zinc-950">
-              Login SPARTA Engineering
+              {mode === "demo" ? "Pilih akun demo" : "Login SPARTA Engineering"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Gunakan email dan password akun Engineering Anda.
+              {mode === "demo" && "Pilih peran untuk melanjutkan simulasi WH Parung."}
+              {mode === "production" && "Masuk dengan akun SPARTA Anda."}
+              {mode === "local" && "Gunakan email dan password akun Engineering Anda."}
             </p>
           </div>
 
-          <LocalLoginForm />
+          {mode === "demo" && (
+            <div className="grid gap-3">
+              {error === "demo-account" && (
+                <p role="alert" className="text-sm text-red-700">
+                  Akun demo belum bisa digunakan. Pastikan data demo WH Parung
+                  sudah disiapkan.
+                </p>
+              )}
+              <form action={demoLoginAction} className="grid gap-2">
+                {DEMO_ACCOUNTS.map(({ key, label }) => (
+                  <Button
+                    key={key}
+                    type="submit"
+                    name="account"
+                    value={key}
+                    variant="outline"
+                    size="lg"
+                    className="min-h-11 justify-between border-zinc-300 bg-white text-zinc-950 hover:bg-orange-50 hover:text-zinc-950"
+                  >
+                    {label}
+                    <ArrowRight aria-hidden="true" data-icon="inline-end" />
+                  </Button>
+                ))}
+              </form>
+              <Link
+                href="/demo/outbox"
+                className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-zinc-700 hover:text-zinc-950"
+              >
+                <Mail aria-hidden="true" className="size-4" />
+                Buka Kotak Keluar Email Demo
+              </Link>
+            </div>
+          )}
+          {mode === "production" &&
+            (portalUrl ? (
+              <div className="grid gap-3">
+                {error && (
+                  <p role="alert" className="text-sm text-red-700">
+                    Sesi masuk belum bisa dibuat. Buka kembali Engineering dari portal SPARTA.
+                  </p>
+                )}
+                <a href={portalUrl} className={buttonVariants({ size: "lg" })}>
+                  Buka Portal SPARTA
+                </a>
+              </div>
+            ) : (
+              <p role="alert" className="text-sm text-zinc-700">
+                Portal SPARTA belum dikonfigurasi. Hubungi administrator.
+              </p>
+            ))}
+          {mode === "local" && <LocalLoginForm />}
         </section>
       </main>
 

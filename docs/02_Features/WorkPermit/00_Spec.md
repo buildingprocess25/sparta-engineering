@@ -56,7 +56,7 @@ pada form tidak dapat dipakai untuk melewati persetujuan.
   dipaginasi 10 per halaman. Detail berdasarkan kode selalu mode baca.
 - Form memakai bulan target yang dipilih, termasuk pengajuan bulan depan. Izin
   baru tidak menyalin isian/status izin lama. Nomor dokumen dan kolom sumber
-  dipertahankan; periode tidak dibatasi tanggal 20.
+  dipertahankan; periode tidak dibatasi tanggal 20. Tanggal kalender yang dipilih BES disimpan sebagai tanggal kerja dan menjadi bagian tanggal pada nomor izin baru. Periode aktif mengikuti kalender WIB.
 
 ## Migrasi dan konfigurasi
 
@@ -89,14 +89,23 @@ Keputusan P1 MED/003:
    - Email berisi detail pengajuan (pemohon, lokasi, kegiatan, periode, APD) dan tombol **Buka halaman persetujuan** yang memuat tautan ber-token aman.
    - Setelah P2K3/Delegate menyetujui (`PENDING_P2K3` → `PENDING_SECRETARY`), sistem membuat email simulasi berikutnya untuk kontak `SECRETARY` cabang tersebut dengan token baru.
    - Riwayat pengiriman email dapat dipantau melalui halaman Kotak Keluar Email Demo (`/demo/outbox`).
+   - Halaman, aksi reset, dan pengiriman simulasi hanya aktif saat `SPARTA_APP_MODE=demo` pada database development. Pengiriman memakai kontak penugasan yang tersedia di database cabang pemohon.
+   - Kotak keluar dibuka dari halaman pilih akun. Daftar email dan isi pesan tampil berdampingan di desktop. Pada layar sempit, pengguna memilih pesan dari daftar untuk membuka isi pesan.
+   - Untuk memulai demo baru, skrip `scripts/reset-wh-demo-work-permit.ts` dapat menampilkan pengajuan aktif milik akun BES demo WH Parung. Menambahkan `--permit-code` dan `--apply` membersihkan pengajuan demo yang dipilih beserta token dan pesan terkait. Skrip melindungi pengajuan yang selesai dan pengajuan yang terhubung ke laporan.
 3. **Halaman Persetujuan Berbasis Token (Tanpa Login)**:
    - Akses via `/work-permits/approve?token=<TOKEN>`.
    - Menampilkan detail satu dokumen MED/003: pemohon, lokasi, periode, kegiatan, APD, dan riwayat persetujuan sebelumnya.
+   - Halaman menampilkan urutan tahap dalam bahasa operasional. Panel keputusan berada di samping ringkasan di desktop dan setelah detail di perangkat seluler.
+   - Akun penerima harus masih memiliki penugasan aktif untuk tahap dan cabang pemohon saat tautan dibuka atau keputusan disimpan.
    - Tautan memiliki masa berlaku (`expiresAt`) dan bersifat *single-use* (hanya dapat digunakan untuk satu kali keputusan).
    - Dilindungi transaksi atomik: klik ulang atau dua permintaan bersamaan tidak akan mencatat keputusan ganda atau memicu pengiriman email duplikat.
    - Jika token sudah pernah dipakai, halaman menampilkan konfirmasi waktu dan keputusan yang telah dicatat sebelumnya.
 4. **Notifikasi BES & Tampilan Nomor Izin di Checklist**:
-   - Setelah seluruh tahap persetujuan lengkap (`APPROVED`), dashboard BES menampilkan notifikasi konfirmasi persetujuan aktif lengkap dengan nomor izin kerja.
+   - Setelah Sekretaris P2K3 menyetujui tahap terakhir, izin yang sudah memiliki bukti ACC seluruh tahapan muncul di lonceng notifikasi akun BES pemohon. Persetujuan tahap antara dan pengajuan yang ditolak tidak menghasilkan notifikasi persetujuan akhir.
+   - Dashboard memuat jumlah notifikasi belum dibaca dari data izin kerja. Lonceng memuat notifikasi ketika dibuka dan menyegarkan daftar berkala saat dashboard terlihat.
+   - Panel notifikasi memakai tab **Belum dibaca** dan **Riwayat**. Saat BES menandai notifikasi sebagai dibaca, status baca tersimpan dan item langsung berpindah ke Riwayat. Riwayat menampilkan waktu baca terbaru terlebih dahulu, dengan tautan detail izin dan PDF. Riwayat dapat dilihat kembali setelah refresh atau login di perangkat lain.
+   - Notifikasi akhir dan kartu izin aktif memiliki akses ke PDF MED/003 yang dapat diunduh BES pemohon. Detail izin dari riwayat juga menyediakan unduhan untuk izin yang sudah mendapat ACC ketiga tahap. PDF dihasilkan dari isi izin dan audit nama serta waktu persetujuan. Izin bulan depan yang sudah disetujui dapat diunduh tanpa mengaktifkan checklist sebelum periodenya.
+   - Kartu izin BES menggunakan komponen shadcn dengan permukaan netral, indikator status, dan tindakan yang sesuai. Notifikasi persetujuan tersedia di lonceng.
    - Saat BES membuka form checklist rutin (dari To-Do) maupun perbaikan/non-rutin (dari Buat Laporan), nomor MED/003 aktif otomatis ditampilkan secara jelas.
    - Hubungan laporan dengan izin kerja tersimpan persisten melalui `ChecklistReport.workPermitId` sehingga tetap terlihat saat detail laporan dibuka kembali.
    - Pemeriksaan keabsahan izin aktif tetap diwajibkan untuk pekerjaan rutin maupun non-rutin (perbaikan by AHO / Temuan ES).

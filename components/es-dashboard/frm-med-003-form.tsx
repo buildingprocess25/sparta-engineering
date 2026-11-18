@@ -25,6 +25,10 @@ import {
 import { cn } from "@/lib/utils"
 import { submitWorkPermitAction } from "@/lib/actions/work-permit"
 import { getWorkPermitPeriod } from "@/lib/work-permits/active-period"
+import {
+  getNextWorkPermitPeriod,
+  getWorkPermitCalendarDate,
+} from "@/lib/work-permits/calendar"
 
 export type WorkPermitFullData = {
   id: string
@@ -148,11 +152,10 @@ export function FrmMed003Form({
   )
   const [kontraktor, setKontraktor] = React.useState(initialData?.kontraktor || "Internal")
 
-  const now = new Date()
-  const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
-  const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  const nextPeriod = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}`
-  const isHMinusWindow = now.getDate() >= 20
+  const today = getWorkPermitCalendarDate()
+  const currentPeriod = today.slice(0, 7)
+  const nextPeriod = getNextWorkPermitPeriod(currentPeriod)
+  const isHMinusWindow = Number(today.slice(-2)) >= 20
 
   const [targetPeriod, setTargetPeriod] = React.useState<string>(() => {
     if (isReadOnly && initialData) {
@@ -183,7 +186,7 @@ export function FrmMed003Form({
     if (searchParams.get("period") && searchParams.get("period") !== currentPeriod) {
       return `${searchParams.get("period")}-01`
     }
-    return new Date().toISOString().split("T")[0]
+    return today
   })
 
   // Format jam: Jam Mulai & Jam Selesai
@@ -523,7 +526,7 @@ export function FrmMed003Form({
                 type="button"
                 onClick={() => {
                   setTargetPeriod(currentPeriod)
-                  setTanggal(new Date().toISOString().split("T")[0])
+                  setTanggal(today)
                 }}
                 className={cn(
                   "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
