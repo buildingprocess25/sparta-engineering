@@ -28,6 +28,8 @@ di proyek ini.
 
 `ReportStatus` ditambah `WAITING_PB`, `WAITING_PARTS`, dan `IN_PROGRESS`. Penggantian spare part 065 wajib melalui `PENDING_REQUESTER` sebelum status pelaksanaan. Data lama tidak diberi identitas persetujuan fiktif; riwayat kosong tetap kosong. Lihat [spesifikasi Form 065](../02_Features/SparePartFollowUp/00_Spec.md).
 
+Form 014 memakai `PENDING_REQUESTER` setelah ACC Manager dan `WAITING_PJU` setelah ACC Requester. `WAITING_PJU` adalah status tersendiri dari jalur PB/Stock Form 065.
+
 ### User
 | Field | Tipe | Keterangan |
 |---|---|---|
@@ -93,7 +95,7 @@ Constraint: `@@unique([roomId, formCode, period])`. Tabel ini menggantikan `Area
 | category | ReportCategory | Enum (PREVENTIVE, INCIDENTAL). Pembeda laporan rutin dan insidental |
 | period | ChecklistPeriod? | Enum (WEEKLY, MONTHLY, QUARTERLY, SEMESTER). Berlaku hanya untuk PREVENTIVE |
 | periodKey | String? | Penanda periode unik (misal "2026-W37", "2026-09", "2026-Q3", "2026-S2"). Berlaku hanya untuk PREVENTIVE |
-| status | ReportStatus | Enum (DRAFT, NEEDS_REVISION, PENDING_COORD, PENDING_MANAGER, PENDING_REQUESTER, COMPLETED, REJECTED). Default: `DRAFT` |
+| status | ReportStatus | Enum (DRAFT, NEEDS_REVISION, PENDING_COORD, PENDING_MANAGER, PENDING_REQUESTER, WAITING_PJU, WAITING_PB, WAITING_PARTS, IN_PROGRESS, COMPLETED, REJECTED). Default: `DRAFT` |
 | isSafe | Boolean | True jika 100% aman (bypass Requester approval) |
 | checklistPayload | Json | One JSON object containing submitted checklist item results |
 | drivePhotoFileIds | Json | Array of Google Drive file IDs uploaded for the report |

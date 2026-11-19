@@ -19,16 +19,15 @@ export default async function ActivityPage(props: ActivityPageProps) {
     redirect("/login")
   }
 
-  // Jika teknisi ES, tampilkan riwayat aktivitas checklist (Selesai & Terlewat)
   if (session.role === "ES") {
     const authorId = session.userId
-    const [todoData, revisions] = await Promise.all([
+    const [todoData, reports] = await Promise.all([
       getUserTodoTasks(authorId),
       getPrisma().checklistReport.findMany({
-        where: { authorId, status: "NEEDS_REVISION", reportCode: { not: null } },
-        orderBy: { updatedAt: "desc" },
+        where: { authorId, status: { not: "DRAFT" }, reportCode: { not: null } },
+        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
         select: {
-          id: true, reportCode: true, formCode: true, taskId: true, periodKey: true,
+          id: true, reportCode: true, formCode: true, taskId: true, periodKey: true, status: true,
           equipment: { select: { name: true, unitNo: true } },
           room: { select: { name: true } },
           area: { select: { name: true } },
@@ -39,11 +38,13 @@ export default async function ActivityPage(props: ActivityPageProps) {
     return (
       <ActivityHistoryView
         todoData={todoData}
-        revisions={revisions.flatMap((report) => report.reportCode ? [{
+        reports={reports.flatMap((report) => report.reportCode ? [{
           id: report.id,
           reportCode: report.reportCode,
           formCode: report.formCode,
           isRoutine: Boolean(report.taskId),
+          isEquipment: Boolean(report.equipment),
+          status: report.status,
           periodKey: report.periodKey,
           target: report.equipment
             ? `${report.equipment.name}${report.equipment.unitNo ? ` Unit ${report.equipment.unitNo}` : ""}`
@@ -51,7 +52,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
         }] : [])}
         userEmail={session.email as string}
         userRole={session.role as string}
-        initialTab={searchParams?.tab === "revision" ? "revision" : searchParams?.tab === "overdue" ? "overdue" : "completed"}
+        initialTab={searchParams?.tab === "revision" ? "revision" : searchParams?.tab === "overdue" ? "overdue" : searchParams?.tab === "completed" ? "completed" : "submitted"}
       />
     )
   }

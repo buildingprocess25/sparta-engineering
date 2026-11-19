@@ -107,6 +107,8 @@ export function getStatusLabel(status?: string | null): string {
       return "Perlu Revisi"
     case "REJECTED":
       return "Ditolak"
+    case "WAITING_PJU":
+      return "Menunggu PJU"
     case "WAITING_PB":
       return "Menunggu Proses PB"
     case "WAITING_PARTS":

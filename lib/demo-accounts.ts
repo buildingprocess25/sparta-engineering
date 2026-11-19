@@ -14,4 +14,5 @@ export const DEMO_ACCOUNTS = [
     label: "BEC / Koordinator",
   },
   { key: "manager", nik: "WHP-MGR-001", role: "MANAGER", label: "BNM Manager" },
+  { key: "requester", nik: "WHP-REQ-001", role: "REQUESTER", label: "WHM / DWHM (Requester)" },
 ] as const

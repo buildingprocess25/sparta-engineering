@@ -1,22 +1,18 @@
+import { redirect } from "next/navigation"
+
 import { ReportAreaPicker } from "@/components/es-dashboard/report-area-picker"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { getEsDashboardFlowOptions } from "@/lib/es-dashboard-data"
+import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
+import { getWorkPermitUser } from "@/lib/work-permits/current-user"
 
 export const dynamic = "force-dynamic"
 
-type RepairAreaPageProps = {
-  searchParams: Promise<{
-    workPermit?: string
-  }>
-}
+export default async function RepairAreaPage() {
+  const user = await getWorkPermitUser()
+  if (user?.role !== "ES" || !(await getActiveWorkPermit(user))) redirect("/dashboard/reports/new")
 
-export default async function RepairAreaPage({
-  searchParams,
-}: RepairAreaPageProps) {
-  const [{ areas, areaIssue }, params] = await Promise.all([
-    getEsDashboardFlowOptions(),
-    searchParams,
-  ])
+  const { areas, areaIssue } = await getEsDashboardFlowOptions()
 
   return (
     <ReportFlowShell
@@ -28,7 +24,6 @@ export default async function RepairAreaPage({
         areas={areas}
         areaIssue={areaIssue}
         reportType="repair"
-        workPermit={params.workPermit}
       />
     </ReportFlowShell>
   )

@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation"
+
 import { ProfileMenu } from "@/components/auth/profile-menu"
 import { BottomNavigation } from "@/components/es-dashboard/bottom-navigation"
 import { DashboardHeader } from "@/components/es-dashboard/dashboard-header"
@@ -27,6 +29,8 @@ export default async function DashboardPage(props: DashboardPageProps) {
   const searchParams = await props.searchParams
   const session = await getSession()
   const role = session?.role as string
+  if (role === "REQUESTER") redirect("/dashboard/reports")
+
   const forceManagerView = searchParams?.view === "manager"
 
   // If user role is MANAGER, COORD, HO, ADMIN or explicit view=manager is requested

@@ -40,24 +40,28 @@
 
 - **Route(s)**: `/dashboard`, `/dashboard/reports/new`, `/dashboard/reports/new/work-permit`, `/dashboard/reports/new/[reportType]/[formId]`
 - **Alur Laporan Rutin (To-Do List)**:
-  1. PIC / ES login ke SPARTA $\rightarrow$ Dashboard utama menampilkan **Banner Form Izin Kerja (SAT/FRM/MED/003)** tepat di atas **Tugas Rutin PIC (To-Do List)** sebagai pengingat kepatuhan K3/SMK3. Jika sudah memiliki izin kerja yang di-ACC Manager (`status = APPROVED`), banner berstatus aktif dan teknisi tidak perlu mengisi ulang.
-  2. **Kunci Tugas Rutin (Lock / Disabled State)**: Seluruh kartu tugas dalam To-Do List berstatus terkunci (`disabled`) dan tidak dapat diklik selama ES belum memiliki Form Izin Kerja yang berstatus `APPROVED`.
-  3. Setelah Form Izin Kerja disetujui (ACC Manager), kunci kartu to-do otomatis terbuka.
+  1. PIC / ES login ke SPARTA $\rightarrow$ Dashboard utama menampilkan **Banner Form Izin Kerja (SAT/FRM/MED/003)** tepat di atas **Tugas Rutin PIC (To-Do List)** sebagai pengingat kepatuhan K3/SMK3. Jika izin kerja sudah memperoleh seluruh persetujuan dan berlaku pada bulan berjalan, banner berstatus aktif dan teknisi tidak perlu mengisi ulang.
+  2. **Kunci Tugas Rutin (Lock / Disabled State)**: Seluruh kartu tugas dalam To-Do List berstatus terkunci (`disabled`) dan tidak dapat diklik selama ES belum memiliki izin kerja aktif.
+  3. Setelah ACC Manager, P2K3/Delegate, dan Sekretaris P2K3 lengkap, kunci kartu to-do otomatis terbuka.
   4. PIC dapat memfilter tugas: **Pending**, **Mingguan**, **Bulanan**, **Selesai**, atau **Semua**, memilih kategori **Equipment** / **Ruangan**, serta mencari berdasarkan nama alat/ruangan.
-  5. PIC mengklik kartu tugas yang sudah terbuka $\rightarrow$ langsung diarahkan ke form checklist terkait tanpa perlu memilih area atau ruangan secara manual (data area, ruangan, kode form, dan nama unit sudah terisi otomatis via `taskId`).
-  5. Setelah PIC melengkapi item checklist dan menekan Submit, status `ChecklistTask` otomatis diperbarui menjadi `COMPLETED`, tanggal penyelesaian tercatat, dan persentase progres dashboard bertambah secara real-time.
+  5. PIC mengklik kartu tugas yang sudah terbuka $\rightarrow$ langsung diarahkan ke form checklist terkait tanpa perlu memilih area atau ruangan secara manual (data area, ruangan, kode form, dan nama unit sudah terisi otomatis via `taskId`). Kode SAT/NRA dan kode internal membuka form yang sama. Draft rutin memakai periode serta `periodKey` dari tugas. Form Hydrant dan PLTS baru mengikuti jenis perawatan sesuai periode yang dipilih, dan form mingguan rutin menampilkan minggu penugasan. Tugas dengan kode form yang belum terdaftar atau aset yang belum memiliki lokasi valid menampilkan petunjuk untuk menghubungi BEC.
+  6. Setelah PIC melengkapi item checklist dan menekan Submit, status `ChecklistTask` otomatis diperbarui menjadi `COMPLETED`, tanggal penyelesaian tercatat, dan persentase progres dashboard bertambah secara real-time.
 - **Alur Laporan Non-Rutin**:
   1. ES masuk SPARTA dan klik 'Buat Laporan Baru' di bawah panel To-Do List.
   2. ES mengisi *Form Ijin Kerja* (SAT/FRM/MED/003) secara digital (Wajib / Mandatory, tanpa opsi lewati).
   3. ES memilih jalur **Checklist** atau **Perbaikan by AHO / Temuan ES**.
   4. ES memilih **Area** (misal: Branch / Office atau Warehouse).
-  5. ES memilih **Ruangan** spesifik di dalam Area tersebut (ruangan sudah default dari master data Excel, tidak dapat ditambah manual oleh user).
-  6. Sistem menyaring dan hanya menampilkan **Form Checklist** yang berlaku untuk ruangan tersebut berdasarkan master `RoomFormAvailability`.
-  7. ES memilih **Periode** yang tersedia (Weekly, Monthly, Triwulan / Quarterly, Semester).
+  5. ES memilih **Periode**. Branch / Office memakai Monthly, sedangkan area gudang mengikuti periode yang tersedia pada master ruangan.
+  6. ES memilih **Ruangan** dari master Excel. Pilihan disaring berdasarkan area dan periode.
+  7. ES memilih **Form Checklist** sesuai `RoomFormAvailability`. Form dapat dicari berdasarkan nama atau kode. Menu **General Checklist** membuka katalog Monthly yang sama. Jalur non-rutin hanya membuka kombinasi area, ruangan, periode, dan form yang valid, termasuk saat diakses melalui URL langsung.
   8. ES mengisi checklist dan submit laporan (laporan terikat ke `areaId` dan `roomId`).
   9. Laporan masuk antrean Approval:
      - Jika 100% aman: `Coord -> Manager -> Selesai`
      - Jika ada kerusakan: `Coord -> Manager -> Requester -> Input PB/PJU -> Selesai`
+
+- Jika form sudah pernah dikirim dan nomor laporan tersedia, BES dapat membuka detail laporan miliknya dari tombol **Lihat laporan**. Tautan berlaku untuk laporan rutin dan non-rutin, termasuk saat review masih berjalan.
+
+- **Impor master PIC**: Jalankan `pnpm exec tsx scripts/import-pic-assignments.ts --dry-run` untuk melihat ringkasan validasi sebelum impor. NIK akun ES dan cabangnya harus cocok dengan sumber. Ruangan harus cocok secara unik dengan nama dan ketersediaan form, serta area jika tipe tercantum di nama cabang. Format kode form yang setara tidak membuat penugasan duplikat. Impor nasional tidak mengisi lokasi aset dari perkiraan karena sumber hanya memiliki cabang, jenis, dan nomor unit.
 
 - **Alur Penyelesaian Laporan & Halaman Sukses (Completion Screen)**:
   Setelah pengisian form checklist (baik kondisi normal tanpa perbaikan maupun setelah melengkapi form tindak lanjut 014 / 065), sistem menampilkan halaman konfirmasi penyelesaian (`ReportCompletionSuccess`) dan tidak me-redirect pengguna secara mendadak ke tabel `/dashboard/reports`:
@@ -81,13 +85,27 @@
 - Periode Checklist (`ChecklistPeriod`): `WEEKLY`, `MONTHLY`, `QUARTERLY`, `SEMESTER`.
 *(Detail field didokumentasikan di `docs/01_Architecture/10_Data_Models.md`)*
 
+## Aktivitas BES
+
+- **Terkirim** membuka daftar laporan milik BES dari `ChecklistReport`, termasuk laporan rutin dan non-rutin dari periode lama. Draft dikecualikan. Setiap kartu menunjukkan nomor, objek, periode, jenis, dan status terakhir. Pencarian mencakup nomor laporan, kode form, dan objek. Kartu membuka detail laporan yang sama.
+- **Selesai** dan **Terlewat** tetap mengikuti status tugas rutin dari `ChecklistTask` pada periode yang ditampilkan. **Perlu Revisi** menampilkan laporan yang perlu ditindaklanjuti BES.
+
+- Navigasi Aktivitas menggunakan tab shadcn dengan aksen oranye pada pilihan aktif. Kartu menampilkan ikon jenis objek dan badge hijau bercetang untuk status selesai. Di detail laporan, status Izin Kerja K3 memakai aksen hijau setelah disetujui dan Form 065/014 memakai label tindak lanjut beraksen oranye.
+
+## Persetujuan Form 014
+
+- Laporan rutin atau non-rutin yang memiliki Form 014 lengkap mengikuti BEC → Manager → Requester (WHM/DWHM). ACC Manager memindahkannya ke `PENDING_REQUESTER`, dan Requester harus berasal dari cabang pelapor.
+- Akun Requester membuka antrean Laporan Maintenance yang hanya memuat laporan `PENDING_REQUESTER` dari cabangnya. Akun demo WH Parung menyediakan pilihan WHM/DWHM.
+- ACC Requester memindahkan laporan ke `WAITING_PJU` (**Menunggu PJU**) dan menyimpan keputusan di riwayat. Laporan gabungan 014/065 juga menunggu PJU, termasuk bila ada part berencana PB. Tahap PB/Stock pada laporan 065 tanpa Form 014 mengikuti alur yang sudah ada.
+- Status ini belum memiliki aksi pencatatan atau integrasi PJU. Nomor referensi, pelaksanaan, dan bukti penutupan mengikuti keputusan proses PJU. Migrasi hanya menambah status dan tidak membuka kembali laporan historis.
+
 ## Minta Revisi
 
 - COORD atau Manager pada tahap review yang sesuai dapat mengembalikan laporan cabangnya dengan alasan wajib. Laporan berubah menjadi `NEEDS_REVISION`. Riwayat menyimpan alasan, NIK dan nama reviewer, tahap review, waktu permintaan, dan isian sebelum perbaikan.
 - Tab **Perlu Revisi** di Aktivitas menampilkan laporan milik ES, baik rutin Equipment, rutin Ruangan, maupun non-rutin. Detail menampilkan alasan dan tombol **Perbaiki Laporan**. Hanya ES pemilik dengan izin kerja aktif yang dapat mengedit dan mengirim ulang. Tugas rutin tetap tercatat selesai dan tetap terhubung ke laporan itu.
 - Editor memakai form asli, mengisi ulang metadata, jawaban dan foto, serta mempertahankan identitas target, periode, dan nomor laporan. Form 014/065 yang masih dipilih untuk item dan unit yang sama membawa rincian lama. Jika jenis atau unit tindak lanjut berubah, rincian yang tidak berlaku dilepas dan ringkasan dihitung ulang.
 - Laporan kembali ke `PENDING_COORD` setelah ES melengkapi checklist dan tindak lanjut yang diperlukan. Waktu kirim ulang dan isian setelah perbaikan disimpan dalam riwayat. Reviewer dapat melihat perubahan dan COORD meneruskan laporan ke Manager dengan persetujuan biasa.
-- Migrasi memulihkan laporan lama yang masih berstatus `DRAFT` dan menyimpan payload checklist yang sudah dikirim, termasuk `ENG-WH-202611-003`. Riwayat lama menampilkan alasan yang tidak tersimpan dan membiarkan reviewer, tahap, serta waktu permintaan kosong bila tidak diketahui. Reservasi draft baru hanya dapat menghapus draft kosong tanpa riwayat revisi.
+- Migrasi memulihkan laporan lama yang masih berstatus `DRAFT` dan menyimpan payload checklist yang sudah dikirim, termasuk `ENG-WH-202611-003`. Riwayat lama menampilkan alasan yang tidak tersimpan dan membiarkan reviewer, tahap, serta waktu permintaan kosong bila tidak diketahui. Membuka form melanjutkan draft milik BES untuk tugas atau kombinasi area, ruangan, periode, dan form yang sama. Draft kosong dari penugasan lama dapat diselaraskan dengan form dan periode tugas saat ini tanpa mengganti nomor laporannya. Draft, bukti, dan riwayat yang sudah tersimpan tetap dipertahankan bila data lama atau laporan milik BES lain berbenturan. Membuka form yang sama secara bersamaan menggunakan satu draft.
 
 ## Form Checklist Tersedia
 
@@ -622,7 +640,7 @@ Terdapat 2 jalur utama pengisian laporan yang dibedakan secara logika meskipun s
 
 1. **Jalur Checklist (Rutin)**:
    - Form 002, 003, dan 005 memiliki opsi kondisi lengkap: `BAIK`, `RUSAK`, `TIDAK_ADA`.
-   - `BAIK` dan `RUSAK` wajib disertai foto (mandatory).
+   - Kondisi temuan seperti `RUSAK` wajib disertai foto. Kondisi `BAIK` dan `TIDAK_ADA` tidak memerlukan foto.
    - Seluruh item dalam checklist **wajib** diisi kondisinya sebelum laporan dapat disubmit.
    - Pengecualian: Form **004** murni penginputan angka daya (KWH) tanpa opsi kondisi dan tidak memerlukan foto.
 
@@ -651,7 +669,7 @@ Required behavior:
   project.
 - Condition choices remain `BAIK`, `RUSAK`, and `TIDAK_ADA`; displayed labels
   are `Baik`, `Rusak`, and `Tidak Ada`.
-- `BAIK` and `RUSAK` require direct camera capture evidence. The upload control
+- Conditions requiring photo evidence use direct camera capture. The upload control
   must request browser camera permission and open a live camera preview instead
   of starting from file storage.
 - Captured camera images continue to upload through the existing photo upload

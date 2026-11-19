@@ -152,7 +152,7 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
         </div>
         <div className="mt-3.5 sm:mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <ReportChoiceCard
-            href="/dashboard/reports/new/checklist/area?workPermit=fill"
+            href="/dashboard/reports/new/checklist/area"
             title="Checklist"
             description={
               hasWorkPermit
@@ -163,7 +163,7 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
             disabled={!hasWorkPermit}
           />
           <ReportChoiceCard
-            href="/dashboard/reports/new/repair/area?workPermit=fill"
+            href="/dashboard/reports/new/repair/area"
             title="Perbaikan / Temuan"
             description={
               hasWorkPermit
@@ -174,11 +174,15 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
             disabled={!hasWorkPermit}
           />
           <ReportChoiceCard
-            href="#"
+            href="/dashboard/reports/new/checklist/area?catalog=general"
             title="General Checklist"
-            description="Segera hadir pada pembaruan mendatang."
+            description={
+              hasWorkPermit
+                ? "Cari form checklist bulanan berdasarkan area dan ruangan."
+                : "Izin Kerja K3 aktif diperlukan untuk membuka katalog."
+            }
             icon={ClipboardCheck}
-            disabled
+            disabled={!hasWorkPermit}
           />
         </div>
       </section>

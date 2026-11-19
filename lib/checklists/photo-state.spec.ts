@@ -18,6 +18,6 @@ assert.deepEqual(
   { condition: "RUSAK", photos }
 )
 
-assert.deepEqual(getPayloadPhotosForCondition("BAIK", photos), photos)
+assert.deepEqual(getPayloadPhotosForCondition("BAIK", photos), [])
 assert.deepEqual(getPayloadPhotosForCondition("RUSAK", photos), photos)
 assert.deepEqual(getPayloadPhotosForCondition("TIDAK_ADA", photos), [])

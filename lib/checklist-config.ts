@@ -1,3 +1,5 @@
+import type { ChecklistPeriodType } from "@/lib/es-dashboard-types"
+
 export type ChecklistFormConfig = {
   id: string
   title: string
@@ -107,24 +109,40 @@ export const FORM_CODE_TO_CONFIG: Record<string, ChecklistFormConfig> = {
   },
 }
 
+type RoomFormAvailability = { formCode: string; period: string }
+type RoomWithForms = { formAvailabilities: RoomFormAvailability[] }
+type ChecklistAreaType = "OFFICE" | "WAREHOUSE"
+
+export const CHECKLIST_PERIODS: ChecklistPeriodType[] = ["MONTHLY", "WEEKLY", "QUARTERLY", "SEMESTER"]
+
+export function getChecklistFormConfig(formCode: string): ChecklistFormConfig | undefined {
+  // Master data and assignments contain both SAT/NRA numbers and internal codes.
+  const match = formCode.trim().toUpperCase().match(/^(?:SAT[/ _-]+)?FRM[/ _-]+(TSM?)[/ _-]+(\d{3})(?=$|[ _-]+REV\b|[ _-]+REV_)/)
+  return match ? FORM_CODE_TO_CONFIG[`FRM_${match[1]}_${match[2]}`] : undefined
+}
+
 export function getFormsForRoom(
-  room: { formAvailabilities?: Array<{ formCode: string; period: string }> } | undefined,
-  period?: string,
+  room: RoomWithForms,
+  period: ChecklistPeriodType,
+  areaType: ChecklistAreaType,
 ): ChecklistFormConfig[] {
-  if (!room || !room.formAvailabilities) return []
-  const matching = room.formAvailabilities.filter(
-    (fa) => !period || fa.period === period,
-  )
-  const seenIds = new Set<string>()
-  const result: ChecklistFormConfig[] = []
-  for (const item of matching) {
-    const config = FORM_CODE_TO_CONFIG[item.formCode]
-    if (config && !seenIds.has(config.id)) {
-      seenIds.add(config.id)
-      result.push(config)
-    }
+  if (areaType === "OFFICE" && period !== "MONTHLY") return []
+
+  const forms = new Map<string, ChecklistFormConfig>()
+  for (const item of room.formAvailabilities) {
+    if (item.period !== period) continue
+    const config = getChecklistFormConfig(item.formCode)
+    if (config) forms.set(config.id, config)
   }
-  return result
+  return [...forms.values()]
+}
+
+export function matchesChecklistForm(form: ChecklistFormConfig, search: string): boolean {
+  const query = search.trim().toLowerCase()
+  const normalizedCode = query.replace(/[^a-z0-9]/g, "")
+  return form.title.toLowerCase().includes(query) ||
+    form.description.toLowerCase().includes(query) ||
+    (!!normalizedCode && form.id.replaceAll("-", "").includes(normalizedCode))
 }
 
 export const CHECKLIST_FORMS: Record<

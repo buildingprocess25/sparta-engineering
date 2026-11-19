@@ -42,6 +42,7 @@ import type {
 } from "@/lib/checklists/payload"
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
+import { getScheduledChecklistWeek } from "@/lib/date-utils"
 import { cn } from "@/lib/utils"
 
 export type FrmTs045FormProps = {
@@ -116,9 +117,8 @@ export function FrmTs045Form({
 }: FrmTs045FormProps) {
   const router = useRouter()
 
-  // Week locked to current week of month
-  const currentWeekId = React.useMemo(() => getCurrentWeekId(), [])
-  const selectedWeek = currentWeekId
+  const scheduledWeek = getScheduledChecklistWeek(periodKey)
+  const selectedWeek = scheduledWeek ? `M${scheduledWeek}` : getCurrentWeekId()
 
   // Metadata
   const savedNotes = readWeeklyChecklistNotes(initialPayload?.generalNotes)
@@ -418,7 +418,7 @@ export function FrmTs045Form({
               Minggu Pelaksanaan <span className="text-red-500">*</span>
             </label>
             <div className="flex h-11 items-center justify-center rounded-xl border border-[#ff8a2a] bg-[#fff0e3] text-sm font-bold text-[#ff8a2a] shadow-xs select-none">
-              {ALL_WEEKS_LOOKUP.find((w) => w.id === currentWeekId)?.label || "Minggu 4"} Berjalan
+              {ALL_WEEKS_LOOKUP.find((w) => w.id === selectedWeek)?.label || "Minggu 4"}
             </div>
           </div>
 

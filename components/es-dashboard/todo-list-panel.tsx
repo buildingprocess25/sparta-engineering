@@ -454,10 +454,10 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                     const isCompleted = task.status === "COMPLETED"
                     const isOverdue = task.status === "OVERDUE"
 
-                    // Link direct ke form checklist tanpa mampir pilih area/ruangan
-                    const taskUrl = `/dashboard/reports/new/checklist/${task.formSlug}?taskId=${task.id}&roomName=${encodeURIComponent(
-                      task.objectName
-                    )}&period=${task.period}`
+                    const taskUrl = task.formSlug
+                      ? `/dashboard/reports/new/checklist/${task.formSlug}?taskId=${task.id}`
+                      : null
+                    const canOpenTask = hasWorkPermit && taskUrl !== null
 
                     const cardContent = (
                       <>
@@ -490,7 +490,7 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
 
                             {/* Form Code */}
                             <span className="text-[10px] font-medium text-slate-400">
-                              {task.formCode.split("_")[0]}
+                              {task.formSlug?.replaceAll("-", "_").toUpperCase() ?? task.formCode}
                             </span>
                           </div>
 
@@ -517,7 +517,7 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                                 Pending
                               </span>
                             )}
-                            {hasWorkPermit ? (
+                            {canOpenTask ? (
                               <ChevronRight className="size-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-[#ff8a2a]" />
                             ) : (
                               <Lock className="size-3.5 text-slate-400" />
@@ -537,6 +537,9 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                           >
                             {task.objectName}
                           </h4>
+                          {!taskUrl && (
+                            <p className="mt-1 text-xs text-slate-600">Form belum terdaftar. Hubungi BEC.</p>
+                          )}
                         </div>
                       </>
                     )
@@ -552,12 +555,12 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                         : "border-slate-200 bg-white hover:border-[#ff8a2a] hover:bg-orange-50/10 hover:shadow-xs"
                     )
 
-                    if (!hasWorkPermit) {
+                    if (!canOpenTask) {
                       return (
                         <div
                           key={task.id}
                           className={cardClassName}
-                          title="Lengkapi Form Izin Kerja di atas untuk membuka tugas ini"
+                          title={hasWorkPermit ? undefined : "Lengkapi Form Izin Kerja di atas untuk membuka tugas ini"}
                           aria-disabled="true"
                         >
                           {cardContent}

@@ -16,6 +16,7 @@ import {
   Search,
   X,
 } from "lucide-react"
+import { CHECKLIST_STATUS_LABELS } from "@/lib/reports/checklist-status-labels"
 import * as XLSX from "xlsx"
 
 import type { RealReportItem } from "@/lib/manager-dashboard-types"
@@ -35,6 +36,7 @@ type QuickFilterKey =
   | "over_sla"
   | "review_coord"
   | "review_manager"
+  | "review_requester"
   | "revision"
   | "completed"
   | "draft"
@@ -45,6 +47,7 @@ const QUICK_FILTERS: { key: QuickFilterKey; label: string }[] = [
   { key: "over_sla", label: "Lewat SLA" },
   { key: "review_coord", label: "Review Coord" },
   { key: "review_manager", label: "Review Manager" },
+  { key: "review_requester", label: "Review Requester" },
   { key: "revision", label: "Revisi" },
   { key: "completed", label: "Selesai" },
   { key: "draft", label: "Draft" },
@@ -109,6 +112,8 @@ export function AdminReportsTable({
         if (r.status !== "PENDING_COORD") return false
       } else if (quickFilter === "review_manager") {
         if (r.status !== "PENDING_MANAGER") return false
+      } else if (quickFilter === "review_requester") {
+        if (r.status !== "PENDING_REQUESTER") return false
       } else if (quickFilter === "completed") {
         if (r.status !== "COMPLETED") return false
       } else if (quickFilter === "draft") {
@@ -456,7 +461,7 @@ export function AdminReportsTable({
                           )}
                           {!isDraft && !isCompleted && !isCoord && !isManager && !isRejected && (
                             <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200">
-                              {report.status === "NEEDS_REVISION" ? "Perlu Revisi" : report.status}
+                              {CHECKLIST_STATUS_LABELS[report.status] ?? report.status}
                             </span>
                           )}
                         </td>

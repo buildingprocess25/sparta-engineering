@@ -11,13 +11,13 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Clock,
   ExternalLink,
   FileText,
   Home,
   Info,
   Lock,
   Search,
+  Shield,
   ShieldAlert,
   ShieldCheck,
   Sliders,
@@ -27,6 +27,12 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChecklistStatusBadge } from "@/components/es-dashboard/checklist-status-badge"
+import { WORK_PERMIT_STATUS_LABELS } from "@/lib/work-permits/status-labels"
+import type { WorkPermitStatus } from "@/generated/prisma"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
 import { PALLET_MOVER_WEEKLY_CATEGORIES } from "@/lib/checklists/frm-ts-045"
 import { FORKLIFT_WEEKLY_CATEGORIES } from "@/lib/checklists/frm-ts-043"
@@ -81,7 +87,7 @@ export interface EsFormDetailViewProps {
     workPermit?: {
       id: string
       permitCode: string
-      status: string
+      status: WorkPermitStatus
     } | null
   }
   userRole?: string
@@ -132,18 +138,9 @@ export function EsFormDetailView({
   const rawItems: ChecklistPayloadItem[] = React.useMemo(() => getReportItems(report.checklistPayload), [report.checklistPayload])
   const activeRevision = report.revisions.find((entry) => !entry.resubmittedAt)
   const isRevision = report.status === "NEEDS_REVISION"
-  const statusLabel: Record<string, string> = {
-    DRAFT: "Draft",
-    NEEDS_REVISION: "Perlu Revisi",
-    PENDING_COORD: "Review Coord",
-    PENDING_MANAGER: "Review Manager",
-    PENDING_REQUESTER: "Review Requester",
-    WAITING_PB: "Menunggu PB",
-    WAITING_PARTS: "Menunggu Part",
-    IN_PROGRESS: "Sedang Dikerjakan",
-    COMPLETED: "Selesai",
-    REJECTED: "Ditolak",
-  }
+  const permitStatus = report.workPermit?.status
+  const permitApproved = permitStatus === "APPROVED" || permitStatus === "COMPLETED"
+  const PermitIcon = permitApproved ? ShieldCheck : Shield
 
   const formCode = (report.formCode || payload.formCode || "").toUpperCase()
   const formConfig = getChecklistConfig(formCode)
@@ -312,7 +309,7 @@ export function EsFormDetailView({
     : "-"
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] text-[#111111] antialiased">
+    <div className="es-report-surface min-h-screen bg-[#fafaf9] text-[#111111] antialiased">
       {/* 1. Mobile-friendly Top Navigation Header */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#e8e8e6] bg-white/95 px-4 backdrop-blur-md">
         <Link
@@ -332,10 +329,7 @@ export function EsFormDetailView({
           </span>
         </div>
 
-        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-          <Clock className="size-3" />
-          {statusLabel[report.status] ?? report.status}
-        </span>
+        <ChecklistStatusBadge status={report.status} />
       </header>
 
       {/* 2. Main Form Content Wrapper */}
@@ -363,63 +357,60 @@ export function EsFormDetailView({
         )}
         <RevisionHistory revisions={report.revisions.filter((entry) => entry.resubmittedAt)} />
         {(report.status === "WAITING_PB" || report.status === "WAITING_PARTS" || report.status === "IN_PROGRESS") && (
-          <section className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/80 p-4">
-            <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-blue-100 p-2 text-blue-700 shrink-0">
-                <Wrench className="size-5" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-sm font-bold text-slate-900">
-                  {report.status === "WAITING_PB"
-                    ? "Tindak Lanjut Pengadaan Spare Part (PB)"
-                    : report.status === "WAITING_PARTS"
-                      ? "Penyiapan Spare Part & Mulai Perbaikan"
-                      : "Pekerjaan Perbaikan Unit"}
-                </h2>
-                <p className="mt-1 text-xs text-slate-700">
-                  {report.status === "WAITING_PB"
-                    ? "Usulan penggantian spare part telah disetujui Requester. Lakukan proses pengadaan (PB) bersama logistik dan klik tombol di bawah setelah part siap."
-                    : report.status === "WAITING_PARTS"
-                      ? "Seluruh spare part telah dialokasikan dan siap di gudang. Pastikan Izin Kerja (MED/003) bulan berjalan aktif sebelum memulai perbaikan unit."
-                      : "Pekerjaan perbaikan sedang berlangsung. Setelah seluruh penggantian selesai dan diuji coba, selesaikan pekerjaan."}
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  {report.status === "WAITING_PB" && (
-                    <Button
-                      disabled={isExecutionPending}
-                      onClick={() => handleExecuteAction("PROCESS_PB")}
-                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs"
-                    >
-                      Konfirmasi PB Diproses / Part Siap
-                    </Button>
-                  )}
-                  {report.status === "WAITING_PARTS" && (
-                    <Button
-                      disabled={isExecutionPending}
-                      onClick={() => handleExecuteAction("START_WORK")}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs"
-                    >
-                      Mulai Pekerjaan Perbaikan
-                    </Button>
-                  )}
-                  {report.status === "IN_PROGRESS" && (
-                    <Button
-                      disabled={isExecutionPending}
-                      onClick={() => handleExecuteAction("FINISH_WORK")}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
-                    >
-                      Selesaikan Pekerjaan (Selesai)
-                    </Button>
-                  )}
-                </div>
-                {executionFeedback && (
-                  <p className={cn("mt-2 text-xs font-semibold", executionFeedback.isError ? "text-rose-700" : "text-emerald-700")}>
-                    {executionFeedback.message}
-                  </p>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {report.status === "WAITING_PB"
+                  ? "Pengadaan spare part"
+                  : report.status === "WAITING_PARTS"
+                    ? "Penyiapan spare part"
+                    : "Perbaikan unit"}
+              </CardTitle>
+              <CardDescription>
+                {report.status === "WAITING_PB"
+                  ? "Koordinasikan pengadaan dengan logistik, lalu konfirmasi saat spare part siap."
+                  : report.status === "WAITING_PARTS"
+                    ? "Spare part tersedia. Pastikan izin kerja bulan ini aktif sebelum mulai."
+                    : "Setelah penggantian dan uji coba selesai, catat penyelesaian pekerjaan."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-2">
+                {report.status === "WAITING_PB" && (
+                  <Button
+                    disabled={isExecutionPending}
+                    onClick={() => handleExecuteAction("PROCESS_PB")}
+                    size="lg"
+                  >
+                    Konfirmasi PB Diproses / Part Siap
+                  </Button>
+                )}
+                {report.status === "WAITING_PARTS" && (
+                  <Button
+                    disabled={isExecutionPending}
+                    onClick={() => handleExecuteAction("START_WORK")}
+                    size="lg"
+                  >
+                    Mulai Pekerjaan Perbaikan
+                  </Button>
+                )}
+                {report.status === "IN_PROGRESS" && (
+                  <Button
+                    disabled={isExecutionPending}
+                    onClick={() => handleExecuteAction("FINISH_WORK")}
+                    size="lg"
+                  >
+                    Selesaikan Pekerjaan (Selesai)
+                  </Button>
                 )}
               </div>
-            </div>
-          </section>
+              {executionFeedback && (
+                <p className={cn("mt-2 text-xs font-semibold", executionFeedback.isError ? "text-rose-700" : "text-emerald-700")}>
+                  {executionFeedback.message}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         )}
         {/* Form Identity Card */}
         <div className="overflow-hidden rounded-2xl border border-[#dedede] bg-white p-4 shadow-xs">
@@ -485,25 +476,38 @@ export function EsFormDetailView({
                 </a>
               </div>
             )}
-            {report.workPermit && (
-              <div className="col-span-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-2.5 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-medium text-emerald-800">Izin Kerja K3 Terkait</span>
-                  <p className="mt-0.5 font-mono font-bold text-emerald-950 text-xs">
-                    {report.workPermit.permitCode}
-                  </p>
-                </div>
-                <span className="rounded-md bg-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-900 border border-emerald-300">
-                  {report.workPermit.status}
-                </span>
-              </div>
-            )}
           </div>
 
-          {/* Read-Only Notice */}
-          <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-blue-50/80 border border-blue-200/60 px-2.5 py-1.5 text-[11px] text-blue-900 font-medium">
-            <Lock className="size-3 text-blue-600 shrink-0" />
-            <span>Mode Baca: Isian telah tersimpan dan tidak dapat diubah oleh PIC.</span>
+          <div className="flex flex-col gap-3 pt-3">
+            {report.workPermit && (
+              <>
+                <Separator />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className={cn(
+                      "grid size-9 shrink-0 place-items-center rounded-lg",
+                      permitApproved ? "bg-emerald-100 text-emerald-800" : "bg-muted text-muted-foreground",
+                    )}>
+                      <PermitIcon className="size-4" aria-hidden="true" />
+                    </span>
+                    <dl className="min-w-0">
+                      <dt className="text-xs font-medium text-muted-foreground">Izin Kerja K3</dt>
+                      <dd className="break-words text-sm font-semibold">{report.workPermit.permitCode}</dd>
+                    </dl>
+                  </div>
+                  <Badge
+                    variant={permitStatus === "REJECTED" ? "destructive" : "outline"}
+                    className={permitApproved ? "border-emerald-200 bg-emerald-100 text-emerald-900" : undefined}
+                  >
+                    {WORK_PERMIT_STATUS_LABELS[report.workPermit.status]}
+                  </Badge>
+                </div>
+              </>
+            )}
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+              Mode baca · Isian yang sudah dikirim hanya bisa dilihat.
+            </p>
           </div>
         </div>
 
@@ -719,23 +723,22 @@ export function EsFormDetailView({
                                 </div>
                               )}
 
-                              {/* FORM TINDAK LANJUT */}
-                              <div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#707784]">
-                                  Form Tindak Lanjut
-                                </span>
-                                <div className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1 text-xs font-semibold text-blue-900">
-                                  <Wrench className="size-3 text-blue-600" />
-                                  <span>
-                                    {item.repairFormName ||
-                                      (item.repairForm?.includes("065")
-                                        ? "Form Penggantian Spare Part (065)"
-                                        : item.repairForm?.includes("014")
-                                          ? "Form Estimasi Biaya Sipil & ME (014)"
-                                          : item.repairForm || "Form Penggantian Spare Part (065)")}
-                                  </span>
-                                </div>
-                              </div>
+                              <dl className="flex flex-col gap-1.5">
+                                <dt className="text-xs font-medium text-muted-foreground">Form tindak lanjut</dt>
+                                <dd>
+                                  <Badge variant="outline" className="h-auto max-w-full whitespace-normal border-orange-200 bg-orange-50 text-orange-900">
+                                    <Wrench data-icon="inline-start" aria-hidden="true" />
+                                    <span>
+                                      {item.repairFormName ||
+                                        (item.repairForm?.includes("065")
+                                          ? "Form Penggantian Spare Part (065)"
+                                          : item.repairForm?.includes("014")
+                                            ? "Form Estimasi Biaya Sipil & ME (014)"
+                                            : item.repairForm || "Form Penggantian Spare Part (065)")}
+                                    </span>
+                                  </Badge>
+                                </dd>
+                              </dl>
                             </div>
                           )}
                         </div>

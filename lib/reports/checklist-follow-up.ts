@@ -124,6 +124,14 @@ export function hasSparePartReplacement(payload: unknown): boolean {
   })
 }
 
+export function hasCostEstimateFollowUp(payload: unknown): boolean {
+  return getReportItems(payload).some((item) => followUpForm(item) === FORM_014)
+}
+
+export function requiresRequesterReview(payload: unknown): boolean {
+  return hasCostEstimateFollowUp(payload) || hasSparePartReplacement(payload)
+}
+
 export function needsPbProcurement(payload: unknown): boolean {
   const items = getReportItems(payload)
   return items.some((item) => {

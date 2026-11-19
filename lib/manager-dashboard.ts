@@ -10,8 +10,10 @@ export async function getDashboardReportScope(userId: unknown): Promise<Prisma.C
     where: { NIK: userId }, select: { role: true, branchName: true },
   }) : null
   if (user?.role === "ADMIN_HO" || user?.role === "SUPER_ADMIN") return {}
-  if ((user?.role === "COORD" || user?.role === "MANAGER") && user.branchName.trim()) {
-    return { author: { branchName: { equals: user.branchName, mode: "insensitive" } } }
+  if (user?.branchName.trim()) {
+    const author = { branchName: { equals: user.branchName, mode: "insensitive" as const } }
+    if (user.role === "REQUESTER") return { author, status: "PENDING_REQUESTER" }
+    if (user.role === "COORD" || user.role === "MANAGER") return { author }
   }
   return { id: { in: [] } }
 }
@@ -188,7 +190,7 @@ export async function getRealAdminReports(reportScope: Prisma.ChecklistReportWhe
 }) {
   const prisma = getPrisma()
 
-  const whereConditions: any = { ...reportScope }
+  const whereConditions: Prisma.ChecklistReportWhereInput = { AND: [reportScope] }
 
   if (params.areaType) {
     whereConditions.area = {
@@ -211,7 +213,7 @@ export async function getRealAdminReports(reportScope: Prisma.ChecklistReportWhe
       whereConditions.status = "DRAFT"
     }
   } else if (params.status && params.status !== "all") {
-    whereConditions.status = params.status
+    whereConditions.status = params.status as Prisma.EnumReportStatusFilter["equals"]
   }
 
   if (params.search?.trim()) {

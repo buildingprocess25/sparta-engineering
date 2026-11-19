@@ -234,3 +234,25 @@
     --destructive: #a91932;
     --ring: #b7540c;
 }
+
+.es-report-surface {
+    --background: #ffffff;
+    --foreground: #171717;
+    --card: #ffffff;
+    --card-foreground: #171717;
+    --muted: #f1f0ed;
+    --muted-foreground: #5a5752;
+    --secondary: #efeeeb;
+    --secondary-foreground: #383531;
+    --accent: #f6f4f0;
+    --accent-foreground: #171717;
+    --border: #dedbd6;
+    --input: #d3cfc9;
+    --destructive: #a91932;
+    --ring: #b8540c;
+}
+
+.es-report-surface .activity-status-tabs [data-slot="tabs-trigger"][aria-selected="true"] {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+}

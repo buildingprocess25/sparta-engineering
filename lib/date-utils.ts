@@ -30,3 +30,8 @@ export function getCurrentPeriodKey(
   return `${year}-W${weekString}`
 }
 
+
+// ChecklistTask weekly periods use YYYY-MM-Wn, while the manual route uses ISO weeks.
+export function getScheduledChecklistWeek(periodKey: string) {
+  return periodKey.match(/^\d{4}-(?:0[1-9]|1[0-2])-W([1-4])$/)?.[1] as "1" | "2" | "3" | "4" | undefined
+}

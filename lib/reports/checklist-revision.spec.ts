@@ -309,3 +309,56 @@ test("report with 065 PB moves to WAITING_PB on Requester approval and advances 
   assert.equal(pbRes.nextStatus, "WAITING_PARTS")
   assert.equal(r.status, "WAITING_PARTS")
 })
+
+test("Form 014 needs same-branch Requester approval and waits for PJU even with a PB item", async () => {
+  const estimate = {
+    ...item,
+    id: "wall",
+    repairForm: FORM_014,
+    followUp014: {
+      materials: [{ id: "m1", namaBarang: "Cat", satuan: "L", jumlah: 2, hargaUnit: 50_000, total: 100_000 }],
+    },
+  }
+  const pbItem = {
+    ...item,
+    followUp065: { ...details065, parts: [{ ...parts[0], asalPart: "PB" }] },
+  }
+
+  for (const items of [[estimate], [estimate, pbItem]]) {
+    const report = {
+      id: "rep-014", reportCode: "ENG-014", author: { branchName: "HO" },
+      status: "PENDING_MANAGER" as ReportStatus, updatedAt: now, approvalHistory: [] as unknown[],
+      checklistPayload: { ...base, formCode: "FRM_TSM_003", followUpCompleted: true, items },
+    }
+    const tx = {
+      user: {
+        findUnique: async ({ where }: { where: { NIK: string } }) => ({
+          NIK: where.NIK,
+          name: where.NIK,
+          role: where.NIK === "manager" ? "MANAGER" : "REQUESTER",
+          branchName: where.NIK === "requester-other" ? "OTHER" : "HO",
+        }),
+      },
+      checklistReport: {
+        findUnique: async () => ({ ...report }),
+        updateMany: async ({ data }: { data: Partial<typeof report> }) => {
+          Object.assign(report, data)
+          return { count: 1 }
+        },
+      },
+    }
+    const prisma = { $transaction: (work: (client: typeof tx) => unknown) => work(tx) } as unknown as PrismaClient
+    const approve = (reviewerId: string) => saveChecklistReview(prisma, {
+      reportId: report.id, version: report.updatedAt.toISOString(), reviewerId, decision: "approve", notes: "ACC",
+    })
+    assert.ok((await approve("requester")).error)
+    assert.equal((await approve("manager")).nextStatus, "PENDING_REQUESTER")
+    assert.ok((await approve("requester-other")).error)
+    assert.equal((await approve("requester")).nextStatus, "WAITING_PJU")
+    assert.equal(report.status, "WAITING_PJU")
+    assert.deepEqual(
+      report.approvalHistory.map((record) => (record as { stage: string }).stage),
+      ["PENDING_MANAGER", "PENDING_REQUESTER"],
+    )
+  }
+})

@@ -47,20 +47,21 @@ export async function reviewReportDecision(
       revalidatePath(`/dashboard/reports/${reportCode}`)
     }
 
+    const approvalMessage: Partial<Record<typeof nextStatus, string>> = {
+      COMPLETED: "Laporan telah resmi disetujui final (Selesai).",
+      PENDING_MANAGER: "Laporan diverifikasi Coordinator dan diteruskan ke Manager.",
+      PENDING_REQUESTER: "Laporan disetujui Manager dan diteruskan ke Requester (WHM/DWHM).",
+      WAITING_PJU: "Form 014 disetujui Requester. Laporan menunggu proses PJU.",
+      WAITING_PB: "Usulan disetujui Requester. Menunggu proses pengadaan PB.",
+      WAITING_PARTS: "Usulan disetujui Requester. Part dialokasikan dari stok gudang.",
+    }
+
     return {
       success: true,
       nextStatus,
       message:
         decision === "approve"
-          ? nextStatus === "COMPLETED"
-            ? "Laporan telah resmi disetujui final (Selesai)."
-            : nextStatus === "PENDING_MANAGER"
-              ? "Laporan diverifikasi Coordinator dan diteruskan ke Manager."
-              : nextStatus === "PENDING_REQUESTER"
-                ? "Laporan disetujui Manager dan diteruskan ke Requester (WHM/DWHM) untuk konfirmasi spare part."
-                : nextStatus === "WAITING_PB"
-                  ? "Usulan disetujui Requester. Menunggu proses pengadaan PB."
-                  : "Usulan disetujui Requester. Part dialokasikan dari stok gudang."
+          ? approvalMessage[nextStatus] ?? "Persetujuan tersimpan."
           : decision === "reject_revision"
             ? `Laporan dikembalikan untuk revisi: ${decisionNotes}`
             : "Laporan telah ditolak.",

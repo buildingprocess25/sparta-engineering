@@ -35,6 +35,7 @@ import type {
 } from "@/lib/checklists/payload"
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
+import type { ChecklistPeriodType } from "@/lib/es-dashboard-types"
 import { cn } from "@/lib/utils"
 
 export type JenisPerawatanPLTSOption = "BULANAN" | "TIGA_BULANAN"
@@ -44,6 +45,7 @@ export type FrmTsm007FormProps = {
   areaCode: string
   areaName: string
   periodKey: string
+  checklistPeriod?: ChecklistPeriodType
   watermarkUserLabel: string
   watermarkUserRole: string
   formCode?: string
@@ -81,6 +83,7 @@ export function FrmTsm007Form({
   areaCode,
   areaName,
   periodKey,
+  checklistPeriod,
   watermarkUserLabel,
   watermarkUserRole,
   formCode = "FRM_TSM_007",
@@ -91,7 +94,12 @@ export function FrmTsm007Form({
   const currentYear = new Date().getFullYear()
   const [daya, setDaya] = React.useState(initialPayload?.dayaPLTS ?? "")
   const [tahun, setTahun] = React.useState(initialPayload?.tahunPLTS ?? String(currentYear))
-  const [jenisPerawatan, setJenisPerawatan] = React.useState<JenisPerawatanPLTSOption | "">((initialPayload?.jenisPerawatan ?? "") as JenisPerawatanPLTSOption | "")
+  const plannedTypes: Partial<Record<ChecklistPeriodType, JenisPerawatanPLTSOption>> = { MONTHLY: "BULANAN", QUARTERLY: "TIGA_BULANAN" }
+  const plannedType = checklistPeriod ? plannedTypes[checklistPeriod] : undefined
+  const [manualType, setJenisPerawatan] = React.useState<JenisPerawatanPLTSOption | "">(
+    (initialPayload?.jenisPerawatan ?? "") as JenisPerawatanPLTSOption | "",
+  )
+  const jenisPerawatan = plannedType ?? manualType
   const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
   const [itemStates, setItemStates] = React.useState<Record<string, ItemState>>(() => restoreChecklistItems<ItemState>(initialPayload, {}))
   const [collapsedCategories, setCollapsedCategories] = React.useState<Record<string, boolean>>({})
@@ -238,7 +246,7 @@ export function FrmTsm007Form({
 
         <div className="mt-3.5">
           <label className="mb-1.5 block text-xs font-bold text-[#111111]">Jenis Perawatan <span className="text-[#ff8a2a]">*</span></label>
-          <Select value={jenisPerawatan} onValueChange={(val) => setJenisPerawatan(val as JenisPerawatanPLTSOption)}>
+          <Select value={jenisPerawatan} disabled={!!plannedType} onValueChange={(val) => setJenisPerawatan(val as JenisPerawatanPLTSOption)}>
             <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
               <span className={cn("flex-1 text-left truncate", !jenisPerawatan && "text-[#707784]")}>
                 {jenisPerawatan === "BULANAN" ? "1 (satu) Bulanan" : jenisPerawatan === "TIGA_BULANAN" ? "3 (tiga) Bulanan" : "-- Pilih Jenis Perawatan --"}

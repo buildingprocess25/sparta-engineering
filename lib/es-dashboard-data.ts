@@ -29,6 +29,7 @@ const submittedChecklistStatuses = new Set([
   "PENDING_COORD",
   "PENDING_MANAGER",
   "PENDING_REQUESTER",
+  "WAITING_PJU",
   "COMPLETED",
   "REJECTED",
 ])

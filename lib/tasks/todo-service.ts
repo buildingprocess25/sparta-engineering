@@ -1,4 +1,5 @@
 import { ChecklistPeriod, TaskStatus } from "@/generated/prisma"
+import { getChecklistFormConfig } from "@/lib/checklist-config"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
 
@@ -9,7 +10,7 @@ export type UserTodoTaskItem = {
   periodKey: string
   status: TaskStatus
   formCode: string
-  formSlug: string
+  formSlug: string | null
   period: ChecklistPeriod
   completedAt: Date | null
   objectName: string
@@ -25,33 +26,6 @@ export type UserTodoSummary = {
   completed: number
   overdue: number
   tasks: UserTodoTaskItem[]
-}
-
-// Mengubah kode NRA menjadi slug form route e.g. "SAT/FRM/TS/043" -> "frm-ts-043"
-export function formCodeToSlug(formCode: string): string {
-  const clean = formCode.toUpperCase()
-  if (clean.includes("TSM/001")) return "frm-tsm-001"
-  if (clean.includes("TSM/002")) return "frm-tsm-002"
-  if (clean.includes("TSM/003")) return "frm-tsm-003"
-  if (clean.includes("TSM/004")) return "frm-tsm-004"
-  if (clean.includes("TSM/005")) return "frm-tsm-005"
-  if (clean.includes("TSM/006")) return "frm-tsm-006"
-  if (clean.includes("TSM/007")) return "frm-tsm-007"
-  if (clean.includes("TSM/008")) return "frm-tsm-008"
-  if (clean.includes("TSM/013")) return "frm-tsm-013"
-  if (clean.includes("TS/016")) return "frm-ts-016"
-  if (clean.includes("TS/022")) return "frm-ts-022"
-  if (clean.includes("TS/029")) return "frm-ts-029"
-  if (clean.includes("TS/041")) return "frm-ts-041"
-  if (clean.includes("TS/043")) return "frm-ts-043"
-  if (clean.includes("TS/045")) return "frm-ts-045"
-  if (clean.includes("TS/062")) return "frm-ts-062"
-  if (clean.includes("TS/063")) return "frm-ts-063"
-  if (clean.includes("TS/064")) return "frm-ts-064"
-  if (clean.includes("TS/068")) return "frm-ts-068"
-  if (clean.includes("TS/028")) return "frm-ts-028"
-
-  return "frm-tsm-003"
 }
 
 export async function getUserTodoTasks(
@@ -235,7 +209,7 @@ export async function getUserTodoTasks(
       periodKey: t.periodKey,
       status,
       formCode: t.assignment.formCode,
-      formSlug: formCodeToSlug(t.assignment.formCode),
+      formSlug: getChecklistFormConfig(t.assignment.formCode)?.id ?? null,
       period: t.assignment.period,
       completedAt: t.completedAt,
       objectName,

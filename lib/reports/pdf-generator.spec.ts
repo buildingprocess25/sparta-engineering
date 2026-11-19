@@ -71,3 +71,12 @@ test("battery PDFs retain distinct official form numbers", () => {
   assert.match(getNraForForm("FRM_TS_028").nra, /TS\/028/)
   assert.match(getNraForForm("FRM_TS_068").nra, /TS\/068/)
 })
+
+test("a report waiting for PJU is marked as pending, even after Requester approval", async () => {
+  const text = await renderedText({
+    ...report, status: "WAITING_PJU",
+    approvalHistory: [coordinator, manager, { decision: "approve", stage: "PENDING_REQUESTER" }],
+  })
+  assert.match(text, /Menunggu PJU/)
+  assert.doesNotMatch(text, /Laporan Final/)
+})

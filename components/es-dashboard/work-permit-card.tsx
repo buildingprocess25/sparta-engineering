@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { WORK_PERMIT_STATUS_LABELS } from "@/lib/work-permits/status-labels"
 import {
   ArrowRight,
   CalendarDays,
@@ -63,16 +64,6 @@ export type WorkPermitStatusData = {
     targetPeriod: string
   } | null
 } | null
-
-const stages = {
-  PENDING_MANAGER: "Menunggu Manager",
-  PENDING_P2K3: "Menunggu P2K3 / Delegate",
-  PENDING_SECRETARY: "Menunggu Sekretaris P2K3",
-  APPROVED: "Disetujui lengkap",
-  COMPLETED: "Selesai",
-  REJECTED: "Perlu revisi",
-  EXPIRED: "Kedaluwarsa",
-} as const
 
 const permitFormHref =
   "/dashboard/reports/new/work-permit?source=todo&next=dashboard"
@@ -150,7 +141,7 @@ export function WorkPermitCard({
               variant={status === "REJECTED" ? "destructive" : "secondary"}
               className={isFinal ? "bg-emerald-50 text-emerald-800" : undefined}
             >
-              {status ? stages[status] : "Perlu diajukan"}
+              {status ? WORK_PERMIT_STATUS_LABELS[status] : "Perlu diajukan"}
             </Badge>
           </div>
         </CardHeader>
@@ -219,7 +210,7 @@ export function WorkPermitCard({
                   <p className="font-medium">Izin {nextPeriod}</p>
                   <p className="text-muted-foreground">
                     {permit.nextMonthPermit
-                      ? stages[permit.nextMonthPermit.status]
+                      ? WORK_PERMIT_STATUS_LABELS[permit.nextMonthPermit.status]
                       : "Pengajuan periode berikutnya dibuka."}
                   </p>
                 </div>

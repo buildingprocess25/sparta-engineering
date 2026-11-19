@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient, ReportStatus } from "@/generated/prisma"
 import {
-  hasSparePartReplacement,
+  hasCostEstimateFollowUp,
+  requiresRequesterReview,
   needsChecklistFollowUp,
   needsPbProcurement,
 } from "./checklist-follow-up"
@@ -61,14 +62,15 @@ export async function saveChecklistReview(prisma: PrismaClient, input: {
       if (reviewer.role === "COORD") {
         nextStatus = "PENDING_MANAGER"
       } else if (reviewer.role === "MANAGER") {
-        nextStatus = hasSparePartReplacement(report.checklistPayload)
+        nextStatus = requiresRequesterReview(report.checklistPayload)
           ? "PENDING_REQUESTER"
           : "COMPLETED"
       } else {
-        // REQUESTER (WHM / DWHM)
-        nextStatus = needsPbProcurement(report.checklistPayload)
-          ? "WAITING_PB"
-          : "WAITING_PARTS"
+        nextStatus = hasCostEstimateFollowUp(report.checklistPayload)
+          ? "WAITING_PJU"
+          : needsPbProcurement(report.checklistPayload)
+            ? "WAITING_PB"
+            : "WAITING_PARTS"
       }
     } else if (input.decision === "reject_revision") {
       nextStatus = "NEEDS_REVISION"

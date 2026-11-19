@@ -37,8 +37,9 @@ import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
 import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
 import { GENSET_CATEGORIES } from "@/lib/checklists/frm-ts-022"
 import { getChecklistConfig } from "@/lib/checklists/registry"
-import { getReportItems, hasSparePartReplacement, needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
+import { getReportItems, hasCostEstimateFollowUp, needsChecklistFollowUp, requiresRequesterReview } from "@/lib/reports/checklist-follow-up"
 import type { ChecklistRevisionHistory } from "@/lib/reports/checklist-revision-history"
+import { Badge } from "@/components/ui/badge"
 import { RevisionHistory } from "@/components/reports/checklist-revision-history"
 
 export interface ReportDetailViewProps {
@@ -519,6 +520,9 @@ export function ReportDetailView({
   const isCoord = report.status === "PENDING_COORD"
   const isManager = report.status === "PENDING_MANAGER"
   const isPendingRequester = report.status === "PENDING_REQUESTER"
+  const isWaitingPju = report.status === "WAITING_PJU"
+  const hasForm014 = hasCostEstimateFollowUp(payload)
+  const needsRequester = requiresRequesterReview(payload)
   const isWaitingPb = report.status === "WAITING_PB"
   const isWaitingParts = report.status === "WAITING_PARTS"
   const isInProgress = report.status === "IN_PROGRESS"
@@ -610,7 +614,11 @@ export function ReportDetailView({
             <div className="flex items-center gap-2.5">
               <Clock className="size-4 text-purple-700 animate-pulse shrink-0" />
               <span>
-                <strong>Tahap Menunggu Review Requester (WHM / DWHM)</strong> — Usulan penggantian spare part Form 065 sedang ditinjau sebelum part dapat dialokasikan dari stok atau diajukan via PB.
+                <strong>Tahap Menunggu Review Requester (WHM / DWHM)</strong>
+                {" · "}
+                {hasForm014
+                  ? "Estimasi biaya Form 014 sedang ditinjau sebelum proses PJU."
+                  : "Usulan penggantian spare part Form 065 sedang ditinjau sebelum alokasi stok atau proses PB."}
               </span>
             </div>
           </div>
@@ -719,6 +727,7 @@ export function ReportDetailView({
                 Review Requester
               </span>
             )}
+            {isWaitingPju && <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-900">Menunggu PJU</Badge>}
             {isWaitingPb && (
               <span className="inline-flex items-center rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900 border border-amber-300">
                 Menunggu PB
@@ -1602,10 +1611,10 @@ export function ReportDetailView({
                     {userRole === "COORD"
                       ? "Validasi & Teruskan ke Manager"
                       : userRole === "MANAGER"
-                        ? hasSparePartReplacement(payload)
+                        ? needsRequester
                           ? "Setujui & Teruskan ke Requester (WHM/DWHM)"
                           : "Setujui Final"
-                        : "Setujui Usulan Spare Part"}
+                        : hasForm014 ? "Setujui Estimasi Form 014" : "Setujui Usulan Spare Part"}
                   </button>
                   <button
                     type="button"
@@ -1641,10 +1650,12 @@ export function ReportDetailView({
                       ? userRole === "COORD"
                         ? "Teruskan laporan ini ke Manager?"
                         : userRole === "MANAGER"
-                          ? hasSparePartReplacement(payload)
-                            ? "Setujui usulan dan teruskan ke Requester (WHM/DWHM) untuk konfirmasi spare part?"
+                          ? needsRequester
+                            ? "Setujui dan teruskan laporan ke Requester (WHM/DWHM)?"
                             : "Setujui laporan ini secara final?"
-                          : "Setujui usulan penggantian spare part ini?"
+                          : hasForm014
+                            ? "Setujui Form 014 dan lanjut ke tahap Menunggu PJU?"
+                            : "Setujui usulan penggantian spare part ini?"
                       : reviewDecision === "reject_revision"
                         ? "Kembalikan laporan untuk revisi?"
                         : "Tolak laporan ini?"}

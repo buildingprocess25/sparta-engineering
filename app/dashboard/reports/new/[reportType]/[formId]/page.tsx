@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 
 import { SharedChecklistForm } from "@/components/es-dashboard/shared-checklist-form"
@@ -18,6 +19,8 @@ import { FrmTs063Form } from "@/components/es-dashboard/frm-ts-063-form"
 import { FrmTs041Form } from "@/components/es-dashboard/frm-ts-041-form"
 import { FrmTs028Form } from "@/components/es-dashboard/frm-ts-028-form"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
+import { CHECKLIST_PERIODS, getChecklistFormConfig, getFormsForRoom } from "@/lib/checklist-config"
+import type { ChecklistPeriodType } from "@/lib/es-dashboard-types"
 import { getCurrentPeriodKey } from "@/lib/date-utils"
 import { getPrisma } from "@/lib/prisma"
 import { reserveChecklistDraft } from "@/lib/reports/drive-draft-service"
@@ -30,6 +33,7 @@ import { asPayloadRecord } from "@/lib/reports/checklist-follow-up"
 import { editableChecklistOwner } from "@/lib/reports/checklist-submission"
 import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
 import { getWorkPermitUser } from "@/lib/work-permits/current-user"
+import { buttonVariants } from "@/components/ui/button"
 
 export const dynamic = "force-dynamic"
 
@@ -41,9 +45,7 @@ type DynamicFormPageProps = {
   searchParams: Promise<{
     areaId?: string
     roomId?: string
-    roomName?: string
     period?: string
-    workPermit?: string
     taskId?: string
     revision?: string
   }>
@@ -152,7 +154,12 @@ const FORM_META: Record<string, { eyebrow: string; title: string; description: s
   },
 }
 
-function unavailable(title: string, description: string, eyebrow?: string) {
+function unavailable(
+  title: string,
+  description: string,
+  eyebrow?: string,
+  existingReportCode?: string | null,
+) {
   return (
     <ReportFlowShell
       eyebrow={eyebrow || "Form"}
@@ -160,7 +167,19 @@ function unavailable(title: string, description: string, eyebrow?: string) {
       description={description}
     >
       <div className="rounded-2xl border border-[#dedede] bg-white p-4 text-sm leading-6 text-[#686868] shadow-sm">
-        Kembali ke pemilihan area untuk membuka form checklist yang tersedia.
+        {existingReportCode ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href={`/dashboard/reports/${encodeURIComponent(existingReportCode)}`}
+              className={buttonVariants({ size: "lg" })}
+            >
+              Lihat laporan
+            </Link>
+            <span>{existingReportCode}</span>
+          </div>
+        ) : (
+          "Kembali ke pemilihan area untuk membuka form checklist yang tersedia."
+        )}
       </div>
     </ReportFlowShell>
   )
@@ -215,6 +234,7 @@ export default async function DynamicFormPage({
   let periodKey: string
   let reportCode: string
   let roomName: string | undefined
+  let checklistPeriod: ChecklistPeriodType | undefined
 
   if (revision && queryParams.revision) {
     const savedPeriodKey = revision.periodKey ?? asPayloadRecord(revision.checklistPayload).periodKey
@@ -227,109 +247,92 @@ export default async function DynamicFormPage({
       ? `${revision.equipment.name}${revision.equipment.unitNo ? ` Unit ${revision.equipment.unitNo}` : ""}`
       : revision.room?.name
   } else {
-    const validPeriods = ["WEEKLY", "MONTHLY", "QUARTERLY", "SEMESTER"] as const
-    type ValidPeriod = (typeof validPeriods)[number]
+    const prisma = getPrisma()
+    let roomId: string | null
+    let selectedPeriod: ChecklistPeriodType
+    let equipmentId: string | null = null
 
-    let areaId = queryParams.areaId
-    let roomId = queryParams.roomId || null
-    roomName = queryParams.roomName
-    let selectedPeriod = queryParams.period as ValidPeriod | undefined
-    let equipmentId: string | undefined = undefined
+    if (queryParams.taskId !== undefined) {
+      if (reportType !== "checklist" || typeof queryParams.taskId !== "string" || !queryParams.taskId) notFound()
 
-    // Jika datang dari Tugas Rutin (To-Do List), auto-resolve data terkait
-    if (queryParams.taskId) {
-      const task = await getPrisma().checklistTask.findUnique({
-        where: { id: queryParams.taskId, assignment: { userNik: user.NIK } },
+      const task = await prisma.checklistTask.findUnique({
+        where: {
+          id: queryParams.taskId,
+          status: { not: "CANCELLED" },
+          assignment: { userNik: user.NIK, isActive: true },
+        },
         include: {
           assignment: {
             include: {
-              equipment: true,
-              room: true,
+              room: { include: { area: true } },
+              equipment: { include: { area: true, room: { include: { area: true } } } },
             },
           },
         },
       })
+      if (!task || getChecklistFormConfig(task.assignment.formCode)?.id !== formId) notFound()
 
-      if (!task) notFound()
-      if (!selectedPeriod) {
-        selectedPeriod = task.assignment.period
+      const { equipment, room: assignedRoom } = task.assignment
+      const room = assignedRoom ?? equipment?.room
+      const taskArea = room?.area ?? equipment?.area
+      if (
+        !taskArea?.isActive ||
+        (room && !room.isActive) ||
+        (equipment && (
+          !equipment.isActive ||
+          equipment.branchName.trim().toLowerCase() !== user.branchName.trim().toLowerCase() ||
+          (equipment.areaId && equipment.areaId !== taskArea.id)
+        ))
+      ) {
+        return unavailable(
+          "Lokasi tugas belum valid",
+          "Hubungi BEC untuk memeriksa area, ruangan, atau aset yang terdaftar pada tugas ini.",
+          meta.eyebrow,
+        )
       }
-      if (task.assignment.room) {
-        roomId = roomId || task.assignment.room.id
-        roomName = roomName || task.assignment.room.name
-        areaId = areaId || task.assignment.room.areaId
-      } else if (task.assignment.equipment) {
-        equipmentId = task.assignment.equipment.id
-        roomName =
-          roomName ||
-          `${task.assignment.equipment.name}${task.assignment.equipment.unitNo ? ` Unit ${task.assignment.equipment.unitNo}` : ""}`.trim()
-        roomId = roomId || task.assignment.equipment.roomId || null
-        areaId = areaId || task.assignment.equipment.areaId || undefined
-      }
-    }
 
-    // Fallback areaId jika tugas belum terhubung ke area spesifik
-    if (!areaId) {
-      const defaultArea = await getPrisma().area.findFirst({
-        where: { isActive: true },
-        orderBy: { code: "asc" },
+      area = taskArea
+      roomId = room?.id ?? null
+      equipmentId = equipment?.id ?? null
+      roomName = equipment
+        ? `${equipment.name}${equipment.unitNo ? ` Unit ${equipment.unitNo}` : ""}`
+        : room?.name
+      selectedPeriod = task.assignment.period
+      periodKey = task.periodKey
+    } else {
+      const { areaId, roomId: selectedRoomId, period } = queryParams
+      if (
+        typeof areaId !== "string" || !areaId ||
+        typeof selectedRoomId !== "string" || !selectedRoomId ||
+        !CHECKLIST_PERIODS.includes(period as ChecklistPeriodType)
+      ) {
+        return unavailable(
+          "Pilihan checklist belum lengkap",
+          "Pilih area, periode, dan ruangan dari daftar yang tersedia.",
+          meta.eyebrow,
+        )
+      }
+
+      selectedPeriod = period as ChecklistPeriodType
+      const room = await prisma.room.findUnique({
+        where: { id: selectedRoomId, areaId, isActive: true, area: { isActive: true } },
+        include: { area: true, formAvailabilities: true },
       })
-      if (defaultArea) areaId = defaultArea.id
+      if (!room || !getFormsForRoom(room, selectedPeriod, room.area.type).some((form) => form.id === formId)) {
+        return unavailable(
+          "Form tidak tersedia",
+          "Form ini belum terdaftar untuk area, ruangan, dan periode yang dipilih.",
+          meta.eyebrow,
+        )
+      }
+
+      area = room.area
+      roomName = room.name
+      roomId = room.id
+      periodKey = getCurrentPeriodKey(selectedPeriod)
     }
 
-    if (
-      !areaId ||
-      !selectedPeriod ||
-      !validPeriods.includes(selectedPeriod)
-    ) {
-      return unavailable(
-        "Periode belum dipilih",
-        "Pilih area, ruangan, dan periode checklist yang valid.",
-        meta.eyebrow,
-      )
-    }
-
-    const selectedArea = await getPrisma().area.findUnique({
-      where: { id: areaId },
-      select: { id: true, code: true, name: true },
-    })
-
-    if (!selectedArea) {
-      return unavailable(
-        "Area tidak ditemukan",
-        "Data area checklist belum tersedia atau sudah tidak aktif.",
-        meta.eyebrow,
-      )
-    }
-
-    area = selectedArea
-    periodKey = getCurrentPeriodKey(selectedPeriod)
-
-    const existingReport = queryParams.taskId
-      ? await getPrisma().checklistReport.findFirst({
-          where: {
-            taskId: queryParams.taskId,
-          },
-          select: { status: true },
-        })
-      : await getPrisma().checklistReport.findFirst({
-          where: {
-            areaId: area.id,
-            roomId,
-            period: selectedPeriod,
-            periodKey,
-            formCode,
-          },
-          select: { status: true },
-        })
-
-    if (existingReport && existingReport.status !== "DRAFT") {
-      return unavailable(
-        "Checklist Sudah Disubmit",
-        "Laporan checklist untuk tugas / ruangan ini sudah pernah disubmit pada periode ini.",
-        meta.eyebrow,
-      )
-    }
+    checklistPeriod = selectedPeriod
 
     const draft = await reserveChecklistDraft(
       createPrismaChecklistDraftRepository(),
@@ -345,6 +348,26 @@ export default async function DynamicFormPage({
         equipmentId: equipmentId || null,
       },
     )
+    if ("unavailable" in draft) {
+      if (draft.unavailable === "submitted") {
+        return unavailable(
+          "Checklist Sudah Disubmit",
+          draft.existingReportCode
+            ? "Laporan untuk periode ini sudah dikirim. Buka detail untuk melihat statusnya."
+            : "Laporan untuk periode ini sudah dikirim. Hubungi BEC untuk memeriksa nomor laporannya.",
+          meta.eyebrow,
+          draft.existingReportCode,
+        )
+      }
+
+      return unavailable(
+        "Draft checklist perlu diperiksa",
+        draft.unavailable === "legacy"
+          ? "Draft lama berisi data dengan form atau periode yang berbeda. Hubungi BEC untuk meninjau draft ini."
+          : "Sudah ada laporan yang memakai tugas atau kombinasi ruangan, form, dan periode ini. Hubungi BEC untuk memeriksa penugasannya.",
+        meta.eyebrow,
+      )
+    }
     reportCode = draft.reportCode
   }
 
@@ -425,6 +448,7 @@ export default async function DynamicFormPage({
       ) : formId === "frm-tsm-006" ? (
         <FrmTsm006Form
           {...formProps}
+          checklistPeriod={checklistPeriod}
           initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           formCode={formCode}
@@ -441,6 +465,7 @@ export default async function DynamicFormPage({
       ) : formId === "frm-tsm-007" ? (
         <FrmTsm007Form
           {...formProps}
+          checklistPeriod={checklistPeriod}
           initialPayload={initialChecklist}
           areaName={roomName ? `${area.name} - ${roomName}` : area.name}
           formCode={formCode}

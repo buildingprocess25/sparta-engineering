@@ -47,6 +47,8 @@ import type {
 } from "@/lib/checklists/payload"
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
+import { getScheduledChecklistWeek } from "@/lib/date-utils"
+import type { ChecklistPeriodType } from "@/lib/es-dashboard-types"
 import { cn } from "@/lib/utils"
 
 export type JenisPerawatanOption = "GENERAL_MINGGUAN" | "BULANAN" | "ENAM_BULANAN"
@@ -56,6 +58,7 @@ export type FrmTsm006FormProps = {
   areaCode: string
   areaName: string
   periodKey: string
+  checklistPeriod?: ChecklistPeriodType
   watermarkUserLabel: string
   watermarkUserRole: string
   formCode?: string
@@ -99,6 +102,7 @@ export function FrmTsm006Form({
   areaCode,
   areaName,
   periodKey,
+  checklistPeriod,
   watermarkUserLabel,
   watermarkUserRole,
   formCode = "FRM_TSM_006",
@@ -107,11 +111,18 @@ export function FrmTsm006Form({
   submitAction,
 }: FrmTsm006FormProps) {
   const [jenisHydrant, setJenisHydrant] = React.useState(initialPayload?.jenisHydrant ?? "IHB - OHB")
-  const [jenisPerawatan, setJenisPerawatan] = React.useState<JenisPerawatanOption | "">((initialPayload?.jenisPerawatan ?? "") as JenisPerawatanOption | "")
+  const plannedTypes: Partial<Record<ChecklistPeriodType, JenisPerawatanOption>> = { WEEKLY: "GENERAL_MINGGUAN", MONTHLY: "BULANAN", SEMESTER: "ENAM_BULANAN" }
+  const plannedType = checklistPeriod ? plannedTypes[checklistPeriod] : undefined
+  const [manualType, setJenisPerawatan] = React.useState<JenisPerawatanOption | "">(
+    (initialPayload?.jenisPerawatan ?? "") as JenisPerawatanOption | "",
+  )
+  const jenisPerawatan = plannedType ?? manualType
   const calendarInfo = React.useMemo(() => getHydrantWeekRanges(), [])
-  const [selectedWeek, setSelectedWeek] = React.useState<"MGG_1" | "MGG_2" | "MGG_3" | "MGG_4">(
+  const scheduledWeek = getScheduledChecklistWeek(periodKey)
+  const [manualWeek, setSelectedWeek] = React.useState<"MGG_1" | "MGG_2" | "MGG_3" | "MGG_4">(
     initialPayload?.subPeriod?.startsWith("MGG_") ? initialPayload.subPeriod as typeof calendarInfo.activeWeekId : calendarInfo.activeWeekId
   )
+  const selectedWeek = scheduledWeek ? `MGG_${scheduledWeek}` as const : manualWeek
   const [selectedSemester, setSelectedSemester] = React.useState<"SEMESTER_1" | "SEMESTER_2">(() =>
     initialPayload?.subPeriod === "SEMESTER_1" || initialPayload?.subPeriod === "SEMESTER_2"
       ? initialPayload.subPeriod : getCurrentHydrantSemester()
@@ -451,6 +462,7 @@ export function FrmTsm006Form({
           </label>
           <Select
             value={jenisPerawatan}
+            disabled={!!plannedType}
             onValueChange={(val) => setJenisPerawatan(val as JenisPerawatanOption)}
           >
             <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#ff8a2a] focus:ring-offset-0">
@@ -510,7 +522,8 @@ export function FrmTsm006Form({
                   <button
                     key={w.id}
                     type="button"
-                    disabled={w.isPast}
+                    aria-pressed={isSelected}
+                    disabled={scheduledWeek ? !isSelected : w.isPast}
                     onClick={() => setSelectedWeek(w.id)}
                     className={cn(
                       "flex flex-col items-start rounded-xl border p-2.5 text-left transition-all",
