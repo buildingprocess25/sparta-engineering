@@ -1,12 +1,14 @@
 import { notFound, redirect } from "next/navigation"
+import Link from "next/link"
 
 import { getPrisma } from "@/lib/prisma"
 import type { ChecklistPayload } from "@/lib/checklists/payload"
-import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
+import { ACTIVE_WORK_PERMIT_REQUIRED, getActiveWorkPermit } from "@/lib/work-permits/active-permit"
 import { getWorkPermitUser } from "@/lib/work-permits/current-user"
 import { ReportFlowShell } from "@/components/es-dashboard/report-flow-shell"
 import { FollowUpFormsEditor } from "@/components/es-dashboard/follow-up-forms-editor"
 import { ReportCompletionSuccess } from "@/components/es-dashboard/report-completion-success"
+import { Button } from "@/components/ui/button"
 import { FORM_014, FORM_065, getReportItems, needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
 import { editableChecklistOwner } from "@/lib/reports/checklist-submission"
 
@@ -16,6 +18,7 @@ export default async function FollowUpOrchestratorPage({
   params: Promise<{ reportCode: string }>
 }) {
   const { reportCode } = await params
+  const detailHref = `/dashboard/reports/${encodeURIComponent(reportCode)}`
 
   const user = await getWorkPermitUser()
   if (user?.role !== "ES") {
@@ -80,7 +83,7 @@ export default async function FollowUpOrchestratorPage({
   const { followUp014Summary, followUp065Summary } = payload
   const isRevision = report.status === "NEEDS_REVISION"
   const needsFollowUp = needsChecklistFollowUp(payload)
-  if (isRevision && !needsFollowUp) redirect(`/dashboard/reports/${reportCode}`)
+  if (isRevision && !needsFollowUp) redirect(detailHref)
 
   if (!needsFollowUp) {
     return (
@@ -114,11 +117,23 @@ export default async function FollowUpOrchestratorPage({
   }
 
   if (report.status !== "PENDING_COORD" && !isRevision) {
-    redirect(`/dashboard/reports/${reportCode}`)
+    redirect(detailHref)
   }
 
   if (!(await getActiveWorkPermit(user))) {
-    redirect(isRevision ? `/dashboard/reports/${reportCode}` : report.taskId ? "/dashboard" : "/dashboard/reports/new")
+    return (
+      <ReportFlowShell
+        eyebrow="TINDAK LANJUT"
+        title="Izin Kerja K3 diperlukan"
+        description={ACTIVE_WORK_PERMIT_REQUIRED}
+        backHref={detailHref}
+        backLabel="Kembali ke Detail Laporan"
+      >
+        <Button nativeButton={false} size="lg" render={<Link href="/dashboard/reports/new/work-permit" />}>
+          Buka Izin Kerja
+        </Button>
+      </ReportFlowShell>
+    )
   }
 
   return (
@@ -126,8 +141,8 @@ export default async function FollowUpOrchestratorPage({
       eyebrow="TINDAK LANJUT"
       title="Form Tindak Lanjut Perbaikan"
       description="Lengkapi rincian estimasi biaya atau spare part untuk item yang rusak."
-      backHref={isRevision ? `/dashboard/reports/${reportCode}` : undefined}
-      backLabel={isRevision ? "Kembali ke Detail Laporan" : undefined}
+      backHref={detailHref}
+      backLabel="Kembali ke Detail Laporan"
     >
       <FollowUpFormsEditor
         reportCode={reportCode}

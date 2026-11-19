@@ -16,7 +16,6 @@ import {
 } from "@/lib/es-dashboard-data"
 import { getUserTodoTasks } from "@/lib/tasks/todo-service"
 import { getTodayWorkPermitStatus } from "@/lib/actions/work-permit"
-import { getWorkPermitNotifications } from "@/lib/work-permits/notifications"
 import { getSession } from "@/lib/session"
 import { getDashboardReportScope, getRealDashboardStats, getRealAdminReports } from "@/lib/manager-dashboard"
 import { ManagerDashboardView } from "@/components/manager-dashboard/manager-dashboard-view"
@@ -52,21 +51,18 @@ export default async function DashboardPage(props: DashboardPageProps) {
   }
 
   if (role === "ES") {
-    const [userContext, stats, todoData, workPermitStatus, notifications] = await Promise.all([
+    const workPermitSnapshotAt = new Date().toISOString()
+    const [userContext, stats, todoData, workPermitStatus] = await Promise.all([
       getEsDashboardUserContext(session?.userId as string),
       getEsDashboardStats(),
       getUserTodoTasks(session?.userId as string),
       getTodayWorkPermitStatus(session?.userId as string),
-      getWorkPermitNotifications(session?.userId as string).catch((error: unknown) => {
-        console.error("Error fetching work permit notifications:", error)
-        return null
-      }),
     ])
 
     return (
       <>
         <DashboardShell contentClassName="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl sm:px-6 md:px-8">
-          <DashboardHeader email={session?.email as string} role={role} workPermitNotifications={notifications} />
+          <DashboardHeader email={session?.email as string} role={role} workPermitSnapshotAt={workPermitSnapshotAt} />
           <WelcomePanel user={userContext} />
           <WorkPermitCard initialStatus={workPermitStatus} />
           <TodoListPanel

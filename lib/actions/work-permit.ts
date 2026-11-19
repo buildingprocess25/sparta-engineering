@@ -3,11 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { WorkPermitStatus, type Prisma } from "@/generated/prisma"
 import { getPrisma } from "@/lib/prisma"
-import {
-  getApplicantWorkPermitScope,
-  getManagerWorkPermitScope,
-  getPendingWorkPermitDecisionScope,
-} from "@/lib/work-permits/access"
+import { getApplicantWorkPermitScope } from "@/lib/work-permits/access"
 import { getWorkPermitPeriod, hasRequiredApprovals } from "@/lib/work-permits/active-period"
 import {
   getNextWorkPermitPeriod,
@@ -127,6 +123,10 @@ async function decideWorkPermit(permitId: string, decision: "APPROVED" | "REJECT
     return { ok: false, error: "Sesi tidak valid." }
   }
 
+  if (user.role !== "MANAGER") {
+    return { ok: false, error: "Hanya Manager cabang pemohon yang berwenang." }
+  }
+
   const decisionNotes = typeof notes === "string" ? notes.trim() : ""
   if (decision === "REJECTED" && !decisionNotes) {
     return { ok: false, error: "Alasan penolakan izin kerja wajib diisi." }
@@ -157,46 +157,14 @@ async function decideWorkPermit(permitId: string, decision: "APPROVED" | "REJECT
         return { ok: false as const, error: "Cabang pemohon belum dikonfigurasi." }
       }
 
-      let nextStatus: WorkPermitStatus
-      let approvalRole: string
-
-      if (permit.status === "PENDING_MANAGER") {
-        if (user.role !== "MANAGER" || userBranch !== applicantBranch) {
-          return { ok: false as const, error: "Hanya Manager cabang pemohon yang berwenang pada tahap ini." }
-        }
-        approvalRole = "MANAGER"
-        nextStatus = decision === "APPROVED" ? "PENDING_P2K3" : "REJECTED"
-      } else if (permit.status === "PENDING_P2K3") {
-        const approver = await tx.workPermitApprover.findFirst({
-          where: {
-            branchName: { equals: applicantBranch, mode: "insensitive" },
-            userNik: user.NIK,
-            approvalRole: { in: ["P2K3", "DELEGATE"] },
-            isActive: true,
-          },
-        })
-        if (!approver) {
-          return { ok: false as const, error: "Hanya P2K3 atau Delegate cabang yang berwenang pada tahap ini." }
-        }
-        approvalRole = approver.approvalRole
-        nextStatus = decision === "APPROVED" ? "PENDING_SECRETARY" : "REJECTED"
-      } else if (permit.status === "PENDING_SECRETARY") {
-        const approver = await tx.workPermitApprover.findFirst({
-          where: {
-            branchName: { equals: applicantBranch, mode: "insensitive" },
-            userNik: user.NIK,
-            approvalRole: "SECRETARY",
-            isActive: true,
-          },
-        })
-        if (!approver) {
-          return { ok: false as const, error: "Hanya Sekretaris P2K3 cabang yang berwenang pada tahap ini." }
-        }
-        approvalRole = "SECRETARY"
-        nextStatus = decision === "APPROVED" ? "APPROVED" : "REJECTED"
-      } else {
-        return { ok: false as const, error: "Izin kerja tidak dalam status yang menunggu persetujuan akun ini." }
+      if (userBranch !== applicantBranch) {
+        return { ok: false as const, error: "Hanya Manager cabang pemohon yang berwenang." }
       }
+      if (permit.status !== "PENDING_MANAGER") {
+        return { ok: false as const, error: "Izin kerja tidak sedang menunggu persetujuan Manager." }
+      }
+
+      const nextStatus = decision === "APPROVED" ? "PENDING_P2K3" : "REJECTED"
 
       const now = new Date()
       const currentHistory = Array.isArray(permit.approvalHistory)
@@ -207,10 +175,10 @@ async function decideWorkPermit(permitId: string, decision: "APPROVED" | "REJECT
         actorNik: user.NIK,
         actorName: user.name,
         accountRole: user.role,
-        approvalRole,
+        approvalRole: "MANAGER",
         stage: permit.status,
         decision,
-        notes: decisionNotes || (decision === "APPROVED" ? `Disetujui oleh ${approvalRole}` : ""),
+        notes: decisionNotes || (decision === "APPROVED" ? "Disetujui oleh Manager" : ""),
         decidedAt: now.toISOString(),
       }
 
@@ -218,12 +186,9 @@ async function decideWorkPermit(permitId: string, decision: "APPROVED" | "REJECT
         status: nextStatus,
         updatedAt: now,
         approvalHistory: [...currentHistory, auditEntry] as Prisma.InputJsonValue,
-      }
-
-      if (permit.status === "PENDING_MANAGER") {
-        updateData.managerNik = user.NIK
-        updateData.managerSignedAt = now
-        updateData.managerNotes = decisionNotes || "Disetujui oleh Manager"
+        managerNik: user.NIK,
+        managerSignedAt: now,
+        managerNotes: decisionNotes || "Disetujui oleh Manager",
       }
 
       const updated = await tx.workPermit.update({
@@ -241,12 +206,6 @@ async function decideWorkPermit(permitId: string, decision: "APPROVED" | "REJECT
         await sendApprovalEmail(result.permit.id, "PENDING_P2K3")
       } catch (emailErr) {
         console.error("Gagal mengirim simulasi email ke P2K3:", emailErr)
-      }
-    } else if (result.permit.status === "PENDING_SECRETARY") {
-      try {
-        await sendApprovalEmail(result.permit.id, "PENDING_SECRETARY")
-      } catch (emailErr) {
-        console.error("Gagal mengirim simulasi email ke Sekretaris P2K3:", emailErr)
       }
     }
 
@@ -465,20 +424,9 @@ export async function getManagerWorkPermits(filters?: {
   search?: string
 }) {
   const user = await getWorkPermitUser()
-  if (!user || !user.branchName.trim()) return []
+  if (!user || user.role !== "MANAGER" || !user.branchName.trim()) return []
 
   const branch = user.branchName.trim().toUpperCase()
-  const isManager = user.role === "MANAGER"
-  const isApprover = await getPrisma().workPermitApprover.findFirst({
-    where: {
-      branchName: { equals: branch, mode: "insensitive" },
-      userNik: user.NIK,
-      isActive: true,
-    },
-  })
-
-  if (!isManager && !isApprover) return []
-
   const where: Prisma.WorkPermitWhereInput = {
     applicant: { branchName: { equals: branch, mode: "insensitive" } },
   }

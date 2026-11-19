@@ -27,6 +27,7 @@ const roomDraft: ChecklistDraft = {
   taskId: null,
   equipmentId: null,
   canRebind: true,
+  pendingFollowUp: false,
 }
 
 class FakeRepository implements ChecklistDraftRepository {
@@ -88,4 +89,15 @@ test("keeps an existing room draft private and recognizes a submitted report", a
   assert.deepEqual(await reserveChecklistDraft(repository, reservation), { unavailable: "conflict" })
   repository.candidates = [{ ...roomDraft, status: "PENDING_COORD" }]
   assert.deepEqual(await reserveChecklistDraft(repository, reservation), { unavailable: "submitted", existingReportCode: roomDraft.reportCode })
+})
+
+test("resumes a submitted checklist with an unfinished follow-up for its owner", async () => {
+  const repository = new FakeRepository()
+  repository.candidates = [{ ...roomDraft, status: "PENDING_COORD", pendingFollowUp: true }]
+  assert.deepEqual(await reserveChecklistDraft(repository, reservation), {
+    unavailable: "follow-up",
+    existingReportCode: roomDraft.reportCode,
+  })
+  assert.deepEqual(await reserveChecklistDraft(repository, { ...reservation, authorId: "ES002" }), { unavailable: "conflict" })
+  assert.deepEqual(repository.created, [])
 })

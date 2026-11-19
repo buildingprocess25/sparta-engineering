@@ -1,8 +1,5 @@
 import { ProfileMenu } from "@/components/auth/profile-menu"
-import {
-  WorkPermitNotifications,
-  type WorkPermitNotificationData,
-} from "./work-permit-notifications"
+import { DashboardNotifications } from "@/components/dashboard-notifications"
 
 type DashboardHeaderProps = {
   email?: string
@@ -10,7 +7,7 @@ type DashboardHeaderProps = {
   title?: string
   subtitle?: string
   countBadge?: string | number
-  workPermitNotifications?: WorkPermitNotificationData | null
+  workPermitSnapshotAt?: string
 }
 
 export function DashboardHeader({
@@ -19,7 +16,7 @@ export function DashboardHeader({
   title = "Dashboard",
   subtitle = "SPARTA",
   countBadge,
-  workPermitNotifications,
+  workPermitSnapshotAt,
 }: DashboardHeaderProps) {
   return (
     <header className="flex items-center justify-between gap-4">
@@ -39,9 +36,7 @@ export function DashboardHeader({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {workPermitNotifications !== undefined && (
-          <WorkPermitNotifications initialData={workPermitNotifications} />
-        )}
+        <DashboardNotifications workPermitSnapshotAt={workPermitSnapshotAt} />
         <ProfileMenu initials={getInitials(role)} email={email} />
       </div>
     </header>

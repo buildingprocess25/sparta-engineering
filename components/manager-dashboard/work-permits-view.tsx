@@ -1,10 +1,11 @@
 "use client"
 
+import { DashboardNotifications } from "@/components/dashboard-notifications"
+
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
-  Bell,
   CheckCircle2,
   Clock,
   Download,
@@ -59,6 +60,7 @@ export type WorkPermitItem = {
 
 interface WorkPermitsViewProps {
   initialPermits: WorkPermitItem[]
+  initialPermitCode?: string
   viewerRole?: string
   userEmail?: string
   onToggleSidebar?: () => void
@@ -83,6 +85,7 @@ function formatItemsList(items: unknown): string {
 
 export function WorkPermitsView({
   initialPermits,
+  initialPermitCode,
   viewerRole = "MANAGER",
   userEmail = "manager@admin.com",
   onToggleSidebar,
@@ -91,7 +94,7 @@ export function WorkPermitsView({
   const [permits, setPermits] = React.useState<WorkPermitItem[]>(initialPermits)
   const [filter, setFilter] = React.useState<QuickFilter>("ALL")
   const [search, setSearch] = React.useState("")
-  const [selectedPermit, setSelectedPermit] = React.useState<WorkPermitItem | null>(null)
+  const [selectedPermit, setSelectedPermit] = React.useState<WorkPermitItem | null>(() => initialPermits.find((permit) => permit.permitCode === initialPermitCode) ?? null)
   const [actionLoading, setActionLoading] = React.useState(false)
   const [managerNoteInput, setManagerNoteInput] = React.useState("")
 
@@ -252,15 +255,7 @@ export function WorkPermitsView({
             <span>Ekspor XLSX</span>
           </button>
 
-          {/* Bell Icon with badge for pending permits */}
-          <div className="relative flex size-8 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
-            <Bell className="size-4" />
-            {pendingCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#ff8a2a] text-[9px] font-black text-slate-950">
-                {pendingCount}
-              </span>
-            )}
-          </div>
+          <DashboardNotifications />
 
           {/* User Avatar circle */}
           <div className="flex size-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
@@ -806,7 +801,7 @@ export function WorkPermitsView({
               </button>
 
               <div className="flex items-center gap-3">
-                {selectedPermit.status.startsWith("PENDING_") && (
+                {selectedPermit.status === "PENDING_MANAGER" && (
                   <>
                     <button
                       type="button"

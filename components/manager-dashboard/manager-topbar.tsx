@@ -1,7 +1,9 @@
 "use client"
 
+import { DashboardNotifications } from "@/components/dashboard-notifications"
+
 import * as React from "react"
-import { Bell, ChevronDown, Menu, PanelLeft } from "lucide-react"
+import { ChevronDown, Menu, PanelLeft } from "lucide-react"
 
 import type { AreaFilter } from "./mock-data"
 import { ProfileMenu } from "@/components/auth/profile-menu"
@@ -119,15 +121,7 @@ export function ManagerTopbar({
           )}
         </div>
 
-        {/* Notifications Icon */}
-        <button
-          type="button"
-          className="relative flex size-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-          aria-label="Notifikasi"
-        >
-          <Bell className="size-4" />
-          <span className="absolute right-2 top-2 size-2 rounded-full bg-[#e11d48] ring-2 ring-white" />
-        </button>
+        <DashboardNotifications />
 
         {/* User Profile Menu with Logout */}
         <ProfileMenu initials={initials} email={userEmail} />

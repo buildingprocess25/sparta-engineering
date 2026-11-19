@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache"
+
 import { getPrisma } from "@/lib/prisma"
 import type {
   ChecklistPeriodType,
@@ -5,8 +7,6 @@ import type {
   EsDashboardStat,
   EsDashboardUserContext,
 } from "@/lib/es-dashboard-types"
-import { getCurrentPeriodKey } from "@/lib/date-utils"
-import { getChecklistForms } from "@/lib/checklist-config"
 
 const areaOrder = [
   "office",
@@ -46,22 +46,37 @@ export function getCompletedChecklistPeriods(
   })
 }
 
-export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOptions> {
-  try {
-    const areas = await getPrisma().area.findMany({
-      where: { isActive: true },
-      include: {
-        rooms: {
-          where: { isActive: true },
-          orderBy: { name: "asc" },
-          include: {
-            formAvailabilities: {
-              orderBy: { period: "asc" },
-            },
+const getActiveAreaCatalog = unstable_cache(
+  () => getPrisma().area.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      type: true,
+      rooms: {
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          areaId: true,
+          name: true,
+          code: true,
+          formAvailabilities: {
+            orderBy: { period: "asc" },
+            select: { id: true, formCode: true, period: true },
           },
         },
       },
-    })
+    },
+  }),
+  ["sparta-engineering-active-area-catalog"],
+  { revalidate: 60 },
+)
+
+export async function getEsDashboardFlowOptions(): Promise<EsDashboardFlowOptions> {
+  try {
+    const areas = await getActiveAreaCatalog()
 
     const mappedAreas = areas
       .map((area) => {

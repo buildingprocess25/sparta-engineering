@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 
 import { getPrisma } from "@/lib/prisma"
 import { ACTIVE_WORK_PERMIT_REQUIRED, getActiveWorkPermit } from "@/lib/work-permits/active-permit"
@@ -122,6 +123,10 @@ async function submitChecklist(input: SubmitChecklistInput, revisionVersion?: st
   revalidatePath("/dashboard/activity")
   revalidatePath(`/dashboard/reports/${input.reportCode}`)
   revalidatePath(`/dashboard/reports/${input.reportCode}/follow-up`)
+
+  if (submittedReport.pendingFollowUp && revisionVersion === undefined) {
+    redirect(`/dashboard/reports/${encodeURIComponent(input.reportCode)}/follow-up`)
+  }
 
   return { ok: true as const, isSafe }
 }

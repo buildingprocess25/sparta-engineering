@@ -7,9 +7,13 @@ import {
   getFinalWorkPermitApproval,
 } from "./final-approval"
 
-export async function getWorkPermitNotifications(applicantNik: string) {
+export async function getWorkPermitNotifications(applicantNik: string, { unreadOnly = false } = {}) {
   const permits = await getPrisma().workPermit.findMany({
-    where: { applicantNik, status: { in: [...finalizedPermitStatuses] } },
+    where: {
+      applicantNik,
+      status: { in: [...finalizedPermitStatuses] },
+      ...(unreadOnly && { applicantNotificationReadAt: null }),
+    },
     select: {
       id: true,
       permitCode: true,

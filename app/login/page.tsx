@@ -79,12 +79,12 @@ export default async function LoginPage({
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/15 bg-white p-5 text-zinc-950 shadow-2xl shadow-black/30">
+        <section className={`rounded-xl border border-white/15 bg-white p-5 text-zinc-950 shadow-2xl shadow-black/30 ${mode === "demo" ? "border-t-4 border-t-[#ff7826]" : ""}`}>
           <div className="mb-6">
             <p className="text-sm font-semibold text-orange-600">
               AKSES MODUL
             </p>
-            <h2 className="mt-2 text-2xl font-black text-zinc-950">
+            <h2 className="mt-2 text-2xl font-black text-black">
               {mode === "demo" ? "Pilih akun demo" : "Login SPARTA Engineering"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
@@ -114,15 +114,19 @@ export default async function LoginPage({
                     className="min-h-11 justify-between border-zinc-300 bg-white text-zinc-950 hover:bg-orange-50 hover:text-zinc-950"
                   >
                     {label}
-                    <ArrowRight aria-hidden="true" data-icon="inline-end" />
+                    <ArrowRight aria-hidden="true" data-icon="inline-end" className="text-orange-700" />
                   </Button>
                 ))}
               </form>
               <Link
                 href="/demo/outbox"
-                className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-zinc-700 hover:text-zinc-950"
+                className={buttonVariants({
+                  variant: "outline",
+                  size: "lg",
+                  className: "min-h-11 justify-start border-zinc-200 bg-zinc-100 text-black hover:bg-zinc-200 hover:text-black",
+                })}
               >
-                <Mail aria-hidden="true" className="size-4" />
+                <Mail aria-hidden="true" data-icon="inline-start" />
                 Buka Kotak Keluar Email Demo
               </Link>
             </div>

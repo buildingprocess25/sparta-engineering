@@ -27,6 +27,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -93,6 +94,7 @@ export interface EsFormDetailViewProps {
   userRole?: string
   revisionUrl?: string | null
   canEditRevision?: boolean
+  followUp?: { href: string; label: string }
   currentUser?: {
     name: string
     NIK: string
@@ -110,6 +112,7 @@ export function EsFormDetailView({
   report,
   revisionUrl,
   canEditRevision,
+  followUp,
 }: EsFormDetailViewProps) {
   const router = useRouter()
   const [previewPhoto, setPreviewPhoto] = React.useState<PreviewPhoto | null>(null)
@@ -334,6 +337,17 @@ export function EsFormDetailView({
 
       {/* 2. Main Form Content Wrapper */}
       <main className="mx-auto max-w-2xl px-3 py-4 sm:px-4 sm:py-6 space-y-4">
+        {followUp && (
+          <div className="flex flex-col items-start gap-2">
+            <Alert role="status">
+              <AlertTitle>Form tindak lanjut belum lengkap</AlertTitle>
+              <AlertDescription>Lengkapi form agar BEC bisa meninjau laporan ini.</AlertDescription>
+            </Alert>
+            <Button nativeButton={false} size="lg" render={<Link href={followUp.href} />}>
+              {followUp.label}
+            </Button>
+          </div>
+        )}
         {isRevision && (
           <section className="space-y-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
             <h2 className="text-sm font-bold text-orange-900">Perlu Revisi</h2>

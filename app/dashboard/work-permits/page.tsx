@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 
-import { getPrisma } from "@/lib/prisma"
 import { ManagerSidebar } from "@/components/manager-dashboard/manager-sidebar"
 import { getManagerWorkPermits } from "@/lib/actions/work-permit"
 import { WorkPermitsView } from "@/components/manager-dashboard/work-permits-view"
@@ -8,8 +7,8 @@ import { getWorkPermitUser } from "@/lib/work-permits/current-user"
 
 export const dynamic = "force-dynamic"
 
-export default async function WorkPermitsPage() {
-  const user = await getWorkPermitUser()
+export default async function WorkPermitsPage({ searchParams }: { searchParams: Promise<{ permitCode?: string }> }) {
+  const [user, query] = await Promise.all([getWorkPermitUser(), searchParams])
 
   if (!user) {
     redirect("/login")
@@ -20,16 +19,9 @@ export default async function WorkPermitsPage() {
     redirect("/dashboard/reports/new/work-permit")
   }
 
-  const isManager = user.role === "MANAGER"
-  const isApprover = await getPrisma().workPermitApprover.findFirst({
-    where: {
-      branchName: { equals: user.branchName.trim(), mode: "insensitive" },
-      userNik: user.NIK,
-      isActive: true,
-    },
-  })
-  if (!isManager && !isApprover) redirect("/dashboard")
+  if (user.role !== "MANAGER") redirect("/dashboard")
 
+  const permitCode = typeof query.permitCode === "string" ? query.permitCode : undefined
   const permits = await getManagerWorkPermits()
 
   return (
@@ -38,7 +30,9 @@ export default async function WorkPermitsPage() {
       <div className="flex min-h-screen flex-col lg:pl-60 transition-all duration-200">
         <main className="flex-1 pb-10">
           <WorkPermitsView
+            key={permitCode ?? "list"}
             initialPermits={permits}
+            initialPermitCode={permitCode}
             viewerRole={user.role}
             userEmail={user.email ?? undefined}
           />

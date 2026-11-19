@@ -349,6 +349,9 @@ export default async function DynamicFormPage({
       },
     )
     if ("unavailable" in draft) {
+      if (draft.unavailable === "follow-up") {
+        redirect(`/dashboard/reports/${encodeURIComponent(draft.existingReportCode)}/follow-up`)
+      }
       if (draft.unavailable === "submitted") {
         return unavailable(
           "Checklist Sudah Disubmit",

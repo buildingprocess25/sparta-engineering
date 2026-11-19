@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma"
 import { getPrisma } from "@/lib/prisma"
+import { needsChecklistFollowUp } from "./checklist-follow-up"
 
 import type {
   ChecklistDraftRepository,
@@ -71,6 +72,7 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
       })
       return rows.map(({ checklistPayload, drivePhotoFileIds, revisions, items, ...report }) => ({
         ...report,
+        pendingFollowUp: report.status === "PENDING_COORD" && needsChecklistFollowUp(checklistPayload),
         canRebind: JSON.stringify(checklistPayload) === "{}" &&
           Array.isArray(drivePhotoFileIds) && drivePhotoFileIds.length === 0 &&
           revisions.length === 0 && items.length === 0,

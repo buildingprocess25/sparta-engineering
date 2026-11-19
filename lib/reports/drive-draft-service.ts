@@ -26,6 +26,7 @@ export type ChecklistDraft = {
   status: string
   updatedAt: Date
   canRebind: boolean
+  pendingFollowUp: boolean
 }
 
 export type CreateChecklistDraftInput = ReserveChecklistDraftInput & {
@@ -44,6 +45,7 @@ export interface ChecklistDraftRepository {
 
 type ReservationResult =
   | { reportCode: string }
+  | { unavailable: "follow-up"; existingReportCode: string }
   | { unavailable: "submitted"; existingReportCode: string | null }
   | { unavailable: "conflict" | "legacy" }
 
@@ -73,6 +75,9 @@ export async function reserveChecklistDraft(
     }
 
     if (existing.authorId !== input.authorId) return { unavailable: "conflict" }
+    if (existing.pendingFollowUp && existing.reportCode) {
+      return { unavailable: "follow-up", existingReportCode: existing.reportCode }
+    }
     if (existing.status !== "DRAFT") return { unavailable: "submitted", existingReportCode: existing.reportCode }
 
     const matchesEquipment = existing.equipmentId === (input.equipmentId ?? null)

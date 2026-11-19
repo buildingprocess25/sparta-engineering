@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose"
 import { cookies } from "next/headers"
+import { DEMO_ACCOUNTS } from "@/lib/demo-accounts"
 import { allowsSessionInMode, type SessionAuthSource } from "@/lib/sparta-app-mode"
 
 const secretKey = process.env.SESSION_SECRET
@@ -26,7 +27,11 @@ export async function decrypt(session: string | undefined = "") {
     const { payload } = await jwtVerify(session, encodedKey, {
       algorithms: ["HS256"],
     })
-    return allowsSessionInMode(payload.authSource) ? payload : null
+    if (!allowsSessionInMode(payload.authSource)) return null
+    if (payload.authSource === "demo" && !DEMO_ACCOUNTS.some(({ nik }) => nik === payload.userId)) {
+      return null
+    }
+    return payload
   } catch {
     return null
   }

@@ -1,5 +1,7 @@
 "use client"
 
+import { DashboardNotifications } from "@/components/dashboard-notifications"
+
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -553,7 +555,8 @@ export function ReportDetailView({
           <span className="font-mono font-bold text-slate-900">{report.reportCode}</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {isReviewer && <DashboardNotifications />}
           <div className="flex items-center gap-2">
             <div className="grid size-8 place-items-center rounded-lg bg-orange-100 text-[#ff8a2a] font-bold text-xs border border-orange-200">
               {(currentUser?.name || userRole || "US").slice(0, 2).toUpperCase()}

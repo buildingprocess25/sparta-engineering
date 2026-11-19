@@ -30,9 +30,10 @@ pada form tidak dapat dipakai untuk melewati persetujuan.
 - Konfigurasi awal melalui `scripts/configure-work-permit-approver.ts`; operator
   harus memilih target environment dan NIK nyata. Pemetaan kosong menahan izin
   pada tahap terkait; COORD/REQUESTER/admin tidak otomatis menjadi approver.
-- Antrean `/dashboard/work-permits` tersedia bagi Manager atau akun dengan
-  penugasan aktif. Aksi dibatasi cabang dan tahap saat ini. ES yang juga diberi
-  penugasan dapat membuka antrean, tetapi tidak menyetujui izinnya sendiri.
+- Antrean `/dashboard/work-permits` tersedia bagi BNM Manager. Manager dapat
+  memantau seluruh tahapan di cabangnya dan memberi keputusan pada tahap Manager.
+  P2K3/Delegate dan Sekretaris P2K3 memberi keputusan dengan tautan email tanpa
+  login ke SPARTA. Penugasan kontak menentukan penerima tautan.
 - Setiap keputusan menyimpan NIK, nama akun, role akun, fungsi persetujuan,
   keputusan, catatan, dan waktu server dalam `approvalHistory` di luar payload
   isian. Nama/role adalah snapshot saat keputusan, bukan nama terkini saja.

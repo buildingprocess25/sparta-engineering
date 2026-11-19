@@ -9,6 +9,10 @@
 - Sebagai **ES**, saya ingin dapat melaporkan temuan kerusakan langsung dari form checklist agar dapat segera ditindaklanjuti.
 - Sebagai **Engineering Coordinator / Manager / Requester**, saya ingin dapat memverifikasi dan menyetujui (approve) laporan checklist dan perbaikan secara berjenjang di dalam satu sistem yang sama.
 
+## Cache pilihan area
+
+Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam Next.js Data Cache dengan revalidasi 60 detik. Hasilnya dipakai bersama oleh pemilih area dan ringkasan dashboard BES. Status checklist, izin, hak akses, dan hasil laporan tetap diambil sesuai permintaan. Kegagalan koneksi mengikuti pesan pemulihan yang ada dan tidak disimpan sebagai hasil query. Perubahan master melalui seed atau impor dapat terlihat setelah siklus revalidasi.
+
 ## Scope
 
 **Dalam scope:**
@@ -702,6 +706,8 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
 
 2. **Alur Halaman Rekapitulasi Tindak Lanjut (`/dashboard/reports/[reportCode]/follow-up`)**:
    - Jika checklist memiliki item rusak, setelah submit checklist user diarahkan ke halaman pengisian form lanjutan (`/dashboard/reports/[reportCode]/follow-up`) sesuai jenisnya (065 untuk unit mesin/equipment, 014 untuk ruangan/gedung). Standardisasi ini berlaku di seluruh formulir checklist (FRM_TSM_001 s.d. FRM_TSM_013, FRM_TS_016 s.d. FRM_TS_064).
+   - Pengiriman checklist awal yang masih memerlukan Form 014/065 mengarahkan BES ke form tindak lanjut dari server. Jika membuka kembali tugas atau kombinasi checklist yang sama sebelum tindak lanjut disimpan, BES pemilik melanjutkan laporan dan nomor yang sama. Detail laporan BES juga menyediakan tombol untuk melanjutkannya.
+   - Jika izin kerja sudah tidak aktif, halaman tindak lanjut menampilkan tautan ke Izin Kerja K3 dan detail laporan. Isian checklist dan foto tetap tersimpan. Setelah Form 014/065 disimpan, membuka checklist yang sama kembali menampilkan laporan yang sudah dikirim.
    - Jika 100% aman (seluruh item BAIK), laporan langsung menuju antrean approval `PENDING_COORD`.
    - **Tampilan Step-by-Step (1 Form per Halaman/Langkah)**:
      - Form ditampilkan secara berurutan unit demi unit sesuai urutan item rusak di checklist (misal: Unit 1 AC [065] -> Unit 2 AC [065] -> Unit 1 Exhaust Fan [014]).

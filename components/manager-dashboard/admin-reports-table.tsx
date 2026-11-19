@@ -1,11 +1,12 @@
 "use client"
 
+import { DashboardNotifications } from "@/components/dashboard-notifications"
+
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowUpRight,
-  Bell,
   CheckCircle2,
   ChevronDown,
   Download,
@@ -206,13 +207,7 @@ export function AdminReportsTable({
             <span>Ekspor XLSX</span>
           </button>
 
-          {/* Bell Icon with badge 3 */}
-          <div className="relative flex size-8 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
-            <Bell className="size-4" />
-            <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#ff8a2a] text-[9px] font-black text-slate-950">
-              3
-            </span>
-          </div>
+          <DashboardNotifications />
 
           {/* User Avatar circle */}
           <div className="flex size-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">

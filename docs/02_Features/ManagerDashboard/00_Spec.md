@@ -8,6 +8,15 @@
 - Sebagai **Coordinator (Level BMC) / Manager (Level BNM) / Head of Engineering**, saya ingin memantau dashboard operasional yang terhubung langsung ke **database riil PostgreSQL** (2.254 unit equipment, 468 ruangan, 162 teknisi ES, dan laporan aktif).
 - Sebagai **Coordinator & Manager**, saya ingin halaman **Laporan Maintenance** (`/dashboard/reports`) mengadopsi standar tampilan role BMC di `sparta-maintenance`, mencakup filter scope cepat (*Semua, Laporan Aktif, Review Coord, Review Manager, Selesai, Draft*), pencarian teknisi/aset, serta workbench review laporan berjenjang (*Setujui, Minta Revisi, Tolak*).
 
+## Notifikasi dalam aplikasi
+
+- Dashboard, Aktivitas BES, Laporan Maintenance, detail laporan reviewer, dan Izin Kerja K3 memakai panel shadcn yang sama. Badge menghitung notifikasi belum dibaca. Panel memakai header hitam arang, tab aktif oranye, dan daftar netral. Tab Belum dibaca memuat jumlah item. Penanda oranye menandai item baru, dan tindak lanjut PJU yang belum dibaca mendapat penekanan dengan latar oranye muda.
+- BES menerima keputusan izin kerja, revisi checklist, serta penolakan atau penyelesaian checklist dari 30 hari terakhir. BES juga menerima status tindak lanjut PJU/PB/part untuk laporannya sendiri. Penolakan izin tampil selama 30 hari. Bukti ACC akhir MED/003 dan riwayat baca lama tetap tersedia bersama PDF izin.
+- BEC, BNM Manager, dan WHM/DWHM menerima checklist yang siap direview pada tahap masing-masing di cabang yang sama. Checklist yang masih menunggu pengisian Form 014/065 tidak masuk notifikasi BEC.
+- BNM Manager menerima izin pada tahap Manager di cabangnya. P2K3/Delegate dan Sekretaris P2K3 menerima tautan persetujuan melalui email sebagai pihak eksternal. Tautan membuka detail laporan atau izin yang bersangkutan. Admin melihat panel sesuai kewenangan yang sudah ada.
+- Dashboard merender lonceng terlebih dahulu dan meminta jumlah belum dibaca setelah tampil. Daftar serta riwayat baru diminta ketika panel dibuka. Panel menampilkan skeleton pada pemuatan pertama dan mempertahankan daftar saat menyegarkan data. Selama halaman terlihat, penyegaran tiap 30 detik meminta jumlah saja jika panel tertutup dan meminta daftar jika panel terbuka. Menandai dibaca tidak memberi keputusan atau mengubah status dokumen. Notifikasi antrean yang belum dibaca hilang ketika tugas berpindah tahap. Notifikasi yang ditandai dibaca tersimpan di riwayat pengguna untuk peran dan cabangnya.
+- Kotak Keluar Email Demo tetap menjadi simulasi pengiriman tautan P2K3/Delegate dan Sekretaris. Pengiriman email produksi belum tersedia. Pesan hasil aksi di halaman form tetap berfungsi sebagai umpan balik aksi tersebut.
+
 ## Scope
 
 **Dalam scope:**
@@ -29,7 +38,7 @@
    - Dikhususkan untuk role reviewer/management (`COORD`, `MANAGER`, `ADMIN_HO`, `SUPER_ADMIN`).
    - Untuk teknisi (`ES`), rute ini menampilkan `PlaceholderScreen` ("Laporan - Under Construction") konsisten dengan menu mobile ES lainnya (Aktivitas & Preventif).
    - Palette identitas SPARTA Engineering (kepatuhan `/frontend-design`): Bebas dari aksen biru ritel generic, menggunakan oranye signature SPARTA (`#ff8a2a`), deep navy (`#0b1728`), serta slate pekat.
-   - Header bar atas: Tombol toggle sidebar, breadcrumb `Laporan Maintenance`, tombol aksi `Ekspor XLSX` (dark deep navy `#0b1728` profesional), lonceng notifikasi (badge oranye SPARTA `3`), serta avatar profil user.
+   - Header bar atas: Tombol toggle sidebar, breadcrumb `Laporan Maintenance`, tombol aksi `Ekspor XLSX` (dark deep navy `#0b1728` profesional), lonceng notifikasi (badge oranye berdasarkan jumlah belum dibaca), serta avatar profil user.
    - Counter summary dinamis: `Total {n} laporan sesuai filter` dengan angka tebal.
    - Quick Filters button (kotak rounded-lg/md):
      - Active state: Oranye SPARTA (`bg-[#ff8a2a] text-slate-950 font-bold shadow-2xs`).

@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session"
 import { ReportDetailView } from "@/components/reports/report-detail-view"
 import { EsFormDetailView } from "@/components/es-dashboard/es-form-detail-view"
 import { ManagerSidebar } from "@/components/manager-dashboard/manager-sidebar"
-import { asPayloadRecord } from "@/lib/reports/checklist-follow-up"
+import { asPayloadRecord, hasCostEstimateFollowUp, needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
 import { describeRevisionChanges, getChecklistRevisionUrl } from "@/lib/reports/checklist-revision-history"
 import { getActiveWorkPermit } from "@/lib/work-permits/active-permit"
 
@@ -31,6 +31,7 @@ export default async function ReportDetailPage({
       equipment: true,
       author: { select: { NIK: true, name: true, role: true, branchName: true } },
       workPermit: { select: { id: true, permitCode: true, status: true } },
+      task: { select: { assignment: { select: { userNik: true } } } },
       revisions: { orderBy: [{ requestedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }] },
     },
   })
@@ -80,6 +81,15 @@ export default async function ReportDetailPage({
       ? getChecklistRevisionUrl(reportCode, report.formCode ?? (typeof savedFormCode === "string" ? savedFormCode : null))
       : null
     const canEdit = Boolean(editUrl && await getActiveWorkPermit(user))
+    const canResumeFollowUp = userRole === "ES" &&
+      (!report.taskId || report.task?.assignment.userNik === user.NIK) &&
+      report.status === "PENDING_COORD" && needsChecklistFollowUp(report.checklistPayload)
+    const followUp = canResumeFollowUp
+      ? {
+          href: `/dashboard/reports/${encodeURIComponent(reportCode)}/follow-up`,
+          label: hasCostEstimateFollowUp(report.checklistPayload) ? "Lanjutkan Form 014" : "Lanjutkan Form 065",
+        }
+      : undefined
     return (
       <EsFormDetailView
         report={serializedReport}
@@ -87,6 +97,7 @@ export default async function ReportDetailPage({
         currentUser={currentUserData}
         revisionUrl={editUrl}
         canEditRevision={canEdit}
+        followUp={followUp}
       />
     )
   }

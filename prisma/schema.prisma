@@ -23,6 +23,24 @@ model User {
   appliedWorkPermits  WorkPermit[]         @relation("WorkPermitApplicant")
   approvedWorkPermits WorkPermit[]         @relation("WorkPermitManager")
   workPermitApprovals WorkPermitApprover[]
+  dashboardNoticeReads DashboardNoticeRead[]
+}
+
+model DashboardNoticeRead {
+  userNik     String
+  user        User     @relation(fields: [userNik], references: [NIK], onDelete: Cascade)
+  role        UserRole
+  branch      String
+  noticeId    String
+  kind        String
+  title       String
+  reference   String
+  href        String
+  actionLabel String
+  occurredAt  DateTime @db.Timestamptz(3)
+  readAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([userNik, role, branch, noticeId])
 }
 
 model Area {

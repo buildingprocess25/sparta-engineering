@@ -106,6 +106,10 @@ Constraint: `@@unique([roomId, formCode, period])`. Tabel ini menggantikan `Area
 
 Constraint: `@@unique([areaId, roomId, period, periodKey, formCode])` untuk mencegah duplikasi laporan preventif per ruangan. Laporan insidental (`period = null`) tidak dibatasi.
 
+### DashboardNoticeRead
+
+Catatan baca notifikasi terkait antrean atau keputusan checklist dan izin K3. Kunci gabungan pengguna, peran, cabang, dan notifikasi menyimpan satu catatan tiap tahap dokumen. Judul, referensi, tautan internal, dan waktu perubahan disimpan untuk Riwayat setelah dokumen berpindah tahap. Notifikasi izin yang disetujui penuh tetap memakai kolom baca pada WorkPermit untuk mempertahankan riwayat yang sudah ada.
+
 ### ChecklistReportRevision
 
 | Field | Tipe | Keterangan |

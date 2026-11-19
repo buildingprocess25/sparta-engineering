@@ -44,8 +44,8 @@ Kode SSO tetap dipertahankan untuk kelanjutan integrasi:
 ## 2.2 Mode demo dan production
 
 `SPARTA_APP_MODE=demo` mengaktifkan pemilihan akun sekali klik di `/login`.
-Pilihan BES, BEC/Koordinator, dan BNM Manager WH Parung berasal dari data uji di database.
-Server mencocokkan identitas dummy, peran, dan cabang sebelum membuat sesi.
+Pilihan akun demo WH Parung mencakup BES, BEC/Koordinator, BNM Manager, dan WHM/DWHM. Judul pemilih akun dan tautan Kotak Keluar Email Demo menggunakan teks hitam. Tautan tersebut membuka email simulasi bagi P2K3/Delegate dan Sekretaris P2K3 untuk menyetujui izin tanpa sesi SPARTA.
+Server mencocokkan identitas dummy, peran, dan cabang sebelum membuat sesi. Sesi demo hanya berlaku bagi identitas di daftar pemilih akun.
 Tombol **Ganti Pengguna** menghapus sesi lalu membuka halaman pilih akun.
 
 Mode demo memakai database dan secret sesi khusus development. Kotak keluar
