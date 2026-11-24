@@ -107,3 +107,66 @@ for (const activePermit of [false, true]) {
   }))
   assert.equal(result.status, activePermit ? 200 : 403)
 }
+// V6 regression: invalid MIME, oversized, empty image, and Drive exceptions.
+const goodContext = {
+  kind: "CHECKLIST_ITEM",
+  reportCode: "ENG-OFFICE-202609-001",
+  formCode: "FRM_TSM_003",
+  itemId: "air_conditioner",
+}
+
+const invalidType = await handler(
+  await makeRequest(goodContext, new File(["x"], "foto.txt", { type: "text/plain" })),
+)
+assert.equal(invalidType.status, 400)
+
+const oversized = await handler(
+  await makeRequest(
+    goodContext,
+    new File([new Uint8Array(4 * 1024 * 1024 + 1)], "foto.jpg", { type: "image/jpeg" }),
+  ),
+)
+assert.equal(oversized.status, 400)
+
+const empty = await handler(
+  await makeRequest(goodContext, new File([], "foto.jpg", { type: "image/jpeg" })),
+)
+assert.equal(empty.status, 400)
+
+const driveUnavailable = createPhotoUploadPostHandler({
+  getSession: async () => ({ userId: "ES001", role: "ES" }),
+  loadReport: async () => ({
+    reportCode: "ENG-OFFICE-202609-001",
+    authorId: "ES001",
+    status: "DRAFT",
+    formCode: "FRM_TSM_003",
+    periodKey: "2026-09",
+    area: { name: "Office" },
+    author: { branchName: "BANJARMASIN" },
+  }),
+  rootFolderId: "root",
+  ensureEvidenceFolder: async () => { throw new Error("Drive mock unavailable") },
+  uploadPhoto: async () => ({ success: true, fileId: "unused", url: "/api/photos/unused" }),
+})
+const unavailableResponse = await driveUnavailable(await makeRequest(goodContext))
+assert.equal(unavailableResponse.status, 500)
+assert.equal(typeof (await unavailableResponse.json()).error, "string")
+
+const driveRejects = createPhotoUploadPostHandler({
+  getSession: async () => ({ userId: "ES001", role: "ES" }),
+  loadReport: async () => ({
+    reportCode: "ENG-OFFICE-202609-001",
+    authorId: "ES001",
+    status: "DRAFT",
+    formCode: "FRM_TSM_003",
+    periodKey: "2026-09",
+    area: { name: "Office" },
+    author: { branchName: "BANJARMASIN" },
+  }),
+  rootFolderId: "root",
+  ensureEvidenceFolder: async () => "evidence",
+  uploadPhoto: async () => ({ success: false, error: "Drive mock permission error" }),
+})
+const rejectedResponse = await driveRejects(await makeRequest(goodContext))
+assert.equal(rejectedResponse.status, 502)
+assert.equal(typeof (await rejectedResponse.json()).error, "string")

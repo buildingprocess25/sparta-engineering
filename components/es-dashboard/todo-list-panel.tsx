@@ -204,7 +204,7 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-semibold text-slate-400 leading-tight">Selesai</p>
+                  <p className="text-[10px] font-semibold text-slate-400 leading-tight">Sudah Preventif</p>
                   <ChevronRight className="size-3 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
                 </div>
                 <p className="text-sm font-bold text-emerald-400 font-mono leading-tight mt-0.5">{completed}</p>

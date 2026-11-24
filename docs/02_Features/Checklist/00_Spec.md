@@ -1,7 +1,7 @@
 # Checklist & Approval Workflow
 
 > **Status**: `Active`  
-> **Terakhir diperbarui**: 2026-08-31
+> **Terakhir diperbarui**: 2026-11-24
 
 ## User Story
 
@@ -42,7 +42,7 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 
 ## UI & Alur Pengguna
 
-- **Route(s)**: `/dashboard`, `/dashboard/reports/new`, `/dashboard/reports/new/work-permit`, `/dashboard/reports/new/[reportType]/[formId]`
+- **Route(s)**: `/dashboard`, `/dashboard/checklists`, `/dashboard/reports/new`, `/dashboard/reports/new/work-permit`, `/dashboard/reports/new/[reportType]/[formId]`
 - **Alur Laporan Rutin (To-Do List)**:
   1. PIC / ES login ke SPARTA $\rightarrow$ Dashboard utama menampilkan **Banner Form Izin Kerja (SAT/FRM/MED/003)** tepat di atas **Tugas Rutin PIC (To-Do List)** sebagai pengingat kepatuhan K3/SMK3. Jika izin kerja sudah memperoleh seluruh persetujuan dan berlaku pada bulan berjalan, banner berstatus aktif dan teknisi tidak perlu mengisi ulang.
   2. **Kunci Tugas Rutin (Lock / Disabled State)**: Seluruh kartu tugas dalam To-Do List berstatus terkunci (`disabled`) dan tidak dapat diklik selama ES belum memiliki izin kerja aktif.
@@ -50,16 +50,18 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
   4. PIC dapat memfilter tugas: **Pending**, **Mingguan**, **Bulanan**, **Selesai**, atau **Semua**, memilih kategori **Equipment** / **Ruangan**, serta mencari berdasarkan nama alat/ruangan.
   5. PIC mengklik kartu tugas yang sudah terbuka $\rightarrow$ langsung diarahkan ke form checklist terkait tanpa perlu memilih area atau ruangan secara manual (data area, ruangan, kode form, dan nama unit sudah terisi otomatis via `taskId`). Kode SAT/NRA dan kode internal membuka form yang sama. Draft rutin memakai periode serta `periodKey` dari tugas. Form Hydrant dan PLTS baru mengikuti jenis perawatan sesuai periode yang dipilih, dan form mingguan rutin menampilkan minggu penugasan. Tugas dengan kode form yang belum terdaftar atau aset yang belum memiliki lokasi valid menampilkan petunjuk untuk menghubungi BEC.
   6. Setelah PIC melengkapi item checklist dan menekan Submit, status `ChecklistTask` otomatis diperbarui menjadi `COMPLETED`, tanggal penyelesaian tercatat, dan persentase progres dashboard bertambah secara real-time.
+  7. **Halaman Checklist Rutin (`/dashboard/checklists`)**: Halaman khusus role `ES` yang menampilkan daftar tugas preventif PIC aktif (mengecualikan status `CANCELLED`) dengan 4 ringkasan metrik (`Total tugas`, `Belum Preventif`, `Sudah Preventif`, `Terlewat`). Pengguna dapat mencari berdasarkan nama objek, kode form, nama area, cabang, atau `periodKey`; menyaring melalui kontrol dropdown `SpartaFilterSelect` (`Jenis objek`: Equipment/Ruangan, `Periode`: Mingguan/Bulanan/3 Bulanan/6 Bulanan, dan `Area kerja` dari `areaName` pada `lib/tasks/todo-service.ts`) serta pill status dan tombol `Reset filter`. Jika izin kerja `MED/003` belum berstatus `APPROVED`, banner informasi ditampilkan dan daftar serta riwayat tetap dapat dilihat, namun tugas aktif tetap terkunci (`Menunggu izin MED/003`). Kartu berstatus `COMPLETED` yang memiliki `reportCode` mengarahkan ke `/dashboard/reports/[reportCode]`.
 - **Alur Laporan Non-Rutin**:
   1. ES masuk SPARTA dan klik 'Buat Laporan Baru' di bawah panel To-Do List.
   2. ES mengisi *Form Ijin Kerja* (SAT/FRM/MED/003) secara digital (Wajib / Mandatory, tanpa opsi lewati).
-  3. ES memilih jalur **Checklist** atau **Perbaikan by AHO / Temuan ES**.
-  4. ES memilih **Area** (misal: Branch / Office atau Warehouse).
-  5. ES memilih **Periode**. Branch / Office memakai Monthly, sedangkan area gudang mengikuti periode yang tersedia pada master ruangan.
-  6. ES memilih **Ruangan** dari master Excel. Pilihan disaring berdasarkan area dan periode.
-  7. ES memilih **Form Checklist** sesuai `RoomFormAvailability`. Form dapat dicari berdasarkan nama atau kode. Menu **General Checklist** membuka katalog Monthly yang sama. Jalur non-rutin hanya membuka kombinasi area, ruangan, periode, dan form yang valid, termasuk saat diakses melalui URL langsung.
-  8. ES mengisi checklist dan submit laporan (laporan terikat ke `areaId` dan `roomId`).
-  9. Laporan masuk antrean Approval:
+  3. Pada Langkah 2 (**Pilih Aktivitas**) di `/dashboard/reports/new`, ES melihat 3 jalur kerja: **Checklist Rutin** (`/dashboard/checklists`, dapat dibuka meskipun izin kerja belum aktif untuk memantau jadwal dan status tugas preventif), **Perbaikan / Temuan** (`/dashboard/reports/new/repair/area`), dan **General Checklist** (`/dashboard/reports/new/checklist/area?catalog=general`). Pilihan non-rutin (*Perbaikan / Temuan* dan *General Checklist*) terbuka setelah izin kerja aktif.
+  4. Akses ke `/dashboard/reports/new/checklist/area` tanpa parameter `?catalog=general` otomatis dialihkan ke `/dashboard/checklists`; rute tersebut hanya menampilkan pemilihan area **General Checklist** (katalog Monthly) bila disertai `?catalog=general` dan izin kerja aktif.
+  5. ES memilih **Area** (misal: Branch / Office atau Warehouse).
+  6. ES memilih **Periode**. Branch / Office memakai Monthly, sedangkan area gudang mengikuti periode yang tersedia pada master ruangan.
+  7. ES memilih **Ruangan** dari master Excel. Pilihan disaring berdasarkan area dan periode.
+  8. ES memilih **Form Checklist** sesuai `RoomFormAvailability`. Form dapat dicari berdasarkan nama atau kode. Menu **General Checklist** membuka katalog Monthly yang sama. Jalur non-rutin hanya membuka kombinasi area, ruangan, periode, dan form yang valid, termasuk saat diakses melalui URL langsung.
+  9. ES mengisi checklist dan submit laporan (laporan terikat ke `areaId` dan `roomId`).
+  10. Laporan masuk antrean Approval:
      - Jika 100% aman: `Coord -> Manager -> Selesai`
      - Jika ada kerusakan: `Coord -> Manager -> Requester -> Input PB/PJU -> Selesai`
 
@@ -89,12 +91,18 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 - Periode Checklist (`ChecklistPeriod`): `WEEKLY`, `MONTHLY`, `QUARTERLY`, `SEMESTER`.
 *(Detail field didokumentasikan di `docs/01_Architecture/10_Data_Models.md`)*
 
+### Kontrak & Validasi Upload Foto (`/api/photos/upload`)
+
+- Endpoint `POST /api/photos/upload` (`app/api/photos/upload/handler.ts`) memvalidasi payload `multipart/form-data` yang gagal diparsing (`400`), file kosong `0 byte` (`400`), tipe MIME gambar (`image/jpeg`, `image/jpg`, `image/png`, `image/webp`; selainnya `400`), serta batas ukuran maksimal `4 MB` (`400`).
+- Kegagalan unggah yang ditolak Google Drive (`!uploaded.success`) mengembalikan HTTP `502`, sedangkan exception layanan penyimpanan mengembalikan HTTP `500` dengan payload JSON `{ error }`.
+- Respons sukses memakai kontrak JSON `{ fileId, url }` yang diparsing secara seragam oleh klien melalui helper `readPhotoUploadResponse` (`lib/photos/photo-upload-client.ts`), termasuk pada `FRM_TS_041`, `FRM_TSM_006`, dan `FRM_TSM_007`, serta tercakup unit test regresi pada `app/api/photos/upload/route.spec.ts` dan `lib/photos/photo-upload-client.spec.ts`.
+
 ## Aktivitas BES
 
 - **Terkirim** membuka daftar laporan milik BES dari `ChecklistReport`, termasuk laporan rutin dan non-rutin dari periode lama. Draft dikecualikan. Setiap kartu menunjukkan nomor, objek, periode, jenis, dan status terakhir. Pencarian mencakup nomor laporan, kode form, dan objek. Kartu membuka detail laporan yang sama.
-- **Selesai** dan **Terlewat** tetap mengikuti status tugas rutin dari `ChecklistTask` pada periode yang ditampilkan. **Perlu Revisi** menampilkan laporan yang perlu ditindaklanjuti BES.
+- **Sudah Preventif** (tab untuk status `COMPLETED`, sebelumnya bernama *Selesai*) dan **Terlewat** (`OVERDUE`) tetap mengikuti status tugas rutin dari `ChecklistTask` pada periode yang ditampilkan. Kartu tugas selesai menampilkan badge `Sudah Preventif` dan label waktu `Preventif:`. **Perlu Revisi** menampilkan laporan yang perlu ditindaklanjuti BES.
 
-- Navigasi Aktivitas menggunakan tab shadcn dengan aksen oranye pada pilihan aktif. Kartu menampilkan ikon jenis objek dan badge hijau bercetang untuk status selesai. Di detail laporan, status Izin Kerja K3 memakai aksen hijau setelah disetujui dan Form 065/014 memakai label tindak lanjut beraksen oranye.
+- Navigasi Aktivitas menggunakan tab shadcn dengan aksen oranye pada pilihan aktif. Kartu menampilkan ikon jenis objek dan badge hijau untuk status `Sudah Preventif`. Di detail laporan, status Izin Kerja K3 memakai aksen hijau setelah disetujui dan Form 065/014 memakai label tindak lanjut beraksen oranye.
 
 ## Persetujuan Form 014
 

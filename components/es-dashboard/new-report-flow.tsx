@@ -114,7 +114,7 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
               <span className="mt-1 block text-xs sm:text-sm text-[#774000]">
                 {hasWorkPermit
                   ? "Izin kerja aktif & terkonfirmasi. Pilihan laporan di bawah telah terbuka."
-                  : "Wajib diisi sebelum dapat memilih jenis laporan di bawah."}
+                  : "Wajib disetujui sebelum mulai mengerjakan checklist atau perbaikan."}
               </span>
             </div>
             <Link
@@ -142,25 +142,25 @@ export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlo
             2
           </span>
           <div>
-            <h2 className="font-semibold text-base sm:text-lg text-[#111111]">Jenis Laporan</h2>
+            <h2 className="font-semibold text-base sm:text-lg text-[#111111]">Pilih Aktivitas</h2>
             <p className="mt-1 text-sm sm:text-base leading-5 sm:leading-6 text-[#686868]">
               {hasWorkPermit
-                ? "Pilih jalur kerja non-rutin yang akan dilaksanakan."
-                : "Harap isi Form Izin Kerja pada Langkah 1 untuk membuka pilihan jalur kerja."}
+                ? "Cari tugas preventif rutin atau catat temuan di luar jadwal."
+                : "Izin kerja aktif diperlukan untuk mulai mengerjakan checklist atau perbaikan."}
             </p>
           </div>
         </div>
         <div className="mt-3.5 sm:mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <ReportChoiceCard
-            href="/dashboard/reports/new/checklist/area"
-            title="Checklist"
+            href="/dashboard/checklists"
+            title="Checklist Rutin"
             description={
               hasWorkPermit
-                ? "Pilih area dan inventaris checklist non-rutin."
-                : "Wajib mengisi Form Izin Kerja pada langkah 1 terlebih dahulu."
+                ? "Lihat tugas preventif PIC, cari form yang ditugaskan, dan pantau statusnya."
+                : "Aktifkan izin kerja untuk mengerjakan tugas preventif PIC."
             }
             icon={ClipboardCheck}
-            disabled={!hasWorkPermit}
+            disabled={false}
           />
           <ReportChoiceCard
             href="/dashboard/reports/new/repair/area"

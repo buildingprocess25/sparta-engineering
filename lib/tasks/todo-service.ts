@@ -17,6 +17,7 @@ export type UserTodoTaskItem = {
   objectType: "EQUIPMENT" | "ROOM"
   unitNo?: number
   branchName?: string
+  areaName?: string | null
   reportCode?: string | null
 }
 
@@ -165,8 +166,8 @@ export async function getUserTodoTasks(
     include: {
       assignment: {
         include: {
-          equipment: true,
-          room: true,
+          equipment: { include: { area: true, room: { include: { area: true } } } },
+          room: { include: { area: true } },
         },
       },
       report: {
@@ -216,6 +217,7 @@ export async function getUserTodoTasks(
       objectType,
       unitNo: equip?.unitNo,
       branchName: equip?.branchName,
+      areaName: room?.area?.name ?? equip?.room?.area?.name ?? equip?.area?.name ?? null,
       reportCode: t.report?.reportCode || null,
     }
   })

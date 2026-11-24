@@ -1,5 +1,7 @@
 "use client"
 
+import { readPhotoUploadResponse } from "@/lib/photos/photo-upload-client"
+
 import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
@@ -135,11 +137,10 @@ export function FrmTsm007Form({
       formData.set("file", file)
       formData.set("context", JSON.stringify({ kind: "CHECKLIST_ITEM", reportCode, formCode, itemId, sequence: (itemStates[itemId]?.photos?.length || 0) + 1 }))
       const response = await fetch("/api/photos/upload", { method: "POST", body: formData })
-      const payload = await response.json()
-      if (!response.ok || !payload?.ok || !payload?.photo) throw new Error(payload?.error || "Gagal mengupload foto")
+      const payload = await readPhotoUploadResponse(response)
       setItemStates((prev) => {
         const current = prev[itemId] || { condition: "RUSAK" as ChecklistCondition, photos: [], notes: "", handler: "BES" as const, repairForm: "SAT/FRM/TS/065_REV:00_161020" }
-        return { ...prev, [itemId]: { ...current, photos: [...current.photos, payload.photo], uploading: false } }
+        return { ...prev, [itemId]: { ...current, photos: [...current.photos, payload], uploading: false } }
       })
       setUploadNotice({ tone: "success", message: "Foto berhasil diunggah." })
       setTimeout(() => setUploadNotice(null), 3000)

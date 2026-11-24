@@ -1,5 +1,7 @@
 "use client"
 
+import { readPhotoUploadResponse } from "@/lib/photos/photo-upload-client"
+
 import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
@@ -239,11 +241,7 @@ export function FrmTs041Form({
         method: "POST",
         body: formData,
       })
-      const payload = await response.json()
-
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || "Gagal mengunggah foto")
-      }
+      const payload = await readPhotoUploadResponse(response)
 
       setItems((prev) => {
         const current = prev[itemId] || {

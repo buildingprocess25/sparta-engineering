@@ -159,7 +159,7 @@ export function ActivityHistoryView({
               <TabsTrigger value="SUBMITTED" className="min-h-9">
                 <ClipboardList aria-hidden="true" /> Terkirim
               </TabsTrigger>
-              <TabsTrigger value="COMPLETED" className="min-h-9">Selesai</TabsTrigger>
+              <TabsTrigger value="COMPLETED" className="min-h-9">Sudah Preventif</TabsTrigger>
               <TabsTrigger value="OVERDUE" className="min-h-9">Terlewat</TabsTrigger>
               <TabsTrigger value="REVISION" className="min-h-9">
                 Perlu Revisi {revisions.length > 0 && <span aria-label={`${revisions.length} laporan`}>({revisions.length})</span>}
@@ -246,12 +246,12 @@ export function ActivityHistoryView({
                             <FileText className="size-5" />
                           </div>
                           <h4 className="mt-2.5 text-sm font-bold text-slate-800">
-                            Belum Ada Checklist Selesai
+                            Belum Ada Hasil Preventif
                           </h4>
                           <p className="mt-1 max-w-xs text-xs text-slate-500">
                             {searchQuery
-                              ? "Tidak ada riwayat selesai yang sesuai dengan kata kunci pencarian Anda."
-                              : "Tugas checklist yang telah Anda selesaikan bulan ini akan tercatat di sini."}
+                              ? "Tidak ada hasil preventif yang sesuai dengan kata kunci pencarian Anda."
+                              : "Tugas checklist yang sudah Anda kirim bulan ini akan tercatat di sini."}
                           </p>
                         </>
                       ) : (
@@ -310,13 +310,17 @@ export function ActivityHistoryView({
                               {/* Bottom Row: Status Badge & Date */}
                               <div className="mt-1.5 flex items-center justify-between gap-2 flex-wrap text-xs">
                                 <div className="flex items-center gap-1.5">
-                                  <ChecklistStatusBadge status={task.status} />
+                                  {isCompleted ? (
+                                    <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-800">Sudah Preventif</Badge>
+                                  ) : (
+                                    <ChecklistStatusBadge status={task.status} />
+                                  )}
                                 </div>
 
                                 <div className="text-[11px] text-slate-500">
                                   {isCompleted ? (
                                     <span>
-                                      Selesai:{" "}
+                                      Preventif:{" "}
                                       <span className="font-semibold text-slate-700">
                                         {formatDateTime(task.completedAt)}
                                       </span>
@@ -367,7 +371,7 @@ export function ActivityHistoryView({
                   {filteredTasks.length > 0 && (
                     <div className="flex items-center justify-between pt-2 text-[11px] sm:text-xs text-slate-400">
                       <span>
-                        Menampilkan {filteredTasks.length} riwayat {activeTab === "COMPLETED" ? "selesai" : "terlewat"}
+                        Menampilkan {filteredTasks.length} riwayat {activeTab === "COMPLETED" ? "preventif" : "terlewat"}
                       </span>
                       <span>Periode bulan berjalan</span>
                     </div>

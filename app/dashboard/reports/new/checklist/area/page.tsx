@@ -20,8 +20,9 @@ export default async function ChecklistAreaPage({
   const [user, { catalog }] = await Promise.all([getWorkPermitUser(), searchParams])
   if (user?.role !== "ES" || !(await getActiveWorkPermit(user))) redirect("/dashboard/reports/new")
 
-  const { areas, areaIssue } = await getEsDashboardFlowOptions()
   const isGeneralCatalog = catalog === "general"
+  if (!isGeneralCatalog) redirect("/dashboard/checklists")
+  const { areas, areaIssue } = await getEsDashboardFlowOptions()
 
   return (
     <ReportFlowShell

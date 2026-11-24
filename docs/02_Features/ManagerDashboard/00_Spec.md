@@ -1,7 +1,7 @@
 # Manager Dashboard & Laporan Maintenance (SPARTA Engineering)
 
 > **Status**: `Active`  
-> **Terakhir diperbarui**: 2026-10-14  
+> **Terakhir diperbarui**: 2026-11-24
 
 ## User Story
 
@@ -45,6 +45,7 @@
      - Inactive state: Putih bersih `bg-white text-slate-700 border border-slate-200/90 hover:bg-slate-50`.
      - Pilihan filter: `Semua`, `Laporan aktif`, `Lewat SLA`, `Review Coord`, `Review Manager`, `Revisi`, `Selesai`, `Draft`.
    - Baris pencarian dan kontrol: Input pencarian dengan fokus border oranye SPARTA (`#ff8a2a`), serta tombol `Filter` (dengan ikon filter).
+   - Panel filter lipat (`Area`: `Semua Area`, `Area Office`, `Area Warehouse`; `Kategori`: `Semua Kategori`, `Preventif`, `Insidental`) di `components/manager-dashboard/admin-reports-table.tsx` menggunakan komponen bersama `SpartaFilterSelect` (`components/ui/sparta-filter-select.tsx`) berbasis shadcn `Select` dengan fokus aksen oranye SPARTA, menggantikan elemen `<select>` bawaan browser.
    - Tabel Daftar Laporan Presisi:
      - `Laporan`: Nomor laporan berkarakter monospace tebal dengan hover aksen oranye SPARTA dan panah keluar (`↗`).
      - `Update`: Format tanggal dan jam Indonesia (e.g. `14 Okt 2026, 10.49`).

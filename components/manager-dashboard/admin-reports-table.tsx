@@ -24,6 +24,8 @@ import type { RealReportItem } from "@/lib/manager-dashboard-types"
 import { ReportReviewModal } from "./report-review-modal"
 import { cn } from "@/lib/utils"
 
+import { SpartaFilterSelect } from "@/components/ui/sparta-filter-select"
+
 interface AdminReportsTableProps {
   initialReports: RealReportItem[]
   viewerRole?: string
@@ -279,28 +281,36 @@ export function AdminReportsTable({
           <div className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs flex-wrap text-xs">
             <div className="flex items-center gap-2">
               <span className="text-slate-500 font-semibold">Area:</span>
-              <select
+              <SpartaFilterSelect
+                ariaLabel="Filter area laporan"
+                className="h-8! min-w-36 w-auto"
                 value={selectedArea}
-                onChange={(e) => setSelectedArea(e.target.value as any)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-800 outline-none"
-              >
-                <option value="ALL">Semua Area</option>
-                <option value="OFFICE">Area Office</option>
-                <option value="WAREHOUSE">Area Warehouse</option>
-              </select>
+                onValueChange={(next) => {
+                  if (next === "ALL" || next === "OFFICE" || next === "WAREHOUSE") setSelectedArea(next)
+                }}
+                options={[
+                  { value: "ALL", label: "Semua Area" },
+                  { value: "OFFICE", label: "Area Office" },
+                  { value: "WAREHOUSE", label: "Area Warehouse" },
+                ]}
+              />
             </div>
 
             <div className="flex items-center gap-2">
               <span className="text-slate-500 font-semibold">Kategori:</span>
-              <select
+              <SpartaFilterSelect
+                ariaLabel="Filter kategori laporan"
+                className="h-8! min-w-36 w-auto"
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value as any)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-800 outline-none"
-              >
-                <option value="ALL">Semua Kategori</option>
-                <option value="PREVENTIVE">Preventif</option>
-                <option value="INCIDENTAL">Insidental</option>
-              </select>
+                onValueChange={(next) => {
+                  if (next === "ALL" || next === "PREVENTIVE" || next === "INCIDENTAL") setSelectedCategory(next)
+                }}
+                options={[
+                  { value: "ALL", label: "Semua Kategori" },
+                  { value: "PREVENTIVE", label: "Preventif" },
+                  { value: "INCIDENTAL", label: "Insidental" },
+                ]}
+              />
             </div>
 
             {(selectedArea !== "ALL" || selectedCategory !== "ALL" || searchQuery) && (

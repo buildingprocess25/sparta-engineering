@@ -116,12 +116,20 @@ export function createPhotoUploadPostHandler(deps: PhotoUploadHandlerDeps) {
       return jsonError("Forbidden", 403)
     }
 
-    const formData = await request.formData()
+    let formData: FormData
+    try {
+      formData = await request.formData()
+    } catch {
+      return jsonError("Data upload tidak valid. Pilih foto dan coba lagi.", 400)
+    }
     const file = formData.get("file")
     const context = parseUploadContext(formData.get("context"))
 
     if (!(file instanceof File) || !context) {
       return jsonError("Invalid upload payload", 400)
+    }
+    if (file.size === 0) {
+      return jsonError("Foto kosong. Pilih foto lain.", 400)
     }
     if (!ALLOWED_MIME_TYPES.has(file.type)) {
       return jsonError("Unsupported file type", 400)
@@ -155,32 +163,38 @@ export function createPhotoUploadPostHandler(deps: PhotoUploadHandlerDeps) {
       return jsonError("Checklist item not found", 404)
     }
 
-    const parentFolderId = await deps.ensureEvidenceFolder({
-      rootFolderId: deps.rootFolderId,
-      branchName: report.author.branchName ?? "-",
-      areaName: report.area.name,
-      periodKey: report.periodKey,
-      reportCode: report.reportCode,
-      evidence: {
-        formCode: context.formCode,
-        itemId: item.id,
-        itemName: item.label,
-      },
-    })
-    const fileName = buildChecklistPhotoName({
-      sequence: context.sequence ?? 1,
-      randomSuffix: deps.randomId?.() ?? crypto.randomUUID().slice(0, 8),
-      extension: extensionFor(file),
-    })
-    const uploaded = await deps.uploadPhoto(file, { parentFolderId, fileName })
+    try {
+      const parentFolderId = await deps.ensureEvidenceFolder({
+        rootFolderId: deps.rootFolderId,
+        branchName: report.author.branchName ?? "-",
+        areaName: report.area.name,
+        periodKey: report.periodKey,
+        reportCode: report.reportCode,
+        evidence: {
+          formCode: context.formCode,
+          itemId: item.id,
+          itemName: item.label,
+        },
+      })
+      const fileName = buildChecklistPhotoName({
+        sequence: context.sequence ?? 1,
+        randomSuffix: deps.randomId?.() ?? crypto.randomUUID().slice(0, 8),
+        extension: extensionFor(file),
+      })
+      const uploaded = await deps.uploadPhoto(file, { parentFolderId, fileName })
 
-    if (!uploaded.success) {
-      return jsonError(uploaded.error, 500)
+      if (!uploaded.success) {
+        console.error("[photo-upload] Drive rejected upload:", uploaded.error)
+        return jsonError("Penyimpanan foto gagal. Periksa akses dan koneksi Google Drive.", 502)
+      }
+
+      return NextResponse.json({
+        fileId: uploaded.fileId,
+        url: uploaded.url,
+      })
+    } catch (error) {
+      console.error("[photo-upload] Storage error:", error instanceof Error ? error.message : "Unknown error")
+      return jsonError("Layanan penyimpanan foto bermasalah. Periksa konfigurasi Google Drive.", 500)
     }
-
-    return NextResponse.json({
-      fileId: uploaded.fileId,
-      url: uploaded.url,
-    })
   }
 }
