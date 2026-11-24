@@ -54,6 +54,8 @@ import {
   COMPLETION_EVIDENCE_LABELS,
   readStoredCompletionEvidence,
 } from "@/lib/reports/completion-evidence"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
+import { getReviewSubmittedAt, getReportCompletedAt, mergeReportHistory } from "@/lib/reports/report-timestamps"
 import {
   formatChecklistPeriodLabel,
   getReportCompletenessSummary,
@@ -219,16 +221,20 @@ function getItemEstimate(item: ReportItem): number | null {
 function formatIndoDateTime(dateStr: string): string {
   try {
     const d = new Date(dateStr)
+    if (!Number.isFinite(d.getTime())) return "-"
     const datePart = d.toLocaleDateString("id-ID", {
+      timeZone: "Asia/Jakarta",
       day: "2-digit",
       month: "short",
       year: "numeric",
     })
     const timePart = d.toLocaleTimeString("id-ID", {
+      timeZone: "Asia/Jakarta",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
     })
-    return `${datePart}, ${timePart.replace(":", ".")}`
+    return `${datePart}, ${timePart.replace(":", ".")} WIB`
   } catch {
     return "-"
   }
@@ -849,6 +855,8 @@ export function ReportDetailView({
                 checklistPayload={report.checklistPayload}
                 authorName={report.author.name}
                 authorNik={report.author.NIK}
+                targetLabel={report.equipment?.name || report.room?.name || report.area.name}
+                locationLabel={[report.area.code, report.room?.name].filter(Boolean).join(" — ")}
                 disabled={isExecutionPending}
                 onSuccess={() => {
                   setExecutionFeedback({
@@ -955,7 +963,7 @@ export function ReportDetailView({
           <div className="flex flex-wrap items-center gap-2">
             {/* Laporan Final PDF button */}
             <a
-              href={currentPdfUrl || `/api/reports/${report.reportCode}/pdf`}
+              href={userRole === "REQUESTER" && isCompleted ? `/api/reports/${report.reportCode}/pdf` : currentPdfUrl || `/api/reports/${report.reportCode}/pdf`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#0b1728] px-3.5 text-xs font-bold text-white shadow-2xs hover:bg-[#15253e] transition-colors"
@@ -965,7 +973,8 @@ export function ReportDetailView({
               <ExternalLink className="size-3 text-slate-400" />
             </a>
 
-            {/* Siapkan Laporan Lengkap PDF (Sync to Drive) */}
+            {/* Requester can read the final PDF but cannot regenerate it. */}
+            {!(userRole === "REQUESTER" && isCompleted) && (
             <button
               type="button"
               onClick={handleSyncPdf}
@@ -979,6 +988,7 @@ export function ReportDetailView({
               )}
               <span>Siapkan Laporan Lengkap PDF</span>
             </button>
+            )}
 
             {/* Intervensi Action (ES pembuat sebelum Selesai) */}
             {isAuthor && !isCompleted && (
@@ -1094,7 +1104,7 @@ export function ReportDetailView({
                 <div className="flex justify-between">
                   <span className="text-slate-500">Selesai final:</span>
                   <span className="font-medium text-slate-800">
-                    {isCompleted ? formatIndoDateTime(report.updatedAt) : "-"}
+                    {isCompleted ? (getReportCompletedAt(report) ? formatIndoDateTime(getReportCompletedAt(report)!) : "Tidak tercatat") : "-"}
                   </span>
                 </div>
               </div>
@@ -1266,7 +1276,7 @@ export function ReportDetailView({
             <span>Riwayat Aktivitas</span>
           </button>
 
-          {isReviewer && (
+          {isReviewer && !(userRole === "REQUESTER" && isCompleted) && (
             <button
               type="button"
               onClick={() => setActiveTab("aksi")}
@@ -1835,56 +1845,58 @@ export function ReportDetailView({
                       Laporan checklist diselesaikan dan diteruskan untuk review level BMC.
                     </p>
                     <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                      {formatIndoDateTime(report.updatedAt)}
+                      {getReviewSubmittedAt(report) ? formatIndoDateTime(getReviewSubmittedAt(report)!) : "Waktu submit tidak tercatat (laporan historis)"}
                     </p>
                   </div>
                 )}
 
-                {/* Riwayat Approval Multilevel */}
-                {normalizedApproval.map((app, idx) => {
-                  const isApprove = app.decision === "approve"
-                  const isRevision = app.decision === "reject_revision"
+                {/* Riwayat Approval dan Pelaksanaan berdasarkan timestamp masing-masing */}
+                {mergeReportHistory(normalizedApproval, normalizedExecution).map((event, idx) => {
+                  if (event.kind === "approval") {
+                    const app = event.entry
+                    const isApprove = app.decision === "approve"
+                    const isRevision = app.decision === "reject_revision"
+                    return (
+                      <div key={`approval-${idx}`} className="relative pl-6">
+                        <div className={cn(
+                          "absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white",
+                          isApprove ? "bg-emerald-600" : isRevision ? "bg-amber-500" : "bg-rose-600"
+                        )} />
+                        <p className="text-xs font-bold text-slate-900">
+                          {isApprove
+                            ? `Disetujui oleh ${app.role} (${app.actorName})`
+                            : isRevision
+                              ? `Minta Revisi oleh ${app.role} (${app.actorName})`
+                              : `Ditolak oleh ${app.role} (${app.actorName})`}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Tahap: {app.stage || "-"} · NIK: {app.actorNik || "-"}
+                          {app.notes ? ` · Catatan: "${app.notes}"` : ""}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                          {formatIndoDateTime(app.decidedAt)}
+                        </p>
+                      </div>
+                    )
+                  }
+                  const ex = event.entry
                   return (
-                    <div key={`approval-${idx}`} className="relative pl-6">
-                      <div className={cn(
-                        "absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white",
-                        isApprove ? "bg-emerald-600" : isRevision ? "bg-amber-500" : "bg-rose-600"
-                      )} />
+                    <div key={`exec-${idx}`} className="relative pl-6">
+                      <div className="absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white bg-blue-600" />
                       <p className="text-xs font-bold text-slate-900">
-                        {isApprove
-                          ? `Disetujui oleh ${app.role} (${app.actorName})`
-                          : isRevision
-                            ? `Minta Revisi oleh ${app.role} (${app.actorName})`
-                            : `Ditolak oleh ${app.role} (${app.actorName})`}
+                        {ex.actionLabel} · {ex.actorName} ({ex.actorNik})
                       </p>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        Tahap: {app.stage || "-"} · NIK: {app.actorNik || "-"}
-                        {app.notes ? ` · Catatan: "${app.notes}"` : ""}
+                        Status: {ex.previousStatus} → {ex.nextStatus}
+                        {ex.referenceNo ? ` · Ref: ${ex.referenceNo}` : ""}
+                        {ex.notes ? ` · Catatan: "${ex.notes}"` : ""}
                       </p>
                       <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                        {formatIndoDateTime(app.decidedAt)}
+                        {formatIndoDateTime(ex.performedAt)}
                       </p>
                     </div>
                   )
                 })}
-
-                {/* Riwayat Pelaksanaan Pekerjaan */}
-                {normalizedExecution.map((ex, idx) => (
-                  <div key={`exec-${idx}`} className="relative pl-6">
-                    <div className="absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white bg-blue-600" />
-                    <p className="text-xs font-bold text-slate-900">
-                      {ex.actionLabel} · {ex.actorName} ({ex.actorNik})
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Status: {ex.previousStatus} → {ex.nextStatus}
-                      {ex.referenceNo ? ` · Ref: ${ex.referenceNo}` : ""}
-                      {ex.notes ? ` · Catatan: "${ex.notes}"` : ""}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                      {formatIndoDateTime(ex.performedAt)}
-                    </p>
-                  </div>
-                ))}
 
                 {isCompleted && (
                   <div className="relative pl-6">
@@ -1896,7 +1908,7 @@ export function ReportDetailView({
                       Laporan telah diverifikasi penuh dan ditutup dengan sukses.
                     </p>
                     <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                      {formatIndoDateTime(report.updatedAt)}
+                      {getReportCompletedAt(report) ? formatIndoDateTime(getReportCompletedAt(report)!) : "Waktu selesai tidak tercatat"}
                     </p>
                   </div>
                 )}
@@ -1906,7 +1918,7 @@ export function ReportDetailView({
         )}
 
         {/* 9. Tab Content: Aksi Review (Hanya Reviewer) */}
-        {isReviewer && activeTab === "aksi" && (
+        {isReviewer && !(userRole === "REQUESTER" && isCompleted) && activeTab === "aksi" && (
           <div className="mt-5 space-y-4">
             <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
               <h3 className="text-xs font-black uppercase tracking-wide text-slate-900">
@@ -2029,36 +2041,7 @@ export function ReportDetailView({
       </div>
 
       {/* Photo Preview Modal */}
-      {selectedPhoto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs"
-          onClick={() => setSelectedPhoto(null)}
-        >
-          <div
-            className="relative max-h-[90vh] max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <h4 className="text-xs font-bold text-slate-900">{selectedPhoto.title}</h4>
-              <button
-                type="button"
-                onClick={() => setSelectedPhoto(null)}
-                className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-            <div className="p-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={selectedPhoto.url}
-                alt={selectedPhoto.title}
-                className="max-h-[75vh] w-auto rounded-lg object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <ReportPhotoPreview photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
     </div>
   )
 }

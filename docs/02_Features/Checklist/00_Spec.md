@@ -111,7 +111,7 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 ## Persetujuan Form 014
 
 - Laporan rutin atau non-rutin yang memiliki Form 014 lengkap mengikuti BEC → Manager → Requester (WHM/DWHM). ACC Manager memindahkannya ke `PENDING_REQUESTER`, dan Requester harus berasal dari cabang pelapor.
-- Akun Requester membuka antrean Laporan Maintenance yang hanya memuat laporan `PENDING_REQUESTER` dari cabangnya. Akun demo WH Parung menyediakan pilihan WHM/DWHM.
+- Akun Requester membuka Laporan Maintenance yang memuat antrean `PENDING_REQUESTER` dan laporan `COMPLETED` dari cabangnya yang memiliki persetujuan Requester tercatat. Laporan selesai tersedia read-only tanpa ACC tambahan; PDF final dibuka melalui API terautentikasi. Akun demo WH Parung menyediakan pilihan WHM/DWHM.
 - ACC Requester memindahkan laporan ke `WAITING_PJU` (**Menunggu PJU**) dan menyimpan keputusan di riwayat. Laporan gabungan 014/065 juga menunggu PJU, termasuk bila ada part berencana PB. Tahap PB/Stock pada laporan 065 tanpa Form 014 mengikuti alur yang sudah ada.
 - Status ini belum memiliki aksi pencatatan atau integrasi PJU. Nomor referensi, pelaksanaan, dan bukti penutupan mengikuti keputusan proses PJU. Migrasi hanya menambah status dan tidak membuka kembali laporan historis.
 

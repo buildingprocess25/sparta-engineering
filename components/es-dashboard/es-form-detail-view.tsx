@@ -22,10 +22,10 @@ import {
   ShieldCheck,
   Sliders,
   Wrench,
-  X,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -55,6 +55,7 @@ import {
   COMPLETION_EVIDENCE_LABELS,
   readStoredCompletionEvidence,
 } from "@/lib/reports/completion-evidence"
+import { mergeReportHistory } from "@/lib/reports/report-timestamps"
 import {
   formatChecklistPeriodLabel,
   getReportCompletenessSummary,
@@ -567,6 +568,8 @@ export function EsFormDetailView({
                   checklistPayload={report.checklistPayload}
                   authorName={report.author.name}
                   authorNik={report.author.NIK}
+                  targetLabel={report.equipment?.name || report.room?.name || report.area.name}
+                  locationLabel={[report.area.code, report.room?.name].filter(Boolean).join(" — ")}
                   disabled={isExecutionPending}
                   onSuccess={() => {
                     setExecutionFeedback({
@@ -967,12 +970,15 @@ export function EsFormDetailView({
                     ].map((group) =>
                       group.photos.map((photo, idx) => (
                         <button
-                          key={photo.fileId}
+                          key={`${group.label}-${photo.fileId}`}
                           type="button"
                           onClick={() => setPreviewPhoto({ itemLabel: `${group.label} (${idx + 1})`, url: photo.url })}
-                          className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white"
+                          className="flex min-w-0 flex-col gap-1 text-left cursor-zoom-in"
                         >
-                          <Image unoptimized src={photo.url} alt={group.label} fill sizes="120px" className="object-cover" />
+                          <span className="relative block aspect-square w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
+                            <Image unoptimized src={photo.url} alt={group.label} fill sizes="120px" className="object-cover" />
+                          </span>
+                          <span className="break-words text-[10px] font-medium text-slate-700">{group.label} ({idx + 1})</span>
                         </button>
                       )),
                     )}
@@ -994,12 +1000,15 @@ export function EsFormDetailView({
                     ].map((group) =>
                       group.photos.map((photo, idx) => (
                         <button
-                          key={photo.fileId}
+                          key={`${group.label}-${photo.fileId}`}
                           type="button"
                           onClick={() => setPreviewPhoto({ itemLabel: `${group.label} (${idx + 1})`, url: photo.url })}
-                          className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white"
+                          className="flex min-w-0 flex-col gap-1 text-left cursor-zoom-in"
                         >
-                          <Image unoptimized src={photo.url} alt={group.label} fill sizes="120px" className="object-cover" />
+                          <span className="relative block aspect-square w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
+                            <Image unoptimized src={photo.url} alt={group.label} fill sizes="120px" className="object-cover" />
+                          </span>
+                          <span className="break-words text-[10px] font-medium text-slate-700">{group.label} ({idx + 1})</span>
                         </button>
                       )),
                     )}
@@ -1017,33 +1026,39 @@ export function EsFormDetailView({
               <CardTitle className="text-sm">Histori Persetujuan &amp; Pelaksanaan</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-xs">
-              {normalizedApproval.map((entry, idx) => (
-                <div key={`app-${idx}`} className="flex flex-col gap-0.5 border-l-2 border-emerald-400 pl-3">
-                  <span className="font-bold text-slate-900">
-                    {entry.decision === "approve"
-                      ? `Disetujui ${entry.role} (${entry.actorName})`
-                      : entry.decision === "reject_revision"
-                        ? `Minta Revisi ${entry.role} (${entry.actorName})`
-                        : `Ditolak ${entry.role} (${entry.actorName})`}
-                  </span>
-                  <span className="text-[11px] text-slate-500">
-                    {formatIndoWib(entry.decidedAt)}
-                    {entry.notes ? ` · "${entry.notes}"` : ""}
-                  </span>
-                </div>
-              ))}
-              {normalizedExecution.map((entry, idx) => (
-                <div key={`exec-${idx}`} className="flex flex-col gap-0.5 border-l-2 border-blue-400 pl-3">
-                  <span className="font-bold text-slate-900">
-                    {entry.actionLabel} · {entry.actorName} ({entry.actorNik})
-                  </span>
-                  <span className="text-[11px] text-slate-500">
-                    {formatIndoWib(entry.performedAt)}
-                    {entry.referenceNo ? ` · Ref: ${entry.referenceNo}` : ""}
-                    {entry.notes ? ` · ${entry.notes}` : ""}
-                  </span>
-                </div>
-              ))}
+              {mergeReportHistory(normalizedApproval, normalizedExecution).map((event, idx) => {
+                if (event.kind === "approval") {
+                  const entry = event.entry
+                  return (
+                    <div key={`app-${idx}`} className="flex flex-col gap-0.5 border-l-2 border-emerald-400 pl-3">
+                      <span className="font-bold text-slate-900">
+                        {entry.decision === "approve"
+                          ? `Disetujui ${entry.role} (${entry.actorName})`
+                          : entry.decision === "reject_revision"
+                            ? `Minta Revisi ${entry.role} (${entry.actorName})`
+                            : `Ditolak ${entry.role} (${entry.actorName})`}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {formatIndoWib(entry.decidedAt)}
+                        {entry.notes ? ` · "${entry.notes}"` : ""}
+                      </span>
+                    </div>
+                  )
+                }
+                const entry = event.entry
+                return (
+                  <div key={`exec-${idx}`} className="flex flex-col gap-0.5 border-l-2 border-blue-400 pl-3">
+                    <span className="font-bold text-slate-900">
+                      {entry.actionLabel} · {entry.actorName} ({entry.actorNik})
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      {formatIndoWib(entry.performedAt)}
+                      {entry.referenceNo ? ` · Ref: ${entry.referenceNo}` : ""}
+                      {entry.notes ? ` · ${entry.notes}` : ""}
+                    </span>
+                  </div>
+                )
+              })}
             </CardContent>
           </Card>
         )}
@@ -1071,39 +1086,10 @@ export function EsFormDetailView({
         </div>
       </main>
 
-      {/* Fullscreen Photo Lightbox Modal */}
-      {previewPhoto && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-4"
-          onClick={() => setPreviewPhoto(null)}
-        >
-          <button
-            type="button"
-            onClick={() => setPreviewPhoto(null)}
-            className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white text-[#111111] shadow-lg outline-none transition-transform active:scale-95"
-            aria-label="Tutup foto"
-          >
-            <X className="size-5" />
-          </button>
-          <div
-            className="flex flex-col items-center gap-3 max-w-2xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              unoptimized
-              src={previewPhoto.url}
-              alt={`Preview foto bukti ${previewPhoto.itemLabel}`}
-              width={1280}
-              height={720}
-              className="max-h-[80svh] w-auto max-w-full rounded-2xl object-contain shadow-2xl border border-white/10"
-              priority
-            />
-            <span className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur-md border border-white/10">
-              {previewPhoto.itemLabel}
-            </span>
-          </div>
-        </div>
-      )}
+      <ReportPhotoPreview
+        photo={previewPhoto ? { url: previewPhoto.url, title: previewPhoto.itemLabel } : null}
+        onClose={() => setPreviewPhoto(null)}
+      />
     </div>
   )
 }

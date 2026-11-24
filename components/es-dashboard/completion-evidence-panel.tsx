@@ -2,15 +2,25 @@
 
 import * as React from "react"
 import Image from "next/image"
-import { CheckCircle2, Loader2, Trash2, Upload } from "lucide-react"
+import { CheckCircle2, ClipboardCheck, ImagePlus, Loader2, Trash2, Upload, Wallet, Handshake, Camera } from "lucide-react"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 
 import { executeReportSparePartAction } from "@/app/dashboard/reports/actions"
 import { CameraCaptureButton } from "@/components/es-dashboard/camera-capture-button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
 import { readPhotoUploadResponse, type UploadedChecklistPhoto } from "@/lib/photos/photo-upload-client"
 import {
+  getReportItems,
   hasCostEstimateFollowUp,
   hasForm065FollowUp,
 } from "@/lib/reports/checklist-follow-up"
@@ -28,6 +38,8 @@ export type CompletionEvidencePanelProps = {
   checklistPayload: unknown
   authorName: string
   authorNik: string
+  targetLabel?: string
+  locationLabel?: string
   disabled?: boolean
   onVersionChange?(version: string): void
   onSuccess(): void
@@ -40,6 +52,8 @@ type PhotoGroupProps = {
   authorNik: string
   photos: EvidencePhoto[]
   disabled?: boolean
+  onUploadStart(): boolean
+  onUploadEnd(): void
   onAdd(photo: UploadedChecklistPhoto): void
   onRemove(fileId: string): void
 }
@@ -51,14 +65,18 @@ function EvidencePhotoGroup({
   authorNik,
   photos,
   disabled,
+  onUploadStart,
+  onUploadEnd,
   onAdd,
   onRemove,
 }: PhotoGroupProps) {
   const [uploading, setUploading] = React.useState(false)
   const [uploadError, setUploadError] = React.useState<string | null>(null)
+  const [preview, setPreview] = React.useState<{ url: string; title: string } | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
 
   async function uploadFile(file: File) {
+    if (!onUploadStart()) return
     setUploading(true)
     setUploadError(null)
     try {
@@ -86,99 +104,86 @@ function EvidencePhotoGroup({
       )
     } finally {
       setUploading(false)
+      onUploadEnd()
     }
   }
 
+  const label = COMPLETION_EVIDENCE_LABELS[evidenceType]
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-bold text-slate-900">
-          {COMPLETION_EVIDENCE_LABELS[evidenceType]} *
-        </span>
-        <span className="text-[11px] font-medium text-slate-500">
-          {photos.length} foto terunggah
-        </span>
-      </div>
-
-      {photos.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {photos.map((photo, idx) => (
-            <div
-              key={photo.fileId}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white"
-            >
-              <Image
-                unoptimized
-                src={photo.url}
-                alt={`${COMPLETION_EVIDENCE_LABELS[evidenceType]} ${idx + 1}`}
-                fill
-                sizes="120px"
-                className="object-cover"
-              />
-              <button
-                type="button"
-                disabled={disabled || uploading}
-                onClick={() => onRemove(photo.fileId)}
-                aria-label={`Hapus foto ${idx + 1}`}
-                className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/70 text-white hover:bg-rose-600 disabled:opacity-50"
-              >
-                <Trash2 className="size-3" />
-              </button>
-            </div>
-          ))}
+    <section aria-label={label} className="min-w-0 rounded-lg border bg-background">
+      <div className="flex flex-col gap-3 p-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium leading-snug">{label} <span className="text-destructive">*</span></p>
+            <p className="text-xs text-muted-foreground" aria-live="polite">{photos.length} foto terunggah</p>
+          </div>
+          {photos.length > 0 ? (
+            <Badge variant="outline" className="border-emerald-200 text-emerald-700"><CheckCircle2 /> Lengkap</Badge>
+          ) : <Badge variant="secondary">Belum lengkap</Badge>}
         </div>
-      )}
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <CameraCaptureButton
-          disabled={disabled || uploading}
-          uploading={uploading}
-          watermarkLines={[
-            { text: `${reportCode} · Bukti Penyelesaian`, weight: 700 },
-            { text: `${COMPLETION_EVIDENCE_LABELS[evidenceType]}`, weight: 400 },
-            { text: `${authorName} (${authorNik})`, weight: 400 },
-          ]}
-          onCapture={(file) => {
-            void uploadFile(file)
-          }}
-        />
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              e.target.value = ""
-              if (file) {
-                void uploadFile(file)
-              }
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
+        {photos.length > 0 ? (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,8rem),1fr))] gap-2">
+            {photos.map((photo, idx) => (
+              <div key={photo.fileId} className="min-w-0 overflow-hidden rounded-lg border bg-background">
+                <button
+                  type="button"
+                  aria-label={`Perbesar ${label} ${idx + 1}`}
+                  onClick={() => setPreview({ url: photo.url, title: `${label} ${idx + 1}` })}
+                  className="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
+                >
+                  <Image unoptimized src={photo.url} alt={`${label} ${idx + 1}`} fill sizes="(max-width: 640px) 160px, 220px" className="object-cover" />
+                </button>
+                <div className="flex items-center justify-between gap-1 p-1.5">
+                  <Button type="button" size="sm" variant="ghost" className="min-w-0 flex-1 text-xs" onClick={() => setPreview({ url: photo.url, title: `${label} ${idx + 1}` })}>Lihat foto</Button>
+                  <Button type="button" size="icon" variant="ghost" disabled={disabled || uploading} onClick={() => onRemove(photo.fileId)} aria-label={`Hapus ${label} ${idx + 1}`} className="text-destructive"><Trash2 /></Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-muted/30 p-3 text-center">
+            <ImagePlus className="size-6 text-muted-foreground" aria-hidden="true" />
+            <p className="text-sm font-medium">Belum ada dokumentasi</p>
+            <p className="text-xs text-muted-foreground">Ambil foto atau pilih dari galeri.</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
+          <CameraCaptureButton
             disabled={disabled || uploading}
-            onClick={() => fileInputRef.current?.click()}
-            className="h-12 w-full bg-white text-slate-800 hover:bg-slate-100"
-          >
-            {uploading ? (
-              <Loader2 className="animate-spin" data-icon="inline-start" />
-            ) : (
-              <Upload data-icon="inline-start" />
-            )}
-            Pilih File Gambar
-          </Button>
+            uploading={uploading}
+            watermarkLines={[
+              { text: `${reportCode} · Bukti Penyelesaian`, weight: 700 },
+              { text: label, weight: 400 },
+              { text: `${authorName} (${authorNik})`, weight: 400 },
+            ]}
+            onCapture={(file) => { void uploadFile(file) }}
+          />
+          <div className="min-w-0">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ""
+                if (file) void uploadFile(file)
+              }}
+            />
+            <Button type="button" variant="outline" disabled={disabled || uploading} onClick={() => fileInputRef.current?.click()} className="h-12 w-full">
+              {uploading ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <Upload data-icon="inline-start" />}
+              {uploading ? "Mengunggah..." : "Galeri"}
+            </Button>
+          </div>
         </div>
+        {uploadError && (
+          <Alert variant="destructive" role="alert"><AlertTitle>Foto gagal diunggah</AlertTitle><AlertDescription>{uploadError}</AlertDescription></Alert>
+        )}
       </div>
-
-      {uploadError && (
-        <p role="alert" className="text-xs font-medium text-rose-700">
-          {uploadError}
-        </p>
-      )}
-    </div>
+      <ReportPhotoPreview photo={preview} onClose={() => setPreview(null)} />
+    </section>
   )
 }
 
@@ -189,6 +194,8 @@ export function CompletionEvidencePanel({
   checklistPayload,
   authorName,
   authorNik,
+  targetLabel,
+  locationLabel,
   disabled,
   onVersionChange,
   onSuccess,
@@ -228,32 +235,73 @@ export function CompletionEvidencePanel({
   const [errors, setErrors] = React.useState<string[]>([])
   const [isPending, startTransition] = React.useTransition()
 
-  function handleSubmit() {
-    const candidate = {
-      ...(needs014
-        ? {
-            form014: {
-              workPhotos,
-              receiptPhotos,
-              refundTransferPhotos,
-              actualPurchaseAmount: actualPurchaseAmount.trim(),
-            },
-          }
-        : {}),
-      ...(needs065
-        ? {
-            form065: {
-              handoverConfirmed,
-              handoverRecipient,
-              handoverNotes,
-              repairWithUnitPhotos,
-              selfieWithUserPhotos,
-            },
-          }
-        : {}),
-      notes,
-    }
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [uploadInProgress, setUploadInProgress] = React.useState(false)
+  const uploadLock = React.useRef(false)
+  const finishLock = React.useRef(false)
+  const busy = Boolean(disabled || isPending || uploadInProgress)
 
+  function beginUpload() {
+    if (disabled || isPending || finishLock.current || uploadLock.current) return false
+    uploadLock.current = true
+    setUploadInProgress(true)
+    return true
+  }
+
+  function endUpload() {
+    uploadLock.current = false
+    setUploadInProgress(false)
+  }
+
+  const candidate = {
+    ...(needs014
+      ? {
+          form014: {
+            workPhotos,
+            receiptPhotos,
+            refundTransferPhotos,
+            actualPurchaseAmount: actualPurchaseAmount.trim(),
+          },
+        }
+      : {}),
+    ...(needs065
+      ? {
+          form065: {
+            handoverConfirmed,
+            handoverRecipient,
+            handoverNotes,
+            repairWithUnitPhotos,
+            selfieWithUserPhotos,
+          },
+        }
+      : {}),
+    notes,
+  }
+  const validation = validateCompletionEvidence(checklistPayload, candidate)
+  const requirements = [
+    ...(needs014 ? [
+      { label: "Realisasi biaya", complete: actualPurchaseAmount.trim() !== "" && Number.isFinite(Number(actualPurchaseAmount)) && Number(actualPurchaseAmount) >= 0 },
+      { label: "Foto pekerjaan", complete: workPhotos.length > 0 },
+      { label: "Bon pembelian", complete: receiptPhotos.length > 0 },
+      { label: "Bukti transfer", complete: refundTransferPhotos.length > 0 },
+    ] : []),
+    ...(needs065 ? [
+      { label: "Serah terima unit", complete: handoverConfirmed && handoverRecipient.trim() !== "" },
+      { label: "Foto perbaikan", complete: repairWithUnitPhotos.length > 0 },
+      { label: "Foto selfie", complete: selfieWithUserPhotos.length > 0 },
+    ] : []),
+  ]
+  const completed = requirements.filter((requirement) => requirement.complete).length
+  const total = requirements.length
+  const progress = total ? Math.round(completed / total * 100) : 100
+  const ready = validation.valid && completed === total
+  const formLabel = [needs014 && "Form 014", needs065 && "Form 065"].filter(Boolean).join(" + ")
+  const unitNames = [...new Set(getReportItems(checklistPayload).map((item) => typeof item.followUp065?.namaUnit === "string" ? item.followUp065.namaUnit.trim() : "").filter(Boolean))]
+  const jobTypes = [...new Set(getReportItems(checklistPayload).map((item) => item.followUp065?.jenis === "PERBAIKAN" ? "Perbaikan" : item.followUp065?.jenis === "PENGGANTIAN_SPARE_PART" ? "Penggantian Spare Part" : "").filter(Boolean))]
+
+  function handleSubmit() {
+    if (disabled || isPending || uploadLock.current || finishLock.current) return
+    setConfirmOpen(false)
     const check = validateCompletionEvidence(checklistPayload, candidate)
     if (!check.valid || !check.normalized) {
       setErrors(check.errors)
@@ -261,6 +309,7 @@ export function CompletionEvidencePanel({
     }
 
     setErrors([])
+    finishLock.current = true
     startTransition(async () => {
       try {
         const result = await executeReportSparePartAction(
@@ -277,209 +326,153 @@ export function CompletionEvidencePanel({
         onSuccess()
       } catch {
         setErrors(["Terjadi kesalahan saat menyimpan bukti penyelesaian pekerjaan."])
+      } finally {
+        finishLock.current = false
       }
     })
   }
 
+  function renderPhotoGroup(evidenceType: CompletionEvidenceType, photos: EvidencePhoto[], setPhotos: React.Dispatch<React.SetStateAction<EvidencePhoto[]>>) {
+    return (
+      <EvidencePhotoGroup
+        key={evidenceType}
+        evidenceType={evidenceType}
+        reportCode={reportCode}
+        authorName={authorName}
+        authorNik={authorNik}
+        photos={photos}
+        disabled={busy}
+        onUploadStart={beginUpload}
+        onUploadEnd={endUpload}
+        onAdd={(photo) => {
+          const savedPhoto = syncVersionFromUpload(photo)
+          setPhotos((previous) => [...previous, savedPhoto])
+        }}
+        onRemove={(id) => setPhotos((previous) => previous.filter((photo) => photo.fileId !== id))}
+      />
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-emerald-200 bg-white p-4 shadow-xs">
-      <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-bold text-slate-900">
-          Bukti Penyelesaian Pekerjaan (Wajib Sebelum Selesai)
-        </h3>
-        <p className="text-xs text-slate-600">
-          Lengkapi seluruh bukti lapangan sebelum mengubah status laporan menjadi Selesai.
-        </p>
-      </div>
-
-      {needs014 && (
-        <div className="flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50/40 p-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-orange-900">
-            Persyaratan Form 014 (PJU & Biaya Aktual)
-          </p>
-
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="actual-purchase-amount"
-              className="text-xs font-bold text-slate-900"
-            >
-              Actual Pembelian Barang (Rp) *
-            </label>
-            <Input
-              id="actual-purchase-amount"
-              type="number"
-              min="0"
-              step="1"
-              inputMode="numeric"
-              disabled={disabled || isPending}
-              value={actualPurchaseAmount}
-              onChange={(e) => setActualPurchaseAmount(e.target.value)}
-              placeholder="Contoh: 250000"
-              className="bg-white"
-            />
-          </div>
-
-          <EvidencePhotoGroup
-            evidenceType="WORK_PROGRESS"
-            reportCode={reportCode}
-            authorName={authorName}
-            authorNik={authorNik}
-            photos={workPhotos}
-            disabled={disabled || isPending}
-            onAdd={(p) => setWorkPhotos((prev) => [...prev, syncVersionFromUpload(p)])}
-            onRemove={(id) => setWorkPhotos((prev) => prev.filter((p) => p.fileId !== id))}
-          />
-
-          <EvidencePhotoGroup
-            evidenceType="PURCHASE_RECEIPT"
-            reportCode={reportCode}
-            authorName={authorName}
-            authorNik={authorNik}
-            photos={receiptPhotos}
-            disabled={disabled || isPending}
-            onAdd={(p) => setReceiptPhotos((prev) => [...prev, syncVersionFromUpload(p)])}
-            onRemove={(id) => setReceiptPhotos((prev) => prev.filter((p) => p.fileId !== id))}
-          />
-
-          <EvidencePhotoGroup
-            evidenceType="REFUND_TRANSFER"
-            reportCode={reportCode}
-            authorName={authorName}
-            authorNik={authorNik}
-            photos={refundTransferPhotos}
-            disabled={disabled || isPending}
-            onAdd={(p) => setRefundTransferPhotos((prev) => [...prev, syncVersionFromUpload(p)])}
-            onRemove={(id) =>
-              setRefundTransferPhotos((prev) => prev.filter((p) => p.fileId !== id))
-            }
-          />
-        </div>
-      )}
-
-      {needs065 && (
-        <div className="flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-indigo-900">
-            Persyaratan Form 065 (Serah Terima Unit & Dokumentasi)
-          </p>
-
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-900">
-            <input
-              type="checkbox"
-              checked={handoverConfirmed}
-              disabled={disabled || isPending}
-              onChange={(e) => setHandoverConfirmed(e.target.checked)}
-              className="mt-0.5 size-4 rounded border-slate-300 accent-[#ff8a2a]"
-            />
-            <span className="font-semibold leading-snug">
-              Serah Terima Unit Selesai · Unit sudah diperbaiki, diuji fungsi, dan diserahkan kembali kepada user. *
-            </span>
-          </label>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="handover-recipient"
-                className="text-xs font-bold text-slate-900"
-              >
-                Nama Penerima Serah Terima *
-              </label>
-              <Input
-                id="handover-recipient"
-                disabled={disabled || isPending}
-                value={handoverRecipient}
-                onChange={(e) => setHandoverRecipient(e.target.value)}
-                placeholder="Nama user penerima unit"
-                className="bg-white"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="handover-notes"
-                className="text-xs font-bold text-slate-900"
-              >
-                Catatan Serah Terima (Opsional)
-              </label>
-              <Input
-                id="handover-notes"
-                disabled={disabled || isPending}
-                value={handoverNotes}
-                onChange={(e) => setHandoverNotes(e.target.value)}
-                placeholder="Hasil uji coba / keterangan serah terima"
-                className="bg-white"
-              />
+    <Card className="min-w-0 bg-background text-foreground">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-foreground"><ClipboardCheck className="size-5" /></div>
+            <div className="min-w-0">
+              <CardTitle>Penyelesaian Pekerjaan</CardTitle>
+              <CardDescription className="break-words">{reportCode}{formLabel ? ` · ${formLabel}` : ""}</CardDescription>
             </div>
           </div>
-
-          <EvidencePhotoGroup
-            evidenceType="REPAIR_UNIT"
-            reportCode={reportCode}
-            authorName={authorName}
-            authorNik={authorNik}
-            photos={repairWithUnitPhotos}
-            disabled={disabled || isPending}
-            onAdd={(p) => setRepairWithUnitPhotos((prev) => [...prev, syncVersionFromUpload(p)])}
-            onRemove={(id) =>
-              setRepairWithUnitPhotos((prev) => prev.filter((p) => p.fileId !== id))
-            }
-          />
-
-          <EvidencePhotoGroup
-            evidenceType="USER_SELFIE"
-            reportCode={reportCode}
-            authorName={authorName}
-            authorNik={authorNik}
-            photos={selfieWithUserPhotos}
-            disabled={disabled || isPending}
-            onAdd={(p) => setSelfieWithUserPhotos((prev) => [...prev, syncVersionFromUpload(p)])}
-            onRemove={(id) =>
-              setSelfieWithUserPhotos((prev) => prev.filter((p) => p.fileId !== id))
-            }
-          />
+          <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-900">Sedang Dikerjakan</Badge>
         </div>
-      )}
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-5">
+          {(targetLabel || locationLabel || unitNames.length > 0 || jobTypes.length > 0) && (
+            <dl className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-x-5 gap-y-3 rounded-lg bg-muted/45 p-3">
+              {(targetLabel || unitNames.length > 0) && <div className="min-w-0"><dt className="text-xs text-muted-foreground">Unit / Objek</dt><dd className="break-words text-sm font-medium">{unitNames.length ? unitNames.join(", ") : targetLabel}</dd></div>}
+              {locationLabel && <div className="min-w-0"><dt className="text-xs text-muted-foreground">Lokasi</dt><dd className="break-words text-sm font-medium">{locationLabel}</dd></div>}
+              {formLabel && <div><dt className="text-xs text-muted-foreground">Form tindak lanjut</dt><dd className="text-sm font-medium">{formLabel}</dd></div>}
+              {jobTypes.length > 0 && <div><dt className="text-xs text-muted-foreground">Jenis pekerjaan</dt><dd className="text-sm font-medium">{jobTypes.join(", ")}</dd></div>}
+            </dl>
+          )}
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="completion-notes" className="text-xs font-bold text-slate-900">
-          Catatan Penyelesaian Pekerjaan (Opsional)
-        </label>
-        <Input
-          id="completion-notes"
-          disabled={disabled || isPending}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Ringkasan hasil pekerjaan lapangan"
-          className="bg-white"
-        />
-      </div>
+          <div className="flex flex-col gap-2" aria-live="polite">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-sm font-medium">Kelengkapan penyelesaian</p>
+              <span className="text-xs tabular-nums text-muted-foreground">{completed} dari {total} persyaratan</span>
+            </div>
+            <Progress aria-label="Kelengkapan penyelesaian" value={progress} className="[&_[data-slot=progress-indicator]]:bg-[#ff8a2a]" />
+            <p className="text-xs text-muted-foreground">{ready ? "Seluruh persyaratan lengkap." : `Belum lengkap: ${requirements.filter((requirement) => !requirement.complete).map((requirement) => requirement.label).join(", ") || "periksa kembali bukti"}.`}</p>
+          </div>
+          <Separator />
 
-      {errors.length > 0 && (
-        <Alert variant="destructive" role="alert">
-          <AlertTitle>Bukti Penyelesaian Belum Lengkap</AlertTitle>
-          <AlertDescription>
-            <ul className="list-disc pl-4 space-y-1">
-              {errors.map((err) => (
-                <li key={err}>{err}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Button
-        type="button"
-        disabled={disabled || isPending}
-        onClick={handleSubmit}
-        size="lg"
-        className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
-      >
-        {isPending ? (
-          <Loader2 className="animate-spin" data-icon="inline-start" />
-        ) : (
-          <CheckCircle2 data-icon="inline-start" />
-        )}
-        Selesaikan Pekerjaan (Selesai)
-      </Button>
-    </div>
+          <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))] items-start gap-5">
+            <div className="flex min-w-0 flex-col gap-5">
+              {needs014 && (
+                <section aria-labelledby="completion-cost-heading" className="flex min-w-0 flex-col gap-3">
+                  <div className="flex items-start gap-2">
+                    <Wallet className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <div><h3 id="completion-cost-heading" className="text-sm font-semibold">Realisasi Biaya</h3><p className="text-xs text-muted-foreground">Form 014 · Pembelian barang aktual.</p></div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="actual-purchase-amount">Actual pembelian barang (Rp) *</Label>
+                    <Input id="actual-purchase-amount" type="number" min="0" step="1" inputMode="numeric" disabled={busy} value={actualPurchaseAmount} onChange={(e) => setActualPurchaseAmount(e.target.value)} placeholder="Contoh: 250000" required />
+                  </div>
+                </section>
+              )}
+              {needs014 && needs065 && <Separator />}
+              {needs065 && (
+                <section aria-labelledby="completion-handover-heading" className="flex min-w-0 flex-col gap-3">
+                  <div className="flex items-start gap-2">
+                    <Handshake className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <div><h3 id="completion-handover-heading" className="text-sm font-semibold">Serah Terima Unit</h3><p className="text-xs text-muted-foreground">Form 065 · Konfirmasi hasil pekerjaan kepada user.</p></div>
+                  </div>
+                  <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3">
+                    <Checkbox id="handover-confirmed" checked={handoverConfirmed} disabled={busy} onCheckedChange={(checked) => setHandoverConfirmed(checked === true)} required />
+                    <Label htmlFor="handover-confirmed" className="cursor-pointer leading-relaxed">Unit sudah diperbaiki, diuji fungsi, dan diserahkan kembali kepada user. *</Label>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="handover-recipient">Nama penerima serah terima *</Label>
+                    <Input id="handover-recipient" disabled={busy} value={handoverRecipient} onChange={(e) => setHandoverRecipient(e.target.value)} placeholder="Nama user penerima unit" required />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="handover-notes">Catatan serah terima <span className="font-normal text-muted-foreground">(Opsional)</span></Label>
+                    <Textarea id="handover-notes" disabled={busy} value={handoverNotes} onChange={(e) => setHandoverNotes(e.target.value)} placeholder="Hasil uji coba / keterangan serah terima" rows={3} />
+                  </div>
+                </section>
+              )}
+            </div>
+            <section aria-labelledby="completion-photos-heading" className="flex min-w-0 flex-col gap-3">
+              <div className="flex items-start gap-2">
+                <Camera className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <div><h3 id="completion-photos-heading" className="text-sm font-semibold">Dokumentasi Pekerjaan</h3><p className="text-xs text-muted-foreground">Unggah minimal satu foto untuk setiap jenis bukti wajib.</p></div>
+              </div>
+              {needs014 && renderPhotoGroup("WORK_PROGRESS", workPhotos, setWorkPhotos)}
+              {needs014 && renderPhotoGroup("PURCHASE_RECEIPT", receiptPhotos, setReceiptPhotos)}
+              {needs014 && renderPhotoGroup("REFUND_TRANSFER", refundTransferPhotos, setRefundTransferPhotos)}
+              {needs065 && renderPhotoGroup("REPAIR_UNIT", repairWithUnitPhotos, setRepairWithUnitPhotos)}
+              {needs065 && renderPhotoGroup("USER_SELFIE", selfieWithUserPhotos, setSelfieWithUserPhotos)}
+            </section>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="completion-notes">Catatan penyelesaian <span className="font-normal text-muted-foreground">(Opsional)</span></Label>
+            <Textarea id="completion-notes" disabled={busy} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Tuliskan ringkasan hasil pekerjaan..." rows={3} />
+          </div>
+          {errors.length > 0 && (
+            <Alert variant="destructive" role="alert">
+              <AlertTitle>Penyelesaian belum berhasil</AlertTitle>
+              <AlertDescription><ul className="list-disc pl-4">{errors.map((error) => <li key={error}>{error}</li>)}</ul></AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </CardContent>
+      <CardFooter>
+        <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+            {uploadInProgress ? <Loader2 className="size-4 shrink-0 animate-spin" /> : ready ? <CheckCircle2 className="size-4 shrink-0 text-emerald-600" /> : <ClipboardCheck className="size-4 shrink-0" />}
+            <span>{uploadInProgress ? "Tunggu hingga unggahan selesai." : ready ? "Bukti lengkap, siap diselesaikan." : "Lengkapi seluruh persyaratan wajib."}</span>
+          </div>
+          <Button type="button" size="lg" disabled={busy || !ready} onClick={() => { setErrors([]); setConfirmOpen(true) }} className="h-11 grow bg-[#ff8a2a] text-[#111111] hover:bg-[#f07b1a]">
+            {isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <CheckCircle2 data-icon="inline-start" />}
+            {isPending ? "Menyelesaikan..." : "Selesaikan Pekerjaan"}
+          </Button>
+        </div>
+      </CardFooter>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Selesaikan pekerjaan?</AlertDialogTitle>
+            <AlertDialogDescription>Laporan {reportCode} akan berstatus Selesai setelah bukti berhasil divalidasi. Pastikan seluruh data sudah benar karena laporan selesai bersifat final.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Periksa kembali</AlertDialogCancel>
+            <AlertDialogAction type="button" disabled={busy || !ready} onClick={handleSubmit} className="bg-[#ff8a2a] text-[#111111] hover:bg-[#f07b1a]">Ya, selesaikan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
   )
 }

@@ -146,6 +146,7 @@ export async function triggerReportPdfUploadAction(reportCode: string) {
     const report = await getPrisma().checklistReport.findUnique({
       where: { reportCode },
       select: {
+        status: true,
         authorId: true,
         author: { select: { branchName: true } },
       },
@@ -155,6 +156,9 @@ export async function triggerReportPdfUploadAction(reportCode: string) {
     }
     if (!canUserAccessReport(user, report)) {
       return { ok: false, reportCode, error: "Anda tidak berwenang mengakses dokumen ini." }
+    }
+    if (user.role === "REQUESTER" && report.status === "COMPLETED") {
+      return { ok: false, reportCode, error: "Requester hanya dapat membaca laporan final." }
     }
 
     const res = await generateAndUploadReportPdf(reportCode)

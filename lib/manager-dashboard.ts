@@ -12,7 +12,13 @@ export async function getDashboardReportScope(userId: unknown): Promise<Prisma.C
   if (user?.role === "ADMIN_HO" || user?.role === "SUPER_ADMIN") return {}
   if (user?.branchName.trim()) {
     const author = { branchName: { equals: user.branchName, mode: "insensitive" as const } }
-    if (user.role === "REQUESTER") return { author, status: "PENDING_REQUESTER" }
+    if (user.role === "REQUESTER") return {
+      author,
+      OR: [
+        { status: "PENDING_REQUESTER" },
+        { status: "COMPLETED", approvalHistory: { array_contains: [{ role: "REQUESTER", decision: "approve" }] } },
+      ],
+    }
     if (user.role === "COORD" || user.role === "MANAGER") return { author }
   }
   return { id: { in: [] } }

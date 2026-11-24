@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma"
 import { completeChecklistFollowUp, getReportItems, needsChecklistFollowUp, retainChecklistFollowUp } from "./checklist-follow-up"
+import { withReviewSubmittedAt } from "./report-timestamps"
 
 export const editableChecklistOwner = (authorId: string) => ({
   authorId,
@@ -61,10 +62,11 @@ export async function saveChecklistSubmission(prisma: PrismaClient, input: {
     if (input.photoFileIds.some((fileId) => !allowedPhotoIds.has(fileId))) return null
 
     const answers = { ...input.payload, period: report.period ?? input.payload.period }
-    const payload = asChecklistJson(retainChecklistFollowUp(isRevision ? report.checklistPayload : null, answers))
-    const pendingFollowUp = needsChecklistFollowUp(payload)
+    const retained = retainChecklistFollowUp(isRevision ? report.checklistPayload : null, answers)
+    const pendingFollowUp = needsChecklistFollowUp(retained)
     const mergedPhotoIds = [...new Set([...storedDriveIds, ...input.photoFileIds])]
     const now = nextChecklistVersion(report.updatedAt)
+    const payload = asChecklistJson(withReviewSubmittedAt(retained, report.checklistPayload, !isRevision && !pendingFollowUp ? now : null))
     const updated = await tx.checklistReport.updateMany({
       where: { id: report.id, status, updatedAt: report.updatedAt, ...owner },
       data: {
@@ -106,8 +108,8 @@ export async function saveChecklistFollowUp(prisma: PrismaClient, input: {
     const followUp = completeChecklistFollowUp(report.checklistPayload, input.items, now)
     if (!followUp) return "INVALID"
 
-    const payload = asChecklistJson(followUp)
     const isRevision = report.status === "NEEDS_REVISION"
+    const payload = asChecklistJson(withReviewSubmittedAt(followUp, report.checklistPayload, !isRevision ? now : null))
     const updated = await tx.checklistReport.updateMany({
       where: { id: report.id, status: report.status, updatedAt: report.updatedAt, ...owner },
       data: {
