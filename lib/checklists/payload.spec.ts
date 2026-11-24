@@ -47,6 +47,10 @@ const missingPhoto = {
 
 assert.deepEqual(validateChecklistPayload(missingPhoto), {
   valid: false,
-  errors: ["Lampu wajib memiliki foto untuk kondisi RUSAK."],
+  errors: [
+    "Lampu wajib memiliki foto untuk kondisi RUSAK.",
+    "Lampu wajib memilih siapa yang akan handle.",
+    "Lampu wajib mengisi keterangan.",
+  ],
 })
 assert.equal(calculateChecklistIsSafe(missingPhoto), false)

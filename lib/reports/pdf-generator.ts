@@ -11,6 +11,39 @@ export type PdfReportPhoto = {
   imageBytes?: Buffer | Uint8Array | null
 }
 
+import { getChecklistConditionDisplay } from "@/lib/checklists/condition-display"
+
+export function formatPdfCondition(condition?: string | null, formCode?: string | null) {
+  const baseCode = (formCode || "").replace(/_REPAIR$/i, "").toUpperCase()
+  const isV7Form = baseCode === "FRM_TS_041" || baseCode === "FRM_TS_028"
+  const display = getChecklistConditionDisplay(condition, {
+    noneLabel: isV7Form ? "NONE (N)" : "TIDAK ADA",
+  })
+
+  switch (display.tone) {
+    case "danger":
+      return { text: "RUSAK (X)", color: rgb(0.8, 0.15, 0.15), isBad: true }
+    case "urgent":
+      return { text: "URGENT (U)", color: rgb(0.72, 0.08, 0.12), isBad: true }
+    case "warning":
+      return {
+        text: display.code === "A" ? "ADJUST (A)" : "REPAIR (R)",
+        color: display.code === "A" ? rgb(0.7, 0.35, 0.1) : rgb(0.9, 0.4, 0.05),
+        isBad: true,
+      }
+    case "info":
+      return { text: "CLEAN (C)", color: rgb(0.1, 0.45, 0.7), isBad: false }
+    case "neutral":
+      return {
+        text: display.code === "N" ? (isV7Form ? "NONE (N)" : "TIDAK ADA") : display.label,
+        color: rgb(0.45, 0.5, 0.55),
+        isBad: false,
+      }
+    case "ok":
+      return { text: "BAIK (V)", color: rgb(0.1, 0.55, 0.2), isBad: false }
+  }
+}
+
 export type ApprovalHistoryRecord = {
   reviewerId?: string
   reviewerName?: string
@@ -587,26 +620,10 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
     })
 
     // Kondisi
-    const cond = (item.condition || "BAIK").toUpperCase()
-    let condColor = rgb(0.1, 0.55, 0.2) // Green for BAIK
-    let condText = "BAIK (V)"
-
-    if (cond.includes("RUSAK")) {
-      condColor = rgb(0.8, 0.15, 0.15)
-      condText = "RUSAK (X)"
-    } else if (cond.includes("REPAIR")) {
-      condColor = rgb(0.9, 0.4, 0.05)
-      condText = "REPAIR (R)"
-    } else if (cond.includes("TIDAK")) {
-      condColor = rgb(0.45, 0.5, 0.55)
-      condText = "TIDAK ADA"
-    } else if (cond.includes("CLEAN")) {
-      condColor = rgb(0.1, 0.45, 0.7)
-      condText = "CLEAN (C)"
-    } else if (cond.includes("ADJUST")) {
-      condColor = rgb(0.7, 0.35, 0.1)
-      condText = "ADJUST (A)"
-    }
+    const { text: condText, color: condColor } = formatPdfCondition(
+      item.condition || "BAIK",
+      data.formCode
+    )
 
     page.drawText(condText, {
       x: marginX + colWidthId + colWidthItem + colWidthTindakan + 4,
@@ -796,11 +813,10 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
           color: rgb(0.08, 0.1, 0.15),
         })
 
-        const condStr = (photo.condition || "BAIK").toUpperCase()
-        const isBad = condStr.includes("RUSAK") || condStr.includes("REPAIR")
-        const condClr = isBad ? rgb(0.8, 0.15, 0.15) : rgb(0.1, 0.55, 0.2)
+        const condDisplay = formatPdfCondition(photo.condition || "BAIK", data.formCode)
+        const condClr = condDisplay.isBad ? condDisplay.color : rgb(0.1, 0.55, 0.2)
         const noteStr = photo.notes ? ` - ${photo.notes.slice(0, 24)}` : ""
-        page.drawText(`Kondisi: ${condStr}${noteStr}`, {
+        page.drawText(`Kondisi: ${condDisplay.text}${noteStr}`, {
           x: photoX + 4,
           y: currentY - cardH + 6,
           size: 6.5,

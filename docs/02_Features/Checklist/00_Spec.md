@@ -16,7 +16,8 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 ## Scope
 
 **Dalam scope:**
-- Pengisian *Form Ijin Kerja* (SAT/FRM/MED/003) sebagai prasyarat **Mandatory (Wajib)** sebelum melanjutkan laporan non-rutin.
+
+- Pengisian _Form Ijin Kerja_ (SAT/FRM/MED/003) sebagai prasyarat **Mandatory (Wajib)** sebelum melanjutkan laporan non-rutin.
 - Tombol 'Lewati' dihapus untuk kepatuhan SMK3 dan kebijakan kerja aman.
 - Form pengisian checklist (Weekly & Monthly).
 - Pemilihan Area (Office vs WHC/Gudang).
@@ -24,17 +25,18 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 - Alur Approval berjenjang.
 
 **Luar scope:**
+
 - Tanda tangan digital multi-stakeholder eksternal offline (approval digital diselesaikan via akun internal).
 
 ## Aturan Bisnis (Business Rules)
 
-1. **Langkah Awal ES (Mandatory Izin Kerja)**: Setelah masuk SPARTA dan memilih 'Buat Laporan', ES wajib melengkapi *Form Ijin Kerja* (SAT/FRM/MED/003). Opsi lewati ditiadakan demi penegakan klausul keselamatan kerja (SMK3).
+1. **Langkah Awal ES (Mandatory Izin Kerja)**: Setelah masuk SPARTA dan memilih 'Buat Laporan', ES wajib melengkapi _Form Ijin Kerja_ (SAT/FRM/MED/003). Opsi lewati ditiadakan demi penegakan klausul keselamatan kerja (SMK3).
 2. **Pilihan Jalur Kerja**: Setelah Form Ijin Kerja terkonfirmasi, ES melanjutkan ke pemilihan jenis laporan (**Checklist** atau **Perbaikan by AHO / Temuan ES**).
 3. **Model Pengisian Data**: ES membuat "Dokumen Laporan Baru" (record baru) di dalam sistem setiap kali jadwal checklist tiba.
 4. **Alur Approval (Tanpa Kerusakan)**: Jika laporan checklist 100% aman (tidak ada laporan kerusakan), maka proses approval cukup melalui **Coord** dan **Manager**, lalu status menjadi Selesai (Tidak perlu sampai ke Requester).
 5. **Alur Approval (Ada Kerusakan)**: Jika terdapat temuan kerusakan, alur akan mengikuti proses yang lebih panjang (ES -> Coord -> Manager -> Requester -> Input PB/PJU -> Selesai).
 6. **Otoritas & Tampilan Detail Laporan (`/dashboard/reports/[reportCode]`)**:
-   - **Teknisi ES**: Hanya melihat ringkasan & *draft isian* murni yang telah diinput (hasil periksa, foto bukti, catatan, form tindak lanjut). ES tidak berwenang memberikan persetujuan (*acc*), sehingga tab/tombol **"Aksi Review" (Setujui / Tolak / Minta Revisi) disembunyikan total**. ES juga tidak dimuat dalam `ManagerSidebar`, melainkan tampilan mandiri yang bersih dengan navigasi kembali ke `/dashboard`.
+   - **Teknisi ES**: Hanya melihat ringkasan & _draft isian_ murni yang telah diinput (hasil periksa, foto bukti, catatan, form tindak lanjut). ES tidak berwenang memberikan persetujuan (_acc_), sehingga tab/tombol **"Aksi Review" (Setujui / Tolak / Minta Revisi) disembunyikan total**. ES juga tidak dimuat dalam `ManagerSidebar`, melainkan tampilan mandiri yang bersih dengan navigasi kembali ke `/dashboard`.
    - **Reviewer (COORD, MANAGER, ADMIN_HO, SUPER_ADMIN)**: Memiliki akses penuh termasuk `ManagerSidebar` dan tab **"Aksi Review"** untuk menyetujui, meminta revisi, atau menolak laporan.
 7. **Validasi K3 di server**. Form rutin dan non-rutin memeriksa izin kerja aktif sebelum draft dibuka atau dibuat. Saat pengiriman, server memeriksa kembali izin dan menyimpan `workPermitId` bersama perubahan status laporan ke `PENDING_COORD`. Status laporan rutin dan penyelesaian tugas disimpan dalam satu transaksi. ES hanya dapat membuka dan menyelesaikan tugas miliknya.
 8. **Tindak lanjut 014/065**. ES pemilik laporan memerlukan izin aktif untuk menyimpan Form 014/065. Pada pengiriman awal, laporan berstatus `PENDING_COORD` dan tindakan review baru tersedia setelah tindak lanjut lengkap. Pada revisi, laporan tetap `NEEDS_REVISION` sampai tindak lanjut lengkap. Server menghitung ringkasan berdasarkan rincian yang disimpan.
@@ -53,8 +55,8 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
   7. **Halaman Checklist Rutin (`/dashboard/checklists`)**: Halaman khusus role `ES` yang menampilkan daftar tugas preventif PIC aktif (mengecualikan status `CANCELLED`) dengan 4 ringkasan metrik (`Total tugas`, `Belum Preventif`, `Sudah Preventif`, `Terlewat`). Pengguna dapat mencari berdasarkan nama objek, kode form, nama area, cabang, atau `periodKey`; menyaring melalui kontrol dropdown `SpartaFilterSelect` (`Jenis objek`: Equipment/Ruangan, `Periode`: Mingguan/Bulanan/3 Bulanan/6 Bulanan, dan `Area kerja` dari `areaName` pada `lib/tasks/todo-service.ts`) serta pill status dan tombol `Reset filter`. Jika izin kerja `MED/003` belum berstatus `APPROVED`, banner informasi ditampilkan dan daftar serta riwayat tetap dapat dilihat, namun tugas aktif tetap terkunci (`Menunggu izin MED/003`). Kartu berstatus `COMPLETED` yang memiliki `reportCode` mengarahkan ke `/dashboard/reports/[reportCode]`.
 - **Alur Laporan Non-Rutin**:
   1. ES masuk SPARTA dan klik 'Buat Laporan Baru' di bawah panel To-Do List.
-  2. ES mengisi *Form Ijin Kerja* (SAT/FRM/MED/003) secara digital (Wajib / Mandatory, tanpa opsi lewati).
-  3. Pada Langkah 2 (**Pilih Aktivitas**) di `/dashboard/reports/new`, ES melihat 3 jalur kerja: **Checklist Rutin** (`/dashboard/checklists`, dapat dibuka meskipun izin kerja belum aktif untuk memantau jadwal dan status tugas preventif), **Perbaikan / Temuan** (`/dashboard/reports/new/repair/area`), dan **General Checklist** (`/dashboard/reports/new/checklist/area?catalog=general`). Pilihan non-rutin (*Perbaikan / Temuan* dan *General Checklist*) terbuka setelah izin kerja aktif.
+  2. ES mengisi _Form Ijin Kerja_ (SAT/FRM/MED/003) secara digital (Wajib / Mandatory, tanpa opsi lewati).
+  3. Pada Langkah 2 (**Pilih Aktivitas**) di `/dashboard/reports/new`, ES melihat 3 jalur kerja: **Checklist Rutin** (`/dashboard/checklists`, dapat dibuka meskipun izin kerja belum aktif untuk memantau jadwal dan status tugas preventif), **Perbaikan / Temuan** (`/dashboard/reports/new/repair/area`), dan **General Checklist** (`/dashboard/reports/new/checklist/area?catalog=general`). Pilihan non-rutin (_Perbaikan / Temuan_ dan _General Checklist_) terbuka setelah izin kerja aktif.
   4. Akses ke `/dashboard/reports/new/checklist/area` tanpa parameter `?catalog=general` otomatis dialihkan ke `/dashboard/checklists`; rute tersebut hanya menampilkan pemilihan area **General Checklist** (katalog Monthly) bila disertai `?catalog=general` dan izin kerja aktif.
   5. ES memilih **Area** (misal: Branch / Office atau Warehouse).
   6. ES memilih **Periode**. Branch / Office memakai Monthly, sedangkan area gudang mengikuti periode yang tersedia pada master ruangan.
@@ -62,8 +64,8 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
   8. ES memilih **Form Checklist** sesuai `RoomFormAvailability`. Form dapat dicari berdasarkan nama atau kode. Menu **General Checklist** membuka katalog Monthly yang sama. Jalur non-rutin hanya membuka kombinasi area, ruangan, periode, dan form yang valid, termasuk saat diakses melalui URL langsung.
   9. ES mengisi checklist dan submit laporan (laporan terikat ke `areaId` dan `roomId`).
   10. Laporan masuk antrean Approval:
-     - Jika 100% aman: `Coord -> Manager -> Selesai`
-     - Jika ada kerusakan: `Coord -> Manager -> Requester -> Input PB/PJU -> Selesai`
+  - Jika 100% aman: `Coord -> Manager -> Selesai`
+  - Jika ada kerusakan: `Coord -> Manager -> Requester -> Input PB/PJU -> Selesai`
 
 - Jika form sudah pernah dikirim dan nomor laporan tersedia, BES dapat membuka detail laporan miliknya dari tombol **Lihat laporan**. Tautan berlaku untuk laporan rutin dan non-rutin, termasuk saat review masih berjalan.
 
@@ -72,24 +74,24 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 - **Alur Penyelesaian Laporan & Halaman Sukses (Completion Screen)**:
   Setelah pengisian form checklist (baik kondisi normal tanpa perbaikan maupun setelah melengkapi form tindak lanjut 014 / 065), sistem menampilkan halaman konfirmasi penyelesaian (`ReportCompletionSuccess`) dan tidak me-redirect pengguna secara mendadak ke tabel `/dashboard/reports`:
   1. **Laporan Rutin (To-Do List Task)**:
-     - Badge & Judul: `Checklist Rutin Selesai` • *"Tugas Checklist Rutin Berhasil Diselesaikan!"*
+     - Badge & Judul: `Checklist Rutin Selesai` • _"Tugas Checklist Rutin Berhasil Diselesaikan!"_
      - Notifikasi bahwa kartu to-do list otomatis ditandai `COMPLETED` dan laporan masuk antrean approval Coordinator.
-     - Tombol Navigasi Utama: *"Kembali ke To-Do List"* (`/dashboard`).
+     - Tombol Navigasi Utama: _"Kembali ke To-Do List"_ (`/dashboard`).
   2. **Laporan Non-Rutin (Insidental / Buat Laporan)**:
-     - Badge & Judul: `Laporan Non-Rutin Berhasil Disimpan` • *"Laporan Non-Rutin Berhasil Disimpan!"*
+     - Badge & Judul: `Laporan Non-Rutin Berhasil Disimpan` • _"Laporan Non-Rutin Berhasil Disimpan!"_
      - Notifikasi bahwa laporan non-rutin telah dicatat dan diteruskan ke antrean approval Coordinator.
-     - Tombol Navigasi Utama: *"Kembali ke Dashboard"* (`/dashboard`).
+     - Tombol Navigasi Utama: _"Kembali ke Dashboard"_ (`/dashboard`).
   3. **Ringkasan Informasi Laporan**:
      - Nomor Laporan (`reportCode`), status `Menunggu Review Coord`, objek/lokasi, cabang, dan waktu submit.
      - Informasi form tindak lanjut (total estimasi biaya Form 014 atau jumlah spare part Form 065, atau indikator kondisi baik tanpa biaya).
-     - Tombol aksi tunggal: Tombol utama *"Kembali ke To-Do List"* (atau *"Kembali ke Dashboard"*). Tombol detail laporan ditiadakan agar teknisi langsung kembali melanjutkan tugas berikutnya.
+     - Tombol aksi tunggal: Tombol utama _"Kembali ke To-Do List"_ (atau _"Kembali ke Dashboard"_). Tombol detail laporan ditiadakan agar teknisi langsung kembali melanjutkan tugas berikutnya.
 
 ## Data & API
 
 - Model utama yang dibutuhkan: `ChecklistReport`, `ChecklistItem`, `Area`, `Room`, `RoomFormAvailability`, `User`.
 - Status approval: `PENDING_COORD`, `PENDING_MANAGER`, `PENDING_REQUESTER`, `COMPLETED`, `REJECTED`.
 - Periode Checklist (`ChecklistPeriod`): `WEEKLY`, `MONTHLY`, `QUARTERLY`, `SEMESTER`.
-*(Detail field didokumentasikan di `docs/01_Architecture/10_Data_Models.md`)*
+  _(Detail field didokumentasikan di `docs/01_Architecture/10_Data_Models.md`)_
 
 ### Kontrak & Validasi Upload Foto (`/api/photos/upload`)
 
@@ -100,7 +102,7 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 ## Aktivitas BES
 
 - **Terkirim** membuka daftar laporan milik BES dari `ChecklistReport`, termasuk laporan rutin dan non-rutin dari periode lama. Draft dikecualikan. Setiap kartu menunjukkan nomor, objek, periode, jenis, dan status terakhir. Pencarian mencakup nomor laporan, kode form, dan objek. Kartu membuka detail laporan yang sama.
-- **Sudah Preventif** (tab untuk status `COMPLETED`, sebelumnya bernama *Selesai*) dan **Terlewat** (`OVERDUE`) tetap mengikuti status tugas rutin dari `ChecklistTask` pada periode yang ditampilkan. Kartu tugas selesai menampilkan badge `Sudah Preventif` dan label waktu `Preventif:`. **Perlu Revisi** menampilkan laporan yang perlu ditindaklanjuti BES.
+- **Sudah Preventif** (tab untuk status `COMPLETED`, sebelumnya bernama _Selesai_) dan **Terlewat** (`OVERDUE`) tetap mengikuti status tugas rutin dari `ChecklistTask` pada periode yang ditampilkan. Kartu tugas selesai menampilkan badge `Sudah Preventif` dan label waktu `Preventif:`. **Perlu Revisi** menampilkan laporan yang perlu ditindaklanjuti BES.
 
 - Navigasi Aktivitas menggunakan tab shadcn dengan aksen oranye pada pilihan aktif. Kartu menampilkan ikon jenis objek dan badge hijau untuk status `Sudah Preventif`. Di detail laporan, status Izin Kerja K3 memakai aksen hijau setelah disetujui dan Form 065/014 memakai label tindak lanjut beraksen oranye.
 
@@ -122,6 +124,7 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 ## Form Checklist Tersedia
 
 Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbaikan:
+
 1. **FRM_TSM_001** (Checklist Test ATS & Pemantauan Genset - SAT/FRM/TSM/001_Rev_000_211022)
 2. **FRM_TSM_002** (Genset / Warehouse)
 3. **FRM_TSM_003** (Checklist Ruangan)
@@ -139,8 +142,8 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 15. **FRM_TS_028** (Checklist Baterai Forklift & Pallet Mover - SAT/FRM/TS/028_Rev:002_161020)
 16. **FRM_MED_003** (Form Izin Kerja - SAT/FRM/MED/003_Rev:000_180225) - **Mandatory**
 
-
 ### Form FRM_TSM_001: Pemantauan Penggunaan Genset dan Test Fungsi ATS
+
 - **Identitas Genset**: Cabang (`branch`), Merk Genset (`merk`), Kapasitas (`kva`), dan Periode Bulan (`bulan`).
 - **Log Pengoperasian Mesin (Running Log)**:
   - Tipe Operasional: `Pemanasan` / `Pemadaman` / `Test ATS`.
@@ -159,6 +162,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 - **Catatan & Keterangan**: Catatan kondisi operasional menyeluruh dan disposisi review coordinator & manager.
 
 ### Form FRM_TS_016: Monthly Checklist Pallet Mover
+
 - **Metadata Unit**: Nomor Unit/Serial (`unitNo`), Merk Unit (`unitBrand`), Jam Kerja Alat (`hourMeter`).
 - **12 Kategori Komponen (~41 item pengecekan)**:
   1. Interview User (`In`)
@@ -177,6 +181,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 - **Opsi Kondisi**: `BAIK` (OK) dan `RUSAK` (NOK). Item yang rusak wajib foto bukti, penanggung jawab, catatan, dan pilihan form tindak lanjut (`FRM_TS_065` / `FRM_TSM_014` / `REPAIR_TANPA_BIAYA`).
 
 ### Form FRM_TS_029: Monthly Checklist Forklift (SAT/FRM/TS/029_Rev : 02_161020)
+
 - **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
 - **Identitas & Metadata**:
   - `Lokasi`: Area/Gudang operasional forklift.
@@ -205,6 +210,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Ekspor PDF menyertakan NRA resmi `NRA : SAT/FRM/TS/029_Rev : 02_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, galeri bukti foto dokumentasi lapangan, dan 3 kolom tanda tangan bertingkat.
 
 ### Form FRM_TS_022: Checklist Genset (SAT/FRM/TS/022_Rev : 01_161020)
+
 - **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
 - **Identitas & Metadata**:
   - `Branch / Area`: Lokasi branch atau area penempatan unit genset.
@@ -238,6 +244,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Menyertakan NRA `SAT/FRM/TS/022_Rev : 01_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, 12 kategori pemeriksaan, galeri foto temuan, dan 3 kolom approval berjenjang (Dibuat Oleh: Branch Engineering Support, Diketahui oleh: Branch Engineering Coordinator, Diperiksa Oleh: Branch Building & Maintenance Manager).
 
 ### Form FRM_TSM_013: Checklist Perawatan Peralatan Water Recycle (SAT/FRM/TSM/013_Rev_000_100123)
+
 - **Dasar Kebijakan**: SAT/KEB/TSM/007 Kebijakan Perawatan Peralatan Water Recycle Branch/Depo/Bulky.
 - **Identitas & Metadata**:
   - `Lokasi`: Branch / Depo / Bulky.
@@ -277,23 +284,25 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Menyertakan NRA `SAT/FRM/TSM/013_Rev_000_100123`, REF NRA `SAT/KEB/TSM/007 Kebijakan Perawatan Peralatan Water Recycle Branch/Depo/Bulky`, 15 item inspeksi, catatan dosis kimia, foto temuan ber-watermark, dan 3 kolom approval bertingkat (Pelaksana: Branch ES, Diketahui: Branch ES Coord, Disetujui: Branch B&M Mgr).
 
 ### Form FRM_TSM_006: Checklist Hydrant (SAT/FRM/TSM/006_Rev_000_261022)
+
 - **Dasar Kebijakan**: SAT/KEB/TSM/002 Kebijakan Perawatan Hydrant.
 - **Identitas & Metadata**:
   - Baris 1: `Jenis Hydrant` (input teks, default `IHB - OHB`) & `Periode / Tahun` (`periodKey`, mis. `2026`).
   - Baris 2: Dropdown `Jenis Perawatan` (`GENERAL_MINGGUAN`, `BULANAN`, `ENAM_BULANAN`).
 - **Logika Visibilitas Dinamis (Default Hidden)**:
-  - Sebelum `Jenis Perawatan` dipilih, seluruh 12 kategori checklist disembunyikan (*default hidden*).
-  - **General Mingguan**: Menampilkan sub-selector radio button `Mgg 1`, `Mgg 2`, `Mgg 3`, `Mgg 4` dengan rentang tanggal kalender nyata (berdasarkan bulan dan tahun aktif). Minggu yang sudah lewat otomatis terkunci (*disabled*), dan hanya menampilkan **Kategori 1** (5 item).
+  - Sebelum `Jenis Perawatan` dipilih, seluruh 12 kategori checklist disembunyikan (_default hidden_).
+  - **General Mingguan**: Menampilkan sub-selector radio button `Mgg 1`, `Mgg 2`, `Mgg 3`, `Mgg 4` dengan rentang tanggal kalender nyata (berdasarkan bulan dan tahun aktif). Minggu yang sudah lewat otomatis terkunci (_disabled_), dan hanya menampilkan **Kategori 1** (5 item).
   - **Bulanan**: Menampilkan **Kategori 2 s/d 11** (47 item: kondisi panel, indikator, kabel, diesel, pemipaan, valve, pompa, reservoir).
   - **6 Bulanan**: Menampilkan sub-selector radio button `Semester 1` (Jan - Jun) dan `Semester 2` (Jul - Des), dan hanya menampilkan **Kategori 12** (9 item: uji tekanan aktual).
 - **Tindakan Lapangan**: Menampilkan badge cara tindakan (`CH` = Check, `CL` = Clean, `INSP` = Inspeksi/Ukur, `DO IT` = Laksanakan, `MS` = Make Sure, `R` = Ready).
 - **Opsi Kondisi & Temuan Kerusakan**:
   - Tombol `Baik` (OK) dan `Rusak` (NOK).
   - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark, penanggung jawab (BES/Eksternal), dan dropdown form tindak lanjut (`SAT/FRM/TSM/014`, `SAT/FRM/TS/065`, atau `Tanpa Biaya`).
-  - Khusus item 5.I & 5.J (*Volted battery 1 & 2*): Disediakan field input nilai voltase (Volt).
+  - Khusus item 5.I & 5.J (_Volted battery 1 & 2_): Disediakan field input nilai voltase (Volt).
 - **Catatan & Approval**: Catatan umum pelaksanaan operasional hydrant dan tanda tangan digital pelaksana (Branch ES).
 
 ### Form FRM_TS_062: Checklist Hand Pallet Monthly (SAT/FRM/TS/062_Rev : 00_161020)
+
 - **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
 - **Identitas & Metadata**:
   - `Lokasi`: Area/Gudang tempat Hand Pallet berada.
@@ -321,6 +330,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Disetujui oleh: Br Building & Maintenance Mgr
 
 ### Form FRM_TS_064: Checklist Table Lifter Monthly (SAT/FRM/TS/064_Rev : 00_161020)
+
 - **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
 - **Identitas & Metadata**:
   - `Lokasi`: Area/Lokasi penempatan unit Table Lifter di warehouse.
@@ -372,6 +382,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Menyertakan NRA `SAT/FRM/TS/064_Rev : 00_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
 
 ### Form FRM_TS_063: Checklist Exhaust Fan (SAT/FRM/TS/063_Rev : 00_161020)
+
 - **Dasar Kebijakan**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
 - **Identitas & Metadata**:
   - `Lokasi`: Area/Ruangan tempat unit Exhaust Fan terpasang (misal: `Area Charger Battery`, `Gudang Bulky`).
@@ -415,6 +426,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Menyertakan NRA `SAT/FRM/TS/063_Rev : 00_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
 
 ### Form FRM_TS_041: Checklist Conveyor (SAT/FRM/TS/041_Rev:01_161020)
+
 - **Dasar SOP**: SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH.
 - **Divisi & Departemen**: Division : Property & Small Business Development | Departemen : Building & Maintenance.
 - **Identitas & Metadata**:
@@ -501,30 +513,40 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
       - `D. Check Vbelt Condition`
       - `E. Water parging`
       - `F. Check Air Pressure`
-- **Keterangan Kondisi & Opsi Tindakan**:
-  - `V`: OK (Kondisi Baik)
-  - `X`: Not Good (Rusak / NOK)
-  - `A`: Adjust (Penyetelan)
-  - `R`: Repair (Perbaikan)
-  - `U`: Urgent (Mendesak)
-  - `N`: None (Tidak Ada)
-- **Penanganan Kondisi Rusak / Not Good (X)**:
-  - Pelaporan temuan kerusakan wajib menyertakan foto bukti kamera ber-watermark otomatis `({Warehouse} - Conveyor)`, penanggung jawab (`BES` / `Eksternal`), catatan kerusakan, dan formulir tindak lanjut (`SAT/FRM/TS/065`, `SAT/FRM/TSM/014`, atau `REPAIR_TANPA_BIAYA`).
+- **Keterangan Kondisi & Opsi Tindakan (V7)**:
+  - Menggunakan komponen shadcn `Select` dengan styling SPARTA yang konsisten (`V`, `X`, `A`, `R`, `U`, `N`):
+    - `V`: OK (Kondisi Baik — `BAIK`)
+    - `X`: Not Good (Rusak / NOK — `RUSAK`)
+    - `A`: Adjust (Penyetelan — `ADJUST_OR_ADD`)
+    - `R`: Repair (Perbaikan — `REPAIR`)
+    - `U`: Urgent (Mendesak — `URGENT`)
+    - `N`: None (Tidak Ada — `TIDAK_ADA`)
+  - Seluruh 11 kategori dan 66 item pemeriksaan dipertahankan.
+  - Tombol **Tandai Semua Baik** hanya mengisi item yang belum diperiksa dan tidak menimpa item yang sudah memiliki kondisi.
+  - Pada mode Perbaikan / Temuan (`FRM_TS_041_REPAIR`), hanya menampilkan pilihan kondisi temuan (`X`, `A`, `R`, `U`), tidak mewajibkan pengisian seluruh 66 item, dan mewajibkan minimal 1 item temuan valid sebelum dikirim.
+- **Validasi, Perlindungan Data & Tindak Lanjut (V7)**:
+  - Kondisi temuan (`X`, `A`, `R`, `U`) wajib menyertakan foto bukti kamera ber-watermark otomatis `({Warehouse} - Conveyor)` (upload V6 `readPhotoUploadResponse`), penanggung jawab (`BES` / `Eksternal`), dan deskripsi/keterangan nyata dari teknisi (tanpa fallback teks dummy).
+  - Kondisi `X` (Not Good) mempertahankan alur Form 065 (`SAT/FRM/TS/065_REV:00_161020`).
+  - Kondisi `A` (Adjust), `R` (Repair), dan `U` (Urgent) **tidak otomatis** memicu Form 065; teknisi memilih Form 065 hanya jika benar-benar membutuhkan penggantian spare part. Laporan tanpa Form 065 tetap melalui alur persetujuan BEC → Manager, dan apabila Form 014/065 dipilih, wajib diselesaikan sebelum ACC BEC.
+  - Kondisi `U` (Urgent) tidak boleh dianggap aman (`isSafe = false`).
+  - Kondisi `V` (OK) dan `N` (None) tidak memerlukan tindak lanjut serta tidak boleh membawa referensi tindak lanjut (`repairForm`, `followUp065`, `followUp014`) pada payload yang dikirim. Saat mengganti kondisi di UI sebelum submit, foto dan catatan yang sudah diinput tetap dipertahankan pada state lokal agar tidak hilang permanen.
 - **Approval & Verifikasi**:
   - Dibuat oleh: Br. Technical Support
   - Diperiksa oleh: Br. Coord TS
   - Disetujui oleh: Br. B&M Mgr
 - **Sinkronisasi Dokumen & PDF**:
   - Menyertakan NRA `SAT/FRM/TS/041_Rev:01_161020`, REF NRA `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
+  - Detail laporan dan PDF menampilkan kode kondisi sesuai nilai tersimpan (`BAIK (V)`, `RUSAK (X)`, `ADJUST (A)`, `REPAIR (R)`, `URGENT (U)`, `NONE (N)`), tanpa pernah menampilkan `Urgent` atau `Adjust` sebagai `Baik`.
 
 ### Form FRM_TSM_008: Checklist Perawatan Peralatan Unit Sewa di Warehouse/Depo/Bulky (SAT/FRM/TSM/008_Rev_000_111122)
+
 - **Dasar Kebijakan**: SAT/KEB/TSM/004 Kebijakan Pemeliharaan Peralatan Unit Sewa di Warehouse/Depo/Bulky.
 - **Identitas & Metadata**:
   - `Lokasi`: Area/Lokasi penempatan peralatan unit sewa di warehouse/depo/bulky (misal `Balaraja / Area Charger Battery`).
   - `Nama dan jenis unit`: Nama & jenis unit peralatan sewa (default: `Forklift / Reach truck`).
   - `Tahun`: Tahun pelaksanaan inspeksi berkala (misal `2026`).
   - `Periode / Bulan`: Periode bulanan pelaksanaan (`Januari` s/d `Desember`).
-  - `Catatan Temuan`: Catatan kerusakan dicatat per-item pada rincian temuan kerusakan (misal: *Point 2.A: Lapisan roda mengelupas*).
+  - `Catatan Temuan`: Catatan kerusakan dicatat per-item pada rincian temuan kerusakan (misal: _Point 2.A: Lapisan roda mengelupas_).
 - **Struktur 9 Kategori & 23 Item Pemeriksaan**:
   1. **1. LOAD WHEEL (3 item)**:
      - `A. Cek kondisi Permukaan lapisan roda` (Tindakan: `CH` — Check)
@@ -565,7 +587,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - `DO IT`: Lakukan (Uji coba performa / fungsi hydraulic dan unit)
 - **Opsi Kondisi & Temuan Kerusakan (Unit Sewa)**:
   - Pilihan kondisi: `Baik (V)` dan `Rusak (X)`.
-  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark otomatis `({Nama Unit} - {Kategori/Item})`, penanggung jawab (`Eksternal` / Vendor Sewa atau `BES`), catatan kerusakan (misal: *Point 2.A: Lapisan roda mengelupas, unit down sudah info dept terkait untuk diteruskan ke vendor*), dan pilihan tindak lanjut.
+  - Khusus item yang Rusak: Wajib bukti foto kamera ber-watermark otomatis `({Nama Unit} - {Kategori/Item})`, penanggung jawab (`Eksternal` / Vendor Sewa atau `BES`), catatan kerusakan (misal: _Point 2.A: Lapisan roda mengelupas, unit down sudah info dept terkait untuk diteruskan ke vendor_), dan pilihan tindak lanjut.
 - **Approval & Verifikasi**:
   - Dibuat oleh: Branch Engineering Support
   - Diperiksa oleh: Branch Engineering Coordinator
@@ -574,6 +596,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Menyertakan NRA `SAT/FRM/TSM/008_Rev_000_111122`, REF NRA `SAT/KEB/TSM/004 Kebijakan Pemeliharaan Peralatan Unit Sewa di Warehouse/Depo/Bulky`, tanda watermark "INTERNAL USE ONLY", galeri foto bukti, dan 3 kolom approval bertingkat.
 
 ### Form FRM_TSM_007: Checklist Pemeliharaan PLTS
+
 - **Dasar Kebijakan**: SAT/KEB/TSM/003 Kebijakan Perawatan PLTS di HO/Branch/Depo.
 - **Identitas & Metadata**:
   - `Daya Total PLTS`: Daya kapasitas sistem PLTS dalam satuan KWp (misal 198 KWp).
@@ -585,7 +608,9 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Aksen visual konsisten menggunakan Spartan Orange (`#ff8a2a`) untuk status fokus input, button handler (`BES` / `Eksternal`), dan banner informasi periode.
   - Tinggi elemen input dan dropdown disamakan (`!h-11 h-11`) mengikuti standar formulir checklist ruangan.
   - Header kartu kategori menyajikan judul dan deskripsi ringkas tanpa perulangan badge periode frekuensi.
+
 ### Form FRM_TS_043: Checklist Forklift Weekly (SAT/FRM/TS/043_Rev : 01_161020)
+
 - **Dasar SOP**: `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`.
 - **Identitas & Metadata**:
   - `No. Unit`: Nomor unit Forklift (misal `FL-01`).
@@ -614,6 +639,7 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
   - Disetujui oleh: Br Building & Maintenance Mgr
 
 ### Form FRM_TS_045: Checklist Pallet Mover Weekly (SAT/FRM/TS/045_Rev : 01_161020)
+
 - **Dasar SOP**: `SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH`.
 - **Identitas & Metadata**:
   - `No. Unit`: Nomor unit Pallet Mover (misal `PM-01`).
@@ -644,8 +670,6 @@ Saat ini terdapat 10 jenis form utama yang didigitalkan untuk Checklist & Perbai
 
 Data form disimpan pada `ChecklistReport.checklistPayload` dalam format JSON. Pengunggahan foto menggunakan endpoint Google Drive dan hanya terkirim setelah Laporan beralih dari status `DRAFT`.
 
-
-
 ## Alur: Checklist vs Perbaikan (Repair)
 
 Terdapat 2 jalur utama pengisian laporan yang dibedakan secara logika meskipun secara UI sangat mirip:
@@ -669,6 +693,7 @@ Maintenance checklist reference while keeping SPARTA Engineering's black,
 silver, orange, and white visual language.
 
 Required behavior:
+
 - Checklist entry uses a compact mobile-first wizard surface with a header,
   progress summary, search field, category accordion, segmented condition
   controls, and a sticky bottom continue/save action.
@@ -707,6 +732,7 @@ Required behavior:
 ## Form Tindak Lanjut Perbaikan (FRM_TSM_014 & FRM_TS_065)
 
 Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checklist:
+
 1. **Pilihan Form Tindak Lanjut Spesifik Kategori**:
    - **Kategori Equipment / Alat Operasional**: Otomatis menggunakan `SAT/FRM/TS/065_REV:00_161020` (Form Penggantian Spare Part Equipment).
    - **Kategori Ruangan / Fasilitas Bangunan**: Otomatis menggunakan `SAT/FRM/TSM/014_REV:000_060423` (Form Estimasi Biaya Sipil & ME).
@@ -730,6 +756,7 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
    - Setelah form lanjutan disimpan, laporan dialihkan ke `PENDING_COORD` untuk proses approval berjenjang.
 
 ### Form FRM_MED_003: Form Izin Kerja (SAT/FRM/MED/003_Rev:000_180225) - Mandatory
+
 - **Dasar Kebijakan**: SAT/KEB/MED/001 Kebijakan Persyaratan Kerja Aman (SMK3).
 - **Status Alur**: **Mandatory (Wajib)** sebelum membuat laporan non-rutin. Tombol lewati ditiadakan.
 - **Bagian 1: Header & Identitas Pekerjaan**:
@@ -748,10 +775,10 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
     - Konfirmasi Kondisi Mental Pekerja (Phobia)
     - Persyaratan Lainnya (teks)
 - **Bagian 3: Jenis Pekerjaan Berisiko & APD/APK Khusus**:
-  1. *Hot Work (Kerja Api)*: Lock Out, Barikade, Ventilasi, Welding Cutting Torch, Acetylene, Grinding Machine, Cutting Disk, Fire Blanket, Oxygen, Lainnya.
-  2. *Work Height & Excavation (Kerja Ketinggian & Galian)*: Handrail, Platform/Alas, Alat Komunikasi, Scaffolding, Lampu Penerangan, Crane, Safety Line, Safety Sign, Safety Net, Lainnya.
-  3. *Confined Space Area (Area Terbatas)*: Ventilasi Udara, Proteksi Area, Oxygen, Breathing Apparatus, Log Out, Lainnya.
-  4. *High Voltage Electrical (Listrik Tegangan Tinggi)*: Instalasi Listrik, Proteksi Terminal, Proteksi Arus, Proteksi Tegangan, Alat Komunikasi, Ampere Meter, Lock Out, Proteksi Area, Proteksi Panel, Lainnya.
+  1. _Hot Work (Kerja Api)_: Lock Out, Barikade, Ventilasi, Welding Cutting Torch, Acetylene, Grinding Machine, Cutting Disk, Fire Blanket, Oxygen, Lainnya.
+  2. _Work Height & Excavation (Kerja Ketinggian & Galian)_: Handrail, Platform/Alas, Alat Komunikasi, Scaffolding, Lampu Penerangan, Crane, Safety Line, Safety Sign, Safety Net, Lainnya.
+  3. _Confined Space Area (Area Terbatas)_: Ventilasi Udara, Proteksi Area, Oxygen, Breathing Apparatus, Log Out, Lainnya.
+  4. _High Voltage Electrical (Listrik Tegangan Tinggi)_: Instalasi Listrik, Proteksi Terminal, Proteksi Arus, Proteksi Tegangan, Alat Komunikasi, Ampere Meter, Lock Out, Proteksi Area, Proteksi Panel, Lainnya.
 - **Bagian 4: Standar APD & Fire Protection**:
   - APD: Topi/Helm, Kacamata, Masker, Faceshield, Welding Facer, Apron, Ear plug/ear muff, Safety Vest, Sarung tangan bahan/kulit/karet, Safety shoes, Welding gloves, Dust mask, Body harness, Lainnya.
   - Fire Protection: APAR Dry Chemical Powder, APAR CO2, APAR Foam, Air, Pasir, Lainnya.
@@ -761,8 +788,9 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
   - Catatan hasil pemeriksaan pasca pekerjaan
 
 ### Form FRM_TS_028: Monthly Checklist Battery (Baterai Forklift & Pallet Mover)
+
 - **NRA**: `SAT/FRM/TS/028_Rev:002_161020`
-- **Tujuan**: Form universal bulanan untuk memeriksa kondisi fisik dan parameter elektrikal/kimiawi baterai traksi (*traction battery*), baik untuk unit **Forklift** maupun **Pallet Mover**.
+- **Tujuan**: Form universal bulanan untuk memeriksa kondisi fisik dan parameter elektrikal/kimiawi baterai traksi (_traction battery_), baik untuk unit **Forklift** maupun **Pallet Mover**.
 - **Metadata Header**:
   - `WH`: Lokasi gudang/warehouse.
   - `Unit`: Dropdown pilihan (`Forklift` atau `Pallet Mover`).
@@ -785,7 +813,10 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
   12. Check tegangan akumulasi semua cell
   13. Check volume air accu
   14. Check kondisi tray / housing battery
-  - Pilihan Kondisi: `V` (OK - hijau soft), `X` (Not Good - merah/rose soft), `R` (Repair - amber soft), `U` (Urgent - abu-abu/slate soft).
+  - **Pilihan Kondisi `FRM_TS_028` (V7)**: Menggunakan komponen shadcn `Select` dengan 5 pilihan kondisi: `V` (OK / `BAIK`), `X` (Not Good / `RUSAK`), `R` (Repair / `REPAIR`), `U` (Urgent / `URGENT`), dan `N` (None / `TIDAK_ADA`).
+  - **Isolasi `FRM_TS_068`**: Form `FRM_TS_068` (Checklist Baterai Forklift) tetap mempertahankan tampilan dan seluruh perilaku existing (4 pilihan `V`, `X`, `R`, `U` tanpa `N`, serta NRA `SAT/FRM/TS/068`).
+  - **Mode Perbaikan / Temuan (`FRM_TS_028_REPAIR`)**: Tidak menginisialisasi seluruh 14 item menjadi `RUSAK`; BES memilih item bermasalah (`X`, `R`, `U`) secara selektif, tidak wajib mengisi seluruh 14 item, dan wajib minimal 1 item temuan valid.
+  - **Validasi, Foto V6 & Tindak Lanjut `FRM_TS_028` (V7)**: Kondisi `X`, `R`, dan `U` wajib menyertakan foto bukti (upload V6 `readPhotoUploadResponse`), deskripsi/keterangan nyata (tanpa fallback teks dummy), dan penanggung jawab (`BES` / `Eksternal`). Kondisi `X` mempertahankan alur Form 065; `R` dan `U` tidak otomatis memicu Form 065 (teknisi memilih Form 065 hanya sesuai kebutuhan spare part); `U` tidak dianggap aman (`isSafe = false`); `V` dan `N` tidak memerlukan tindak lanjut serta tidak boleh membawa referensi tindak lanjut pada payload. Perpindahan kondisi di UI sebelum submit tidak menghapus foto dan catatan yang sudah diinput secara permanen. Detail laporan dan PDF menampilkan seluruh kode kondisi sesuai nilai tersimpan (`URGENT (U)` tidak ditampilkan sebagai `Baik`).
 - **Tabel 2: Data Point 10 & 11 (Pengukuran Cell Baterai)**:
   - Jumlah Cell Dinamis (Otomatis Terikat Dropdown `Tipe Unit` tanpa toggle manual):
     - `Pallet Mover`: 12 Cell (No. 01 s/d 12, label Grup 1 disembunyikan karena unit tunggal)
@@ -798,5 +829,3 @@ Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checkli
   - Dibuat Oleh: Branch Technical Support (BES)
   - Diperiksa: Branch Coordinator TS
   - Disetujui: Branch Building & Maintenance Manager
-
-

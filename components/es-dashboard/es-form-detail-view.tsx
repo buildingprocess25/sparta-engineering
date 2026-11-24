@@ -35,6 +35,7 @@ import { ChecklistStatusBadge } from "@/components/es-dashboard/checklist-status
 import { WORK_PERMIT_STATUS_LABELS } from "@/lib/work-permits/status-labels"
 import type { WorkPermitStatus } from "@/generated/prisma"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
+import { getChecklistConditionDisplay } from "@/lib/checklists/condition-display"
 import { PALLET_MOVER_WEEKLY_CATEGORIES } from "@/lib/checklists/frm-ts-045"
 import { FORKLIFT_WEEKLY_CATEGORIES } from "@/lib/checklists/frm-ts-043"
 import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
@@ -181,9 +182,9 @@ export function EsFormDetailView({
     let rusak = 0
     let other = 0
     for (const it of rawItems) {
-      const c = (it.condition || "").toUpperCase()
-      if (c === "BAIK" || c === "OK") baik++
-      else if (c === "RUSAK" || c === "NOK" || c.includes("REPAIR") || c.includes("URGENT")) rusak++
+      const display = getChecklistConditionDisplay(it.condition)
+      if (display.tone === "ok") baik++
+      else if (display.isFinding && display.code !== "C") rusak++
       else other++
     }
     return { baik, rusak, other, total: rawItems.length }
@@ -598,19 +599,21 @@ export function EsFormDetailView({
                 {isOpen && (
                   <div className="divide-y divide-[#f0f0f0]">
                     {catItems.map((item) => {
-                      const cond = (item.condition || "").toUpperCase()
-                      const isBaik = cond === "BAIK" || cond === "OK"
-                      const isRusak =
-                        cond === "RUSAK" ||
-                        cond === "NOK" ||
-                        cond.includes("REPAIR") ||
-                        cond.includes("URGENT")
-                      const isAction = isRusak || ["CLEAN", "ADJUST_OR_ADD"].includes(cond)
+                      const display = getChecklistConditionDisplay(item.condition)
+                      const isAction = display.isFinding
                       const photos = Array.isArray(item.photos) ? item.photos : []
+                      const pillClasses: Record<typeof display.tone, string> = {
+                        ok: "border-emerald-200 bg-emerald-50 text-emerald-700",
+                        danger: "border-rose-200 bg-rose-50 text-rose-700",
+                        urgent: "border-red-300 bg-red-100 text-red-900",
+                        warning: "border-amber-200 bg-amber-50 text-amber-800",
+                        info: "border-sky-200 bg-sky-50 text-sky-800",
+                        neutral: "border-slate-200 bg-slate-100 text-slate-700",
+                      }
 
                       return (
                         <div key={item.id} className="p-3.5 space-y-3">
-                          {/* Item Label & Segmented Controls */}
+                          {/* Item Label & Read-Only Condition Pill */}
                           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <p className="text-xs font-bold text-[#111111]">{item.label}</p>
@@ -621,37 +624,15 @@ export function EsFormDetailView({
                               )}
                             </div>
 
-                            {/* Read-Only Condition Selector Pill */}
-                            <div className="flex items-center gap-1.5 self-start sm:self-center pointer-events-none">
-                              <button
-                                type="button"
-                                disabled
+                            <div className="flex items-center gap-1.5 self-start sm:self-center">
+                              <span
                                 className={cn(
-                                  "rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
-                                  isBaik
-                                    ? "bg-emerald-600 text-white shadow-xs"
-                                    : "bg-gray-100 text-gray-400 opacity-60"
+                                  "rounded-lg border px-3 py-1.5 text-xs font-bold",
+                                  pillClasses[display.tone]
                                 )}
                               >
-                                Baik (V)
-                              </button>
-                              <button
-                                type="button"
-                                disabled
-                                className={cn(
-                                  "rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
-                                  isRusak
-                                    ? "bg-rose-600 text-white shadow-xs"
-                                    : "bg-gray-100 text-gray-400 opacity-60"
-                                )}
-                              >
-                                Rusak (X)
-                              </button>
-                              {!isBaik && !isRusak && item.condition && (
-                                <span className="rounded-lg bg-orange-500 text-white px-2.5 py-1 text-xs font-bold">
-                                  {item.condition}
-                                </span>
-                              )}
+                                {display.label}
+                              </span>
                             </div>
                           </div>
 
@@ -737,22 +718,24 @@ export function EsFormDetailView({
                                 </div>
                               )}
 
-                              <dl className="flex flex-col gap-1.5">
-                                <dt className="text-xs font-medium text-muted-foreground">Form tindak lanjut</dt>
-                                <dd>
-                                  <Badge variant="outline" className="h-auto max-w-full whitespace-normal border-orange-200 bg-orange-50 text-orange-900">
-                                    <Wrench data-icon="inline-start" aria-hidden="true" />
-                                    <span>
-                                      {item.repairFormName ||
-                                        (item.repairForm?.includes("065")
-                                          ? "Form Penggantian Spare Part (065)"
-                                          : item.repairForm?.includes("014")
-                                            ? "Form Estimasi Biaya Sipil & ME (014)"
-                                            : item.repairForm || "Form Penggantian Spare Part (065)")}
-                                    </span>
-                                  </Badge>
-                                </dd>
-                              </dl>
+                              {item.repairForm || item.repairFormName ? (
+                                <dl className="flex flex-col gap-1.5">
+                                  <dt className="text-xs font-medium text-muted-foreground">Form tindak lanjut</dt>
+                                  <dd>
+                                    <Badge variant="outline" className="h-auto max-w-full whitespace-normal border-orange-200 bg-orange-50 text-orange-900">
+                                      <Wrench data-icon="inline-start" aria-hidden="true" />
+                                      <span>
+                                        {item.repairFormName ||
+                                          (item.repairForm?.includes("065")
+                                            ? "Form Penggantian Spare Part (065)"
+                                            : item.repairForm?.includes("014")
+                                              ? "Form Estimasi Biaya Sipil & ME (014)"
+                                              : item.repairForm)}
+                                      </span>
+                                    </Badge>
+                                  </dd>
+                                </dl>
+                              ) : null}
                             </div>
                           )}
                         </div>

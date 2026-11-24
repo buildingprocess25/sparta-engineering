@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils"
 import { triggerReportPdfUploadAction } from "@/lib/actions/checklist"
 import { executeReportSparePartAction, reviewReportDecision } from "@/app/dashboard/reports/actions"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
+import { getChecklistConditionDisplay } from "@/lib/checklists/condition-display"
 import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
 import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
 import { GENSET_CATEGORIES } from "@/lib/checklists/frm-ts-022"
@@ -311,12 +312,19 @@ export function ReportDetailView({
   }, [report.checklistPayload, report.formCode])
 
   // Items classification
+  const isFindingCondition = React.useCallback((condition?: string | null) => {
+    const cond = (condition || "").toUpperCase()
+    return (
+      cond.includes("RUSAK") ||
+      cond.includes("REPAIR") ||
+      cond.includes("URGENT") ||
+      cond.includes("ADJUST")
+    )
+  }, [])
+
   const itemsWithIssues = React.useMemo(() => {
-    return rawItems.filter((it) => {
-      const cond = (it.condition || "").toUpperCase()
-      return cond.includes("RUSAK") || cond.includes("REPAIR") || cond.includes("URGENT")
-    })
-  }, [rawItems])
+    return rawItems.filter((it) => isFindingCondition(it.condition))
+  }, [rawItems, isFindingCondition])
 
   const workItems = React.useMemo(() => {
     const issueIds = new Set(itemsWithIssues.map((item) => item.id))
@@ -340,8 +348,7 @@ export function ReportDetailView({
   const filteredItems = React.useMemo(() => {
     return rawItems.filter((it) => {
       if (checklistFilter === "bermasalah") {
-        const cond = (it.condition || "").toUpperCase()
-        if (!cond.includes("RUSAK") && !cond.includes("REPAIR") && !cond.includes("URGENT")) {
+        if (!isFindingCondition(it.condition)) {
           return false
         }
       }
@@ -357,7 +364,7 @@ export function ReportDetailView({
       }
       return true
     })
-  }, [rawItems, checklistFilter, searchItem])
+  }, [rawItems, checklistFilter, searchItem, isFindingCondition])
 
   // Category grouping
   const isPalletMover = (report.formCode || "").toUpperCase().includes("FRM_TS_016")
@@ -1159,12 +1166,15 @@ export function ReportDetailView({
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {group.items.map((item) => {
-                        const cond = (item.condition || "BAIK").toUpperCase()
-                        const isBad =
-                          cond.includes("RUSAK") ||
-                          cond.includes("REPAIR") ||
-                          cond.includes("URGENT")
-                        const isNone = cond.includes("TIDAK")
+                        const condDisplay = getChecklistConditionDisplay(item.condition)
+                        const badgeStyles: Record<typeof condDisplay.tone, string> = {
+                          ok: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                          danger: "bg-rose-50 text-rose-700 border-rose-200",
+                          urgent: "bg-red-100 text-red-900 border-red-300",
+                          warning: "bg-amber-50 text-amber-800 border-amber-200",
+                          info: "bg-sky-50 text-sky-800 border-sky-200",
+                          neutral: "bg-slate-100 text-slate-600 border-slate-200",
+                        }
                         const estimate = getItemEstimate(item)
 
                         return (
@@ -1212,21 +1222,17 @@ export function ReportDetailView({
                               )}
                             </td>
                             <td className="py-3 px-4 whitespace-nowrap">
-                              {isBad ? (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-1 font-bold text-rose-700 text-xs border border-rose-200">
-                                  <span>{cond}</span>
-                                  <ChevronRight className="size-3 text-rose-400" />
-                                </span>
-                              ) : isNone ? (
-                                <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 font-medium text-slate-500 text-xs">
-                                  Tidak ada
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 font-bold text-emerald-700 text-xs border border-emerald-200">
-                                  <span>Baik</span>
-                                  <ChevronRight className="size-3 text-emerald-400" />
-                                </span>
-                              )}
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-md px-2 py-1 font-bold text-xs border",
+                                  badgeStyles[condDisplay.tone]
+                                )}
+                              >
+                                <span>{condDisplay.shortLabel}</span>
+                                {condDisplay.isFinding ? (
+                                  <ChevronRight className="size-3 opacity-60" />
+                                ) : null}
+                              </span>
                             </td>
                             <td className="py-3 px-4 whitespace-nowrap text-slate-500 font-medium">
                               {estimate === null ? "—" : formatRupiah(estimate)}
@@ -1288,7 +1294,7 @@ export function ReportDetailView({
                               </span>
                               <span className="text-xs font-bold text-slate-900">{item.label}</span>
                               <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
-                                {item.condition}
+                                {getChecklistConditionDisplay(item.condition).shortLabel}
                               </span>
                             </div>
                             {item.notes && <p className="mt-1 text-xs text-slate-500">Catatan: {item.notes}</p>}

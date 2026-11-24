@@ -16,12 +16,20 @@ import {
 } from "lucide-react"
 
 import type { ChecklistConfig, ChecklistItemConfig } from "@/components/es-dashboard/shared-checklist-form"
+import type {
+  ChecklistCondition,
+  ChecklistPayloadItem,
+  ChecklistPhoto,
+} from "@/lib/checklists/payload"
 import { conditionRequiresPhoto } from "@/lib/checklists/photo-state"
 
 export const FRM_TS_041_FORM_CODE = "FRM_TS_041"
 export const FRM_TS_041_NRA = "SAT/FRM/TS/041_Rev:01_161020"
 export const FRM_TS_041_REF_NRA =
   "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH"
+
+const FORM_065_CODE = "SAT/FRM/TS/065_REV:00_161020"
+const FORM_065_LABEL = "Form Penggantian Spare Part (065)"
 
 export type ConveyorItem = {
   id: string
@@ -604,6 +612,159 @@ export const FRM_TS_041_ITEMS_CONFIG: ChecklistItemConfig[] =
       icon: cat?.icon || Activity,
     }
   })
+
+export const FRM_TS_041_CONDITION_OPTIONS = [
+  { value: "BAIK", code: "V", label: "V — OK", shortLabel: "OK (V)" },
+  { value: "RUSAK", code: "X", label: "X — Not Good", shortLabel: "Not Good (X)" },
+  { value: "ADJUST_OR_ADD", code: "A", label: "A — Adjust", shortLabel: "Adjust (A)" },
+  { value: "REPAIR", code: "R", label: "R — Repair", shortLabel: "Repair (R)" },
+  { value: "URGENT", code: "U", label: "U — Urgent", shortLabel: "Urgent (U)" },
+  { value: "TIDAK_ADA", code: "N", label: "N — None", shortLabel: "None (N)" },
+] as const satisfies readonly {
+  value: ChecklistCondition
+  code: string
+  label: string
+  shortLabel: string
+}[]
+
+export const FRM_TS_041_FINDING_CONDITIONS = [
+  "RUSAK",
+  "ADJUST_OR_ADD",
+  "REPAIR",
+  "URGENT",
+] as const satisfies readonly ChecklistCondition[]
+
+export const FRM_TS_041_ALL_CONDITIONS = [
+  "BAIK",
+  "RUSAK",
+  "ADJUST_OR_ADD",
+  "REPAIR",
+  "URGENT",
+  "TIDAK_ADA",
+] as const satisfies readonly ChecklistCondition[]
+
+export type FrmTs041ItemState = {
+  condition?: ChecklistCondition
+  photos: ChecklistPhoto[]
+  notes: string
+  handler?: "BES" | "EKSTERNAL"
+  repairForm?: string
+  uploading: boolean
+}
+
+export function isFrmTs041FindingCondition(condition?: ChecklistCondition | ""): boolean {
+  return (
+    condition === "RUSAK" ||
+    condition === "ADJUST_OR_ADD" ||
+    condition === "REPAIR" ||
+    condition === "URGENT"
+  )
+}
+
+/** Mark only unchecked items in the given category as BAIK without overwriting evaluated items. */
+export function markUncheckedConveyorCategoryGood(
+  items: Record<string, FrmTs041ItemState>,
+  categoryId: string,
+): Record<string, FrmTs041ItemState> {
+  const category = CONVEYOR_CATEGORIES.find((c) => c.id === categoryId)
+  if (!category) return items
+
+  const next = { ...items }
+  for (const item of category.items) {
+    const existing = next[item.id]
+    if (existing?.condition) {
+      continue
+    }
+    next[item.id] = {
+      photos: existing?.photos ?? [],
+      notes: existing?.notes ?? "",
+      uploading: existing?.uploading ?? false,
+      condition: "BAIK",
+      handler: undefined,
+      repairForm: undefined,
+    }
+  }
+  return next
+}
+
+/** Transition item condition while preserving uploaded photos and notes in local UI state. */
+export function transitionFrmTs041ItemCondition(
+  current: FrmTs041ItemState | undefined,
+  nextCondition: ChecklistCondition | undefined,
+): FrmTs041ItemState {
+  const base: FrmTs041ItemState = {
+    photos: current?.photos ?? [],
+    notes: current?.notes ?? "",
+    uploading: current?.uploading ?? false,
+  }
+
+  if (!nextCondition || nextCondition === "BAIK" || nextCondition === "TIDAK_ADA") {
+    return {
+      ...base,
+      condition: nextCondition,
+      handler: undefined,
+      repairForm: undefined,
+    }
+  }
+
+  if (nextCondition === "RUSAK") {
+    return {
+      ...base,
+      condition: "RUSAK",
+      handler: current?.handler || "BES",
+      repairForm: current?.repairForm || FORM_065_CODE,
+    }
+  }
+
+  return {
+    ...base,
+    condition: nextCondition,
+    handler: current?.handler || "BES",
+    repairForm: current?.condition === nextCondition ? current.repairForm : undefined,
+  }
+}
+
+/** Build sanitized FRM_TS_041 payload items without dummy fallback notes or stale OK/None follow-ups. */
+export function buildFrmTs041PayloadItems(
+  items: Record<string, FrmTs041ItemState>,
+  isRepairMode: boolean,
+): ChecklistPayloadItem[] {
+  return ALL_CONVEYOR_ITEMS.filter((it) =>
+    isRepairMode ? Boolean(items[it.id]?.condition) : true,
+  ).map((it) => {
+    const state = items[it.id] ?? {
+      photos: [],
+      notes: "",
+      uploading: false,
+    }
+    const cond = (state.condition || "BAIK") as ChecklistCondition
+    if (!isFrmTs041FindingCondition(cond)) {
+      return {
+        id: it.id,
+        label: it.label,
+        condition: cond,
+        photos: [],
+        notes: undefined,
+        handler: undefined,
+        repairForm: undefined,
+        repairFormName: undefined,
+      }
+    }
+
+    const trimmedNotes = state.notes.trim()
+    const repairForm = state.repairForm === FORM_065_CODE ? FORM_065_CODE : undefined
+    return {
+      id: it.id,
+      label: it.label,
+      condition: cond,
+      photos: state.photos ?? [],
+      notes: trimmedNotes || undefined,
+      handler: state.handler || "BES",
+      repairForm,
+      repairFormName: repairForm ? FORM_065_LABEL : undefined,
+    }
+  })
+}
 
 export const FRM_TS_041_CONFIG: ChecklistConfig = {
   formCode: FRM_TS_041_FORM_CODE,

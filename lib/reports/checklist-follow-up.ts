@@ -43,7 +43,18 @@ export function asPayloadRecord(value: unknown): Record<string, unknown> {
     : {}
 }
 
-function followUpForm(item: FollowUpItem) {
+function isV7TargetFormCode(formCode: unknown): boolean {
+  if (typeof formCode !== "string") return false
+  const base = formCode.replace(/_REPAIR$/, "")
+  return base === "FRM_TS_041" || base === "FRM_TS_028"
+}
+
+function isSafeNonFollowUpCondition(condition: unknown): boolean {
+  return condition === "BAIK" || condition === "TIDAK_ADA"
+}
+
+function followUpForm(item: FollowUpItem, isV7Form = false) {
+  if (isV7Form && isSafeNonFollowUpCondition(item.condition)) return null
   return item.repairForm === FORM_014 || item.repairForm === FORM_065 ? item.repairForm : null
 }
 
@@ -69,7 +80,8 @@ export function getReportItems(value: unknown): FollowUpItem[] {
 
 export function needsChecklistFollowUp(payload: unknown) {
   const data = asPayloadRecord(payload)
-  return data.followUpCompleted !== true && getReportItems(payload).some(followUpForm)
+  const isV7Form = isV7TargetFormCode(data.formCode)
+  return data.followUpCompleted !== true && getReportItems(payload).some((item) => followUpForm(item, isV7Form))
 }
 
 function itemKey(item: FollowUpItem) {
@@ -83,8 +95,9 @@ export function retainChecklistFollowUp(previous: unknown, next: unknown) {
   delete payload.followUp014Summary
   delete payload.followUp065Summary
   if (isFrmTsm001Payload(next)) delete payload.items
+  const isV7Form = isV7TargetFormCode(payload.formCode)
   const nextItems = getReportItems(payload)
-  if (!Array.isArray(payload.items) && !nextItems.some(followUpForm)) return payload
+  if (!Array.isArray(payload.items) && !nextItems.some((item) => followUpForm(item, isV7Form))) return payload
 
   const byUnit = new Map<string, FollowUpItem[]>()
   for (const item of getReportItems(previous)) {
@@ -98,9 +111,14 @@ export function retainChecklistFollowUp(previous: unknown, next: unknown) {
     ...payload,
     items: nextItems.map((item) => {
       const previousItem = byUnit.get(itemKey(item))?.shift()
-      const form = followUpForm(item)
+      const form = followUpForm(item, isV7Form)
       const answer = withoutFollowUpDetails(item)
-      if (!form || !previousItem || form !== followUpForm(previousItem)) return answer
+      if (isV7Form && isSafeNonFollowUpCondition(answer.condition)) {
+        delete answer.repairForm
+        delete answer.repairFormName
+        return answer
+      }
+      if (!form || !previousItem || form !== followUpForm(previousItem, isV7Form)) return answer
       return form === FORM_014
         ? { ...answer, followUp014: previousItem.followUp014, followUpData: previousItem.followUpData }
         : { ...answer, followUp065: previousItem.followUp065, followUpData: previousItem.followUpData }

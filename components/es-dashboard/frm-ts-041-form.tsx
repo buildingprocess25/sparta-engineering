@@ -20,26 +20,31 @@ import {
 } from "lucide-react"
 
 import { CameraCaptureButton } from "@/components/es-dashboard/camera-capture-button"
+import { ChecklistConditionSelect } from "@/components/es-dashboard/checklist-condition-select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select"
 import {
-  CONVEYOR_CATEGORIES,
   ALL_CONVEYOR_ITEMS,
+  CONVEYOR_CATEGORIES,
+  FRM_TS_041_CONDITION_OPTIONS,
   FRM_TS_041_FORM_CODE,
   FRM_TS_041_NRA,
+  buildFrmTs041PayloadItems,
+  isFrmTs041FindingCondition,
+  markUncheckedConveyorCategoryGood,
+  transitionFrmTs041ItemCondition,
   type ConveyorItem,
+  type FrmTs041ItemState,
 } from "@/lib/checklists/frm-ts-041"
 import type {
-  ChecklistCondition,
   ChecklistPayload,
-  ChecklistPayloadItem,
-  ChecklistPhoto,
 } from "@/lib/checklists/payload"
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
@@ -61,20 +66,27 @@ export type FrmTs041FormProps = {
   }): Promise<{ ok: true; isSafe?: boolean } | { ok: false; errors: string[] }>
 }
 
-type ItemState = {
-  condition?: ChecklistCondition
-  photos: ChecklistPhoto[]
-  notes: string
-  handler?: "BES" | "EKSTERNAL"
-  repairForm?: string
-  uploading: boolean
-}
+type ItemState = FrmTs041ItemState
+
+const FORM_065_ID = "SAT/FRM/TS/065_REV:00_161020"
+const NO_FOLLOW_UP_VALUE = "__NONE__"
 
 const FOLLOW_UP_OPTIONS = [
   {
-    id: "SAT/FRM/TS/065_REV:00_161020",
+    id: FORM_065_ID,
     label: "Form Penggantian Spare Part (065)",
     badge: "065",
+  },
+]
+
+const OPTIONAL_FOLLOW_UP_OPTIONS = [
+  {
+    id: NO_FOLLOW_UP_VALUE,
+    label: "Tidak perlu Form 065 (Tanpa penggantian spare part)",
+  },
+  {
+    id: FORM_065_ID,
+    label: "Form Penggantian Spare Part (065)",
   },
 ]
 
@@ -200,23 +212,7 @@ export function FrmTs041Form({
   }
 
   const markCategoryAllGood = (categoryId: string) => {
-    const category = CONVEYOR_CATEGORIES.find((c) => c.id === categoryId)
-    if (!category) return
-
-    setItems((prev) => {
-      const next = { ...prev }
-      category.items.forEach((item) => {
-        next[item.id] = {
-          ...(next[item.id] || { photos: [], notes: "", uploading: false }),
-          condition: "BAIK",
-          photos: [],
-          notes: "",
-          handler: undefined,
-          repairForm: undefined,
-        }
-      })
-      return next
-    })
+    setItems((prev) => markUncheckedConveyorCategoryGood(prev, categoryId))
   }
 
   const uploadPhoto = async (itemId: string, file: File) => {
@@ -308,14 +304,19 @@ export function FrmTs041Form({
   const evaluatedCount = ALL_CONVEYOR_ITEMS.filter((it) =>
     Boolean(items[it.id]?.condition)
   ).length
-  const damagedCount = ALL_CONVEYOR_ITEMS.filter(
-    (it) =>
-      items[it.id]?.condition === "RUSAK" ||
-      items[it.id]?.condition === "REPAIR" ||
-      items[it.id]?.condition === "URGENT" ||
-      items[it.id]?.condition === "ADJUST_OR_ADD"
+  const damagedCount = ALL_CONVEYOR_ITEMS.filter((it) =>
+    isFrmTs041FindingCondition(items[it.id]?.condition)
   ).length
   const progressPercentage = Math.round((evaluatedCount / totalCount) * 100)
+  const conditionSelectOptions = React.useMemo(
+    () =>
+      isRepairMode
+        ? FRM_TS_041_CONDITION_OPTIONS.filter((opt) =>
+            isFrmTs041FindingCondition(opt.value)
+          )
+        : FRM_TS_041_CONDITION_OPTIONS,
+    [isRepairMode]
+  )
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -327,6 +328,13 @@ export function FrmTs041Form({
       return
     }
 
+    if (isRepairMode && evaluatedCount === 0) {
+      setErrors([
+        "Pilih minimal 1 item temuan sebelum mengirim laporan perbaikan conveyor.",
+      ])
+      return
+    }
+
     if (!isRepairMode && evaluatedCount < totalCount) {
       setErrors([
         `Seluruh item wajib diperiksa (${evaluatedCount} dari ${totalCount} terisi). Silakan cek kembali bagian yang belum diisi.`,
@@ -334,55 +342,37 @@ export function FrmTs041Form({
       return
     }
 
-    const damagedWithoutPhoto = ALL_CONVEYOR_ITEMS.filter((it) => {
-      const state = items[it.id]
-      const isDamaged =
-        state?.condition === "RUSAK" ||
-        state?.condition === "REPAIR" ||
-        state?.condition === "URGENT" ||
-        state?.condition === "ADJUST_OR_ADD"
-      return isDamaged && (!state?.photos || state.photos.length === 0)
-    })
+    const findingItems = ALL_CONVEYOR_ITEMS.filter((it) =>
+      isFrmTs041FindingCondition(items[it.id]?.condition)
+    )
+
+    const damagedWithoutPhoto = findingItems.filter(
+      (it) => !items[it.id]?.photos || items[it.id].photos.length === 0
+    )
 
     if (damagedWithoutPhoto.length > 0) {
       setErrors([
-        `Item tidak baik/rusak berikut wajib menyertakan minimal 1 foto bukti: ${damagedWithoutPhoto
+        `Item temuan berikut wajib menyertakan minimal 1 foto bukti: ${damagedWithoutPhoto
           .map((i) => i.label)
           .join(", ")}`,
       ])
       return
     }
 
-    const payloadItems: ChecklistPayloadItem[] = ALL_CONVEYOR_ITEMS.filter(
-      (it) => {
-        const state = items[it.id]
-        return isRepairMode ? Boolean(state?.condition) : true
-      }
-    ).map((it) => {
-      const state = items[it.id] || {
-        photos: [],
-        notes: "",
-        uploading: false,
-      }
-      const cond = (state.condition || "BAIK") as ChecklistCondition
-      const isAction = [
-        "RUSAK",
-        "REPAIR",
-        "URGENT",
-        "ADJUST_OR_ADD",
-      ].includes(cond)
-      return {
-        id: it.id,
-        label: it.label,
-        condition: cond,
-        photos: state.photos || [],
-        notes:
-          state.notes ||
-          (isAction ? `Pemeriksaan conveyor: ${it.label}` : undefined),
-        handler: isAction ? state.handler || "BES" : state.handler,
-        repairForm: state.repairForm,
-      }
-    })
+    const damagedWithoutNotes = findingItems.filter(
+      (it) => !items[it.id]?.notes || !items[it.id].notes.trim()
+    )
+
+    if (damagedWithoutNotes.length > 0) {
+      setErrors([
+        `Item temuan berikut wajib mengisi deskripsi/keterangan: ${damagedWithoutNotes
+          .map((i) => i.label)
+          .join(", ")}`,
+      ])
+      return
+    }
+
+    const payloadItems = buildFrmTs041PayloadItems(items, isRepairMode)
 
     const payload: ChecklistPayload = {
       formCode,
@@ -410,12 +400,6 @@ export function FrmTs041Form({
           setErrors(result.errors)
           return
         }
-
-        const needsFollowUp = payload.items.some(
-          (item) =>
-            item.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ||
-            item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
-        )
 
         window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
       } catch (err) {
@@ -692,14 +676,14 @@ export function FrmTs041Form({
                 </button>
 
                 <div className="flex items-center gap-2">
-                  {!isComplete && (
+                  {!isRepairMode && !isComplete && (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
                         markCategoryAllGood(category.id)
                       }}
-                      className="hidden rounded-lg border border-[#ff8a2a]/30 bg-[#fff0e3] px-2.5 py-1 text-xs font-semibold text-[#c75f00] transition-colors hover:bg-[#ffe3cc] sm:inline-flex"
+                      className="rounded-lg border border-[#ff8a2a]/30 bg-[#fff0e3] px-2.5 py-1 text-xs font-semibold text-[#c75f00] transition-colors hover:bg-[#ffe3cc]"
                     >
                       Tandai Semua Baik
                     </button>
@@ -727,11 +711,7 @@ export function FrmTs041Form({
                       notes: "",
                       uploading: false,
                     }
-                    const isDamaged =
-                      state.condition === "RUSAK" ||
-                      state.condition === "REPAIR" ||
-                      state.condition === "URGENT" ||
-                      state.condition === "ADJUST_OR_ADD"
+                    const isDamaged = isFrmTs041FindingCondition(state.condition)
 
                     return (
                       <div
@@ -753,49 +733,27 @@ export function FrmTs041Form({
                             ) : null}
                           </div>
 
-                          {/* Condition Selectors: OK (V) vs Not Good (X) */}
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                updateItem(item.id, {
-                                  condition: "BAIK",
-                                  photos: [],
-                                  notes: "",
-                                  handler: undefined,
-                                  repairForm: undefined,
-                                })
+                          {/* Condition Selector (shadcn Select with 6 SPARTA V7 choices) */}
+                          <div className="w-full sm:w-48 shrink-0">
+                            <ChecklistConditionSelect
+                              ariaLabel={`Kondisi ${item.label}`}
+                              value={state.condition || ""}
+                              options={conditionSelectOptions}
+                              placeholder={
+                                isRepairMode ? "Pilih temuan..." : "Pilih kondisi"
+                              }
+                              allowClear={isRepairMode}
+                              clearLabel="Hapus temuan"
+                              onValueChange={(nextCond) => {
+                                setItems((prev) => ({
+                                  ...prev,
+                                  [item.id]: transitionFrmTs041ItemCondition(
+                                    prev[item.id],
+                                    nextCond
+                                  ),
+                                }))
                               }}
-                              className={cn(
-                                "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
-                                state.condition === "BAIK"
-                                  ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs"
-                                  : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
-                            >
-                              OK (V)
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                updateItem(item.id, {
-                                  condition: "RUSAK",
-                                  handler: state.handler || "BES",
-                                  repairForm:
-                                    state.repairForm ||
-                                    "SAT/FRM/TS/065_REV:00_161020",
-                                  notes: state.notes || "",
-                                })
-                              }}
-                              className={cn(
-                                "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
-                                isDamaged
-                                  ? "border-red-500 bg-red-50 text-red-600 shadow-xs"
-                                  : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
-                            >
-                              Not Good (X)
-                            </button>
+                            />
                           </div>
                         </div>
 
@@ -915,62 +873,103 @@ export function FrmTs041Form({
                             {/* 3. TINDAK LANJUT */}
                             <div className="border-t border-[#eeeeec] pt-4">
                               <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
-                                TINDAK LANJUT <span className="text-red-500">*</span>
-                              </p>
-                              <Select
-                                value={
-                                  state.repairForm ||
-                                  "SAT/FRM/TS/065_REV:00_161020"
-                                }
-                                onValueChange={(val) =>
-                                  updateItem(item.id, {
-                                    repairForm: val || undefined,
-                                  })
-                                }
-                              >
-                                <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#ff8a2a] focus:ring-offset-0">
-                                  <span
-                                    className={cn(
-                                      "flex-1 text-left truncate text-[#111111]",
-                                      !state.repairForm && "text-[#707784]"
-                                    )}
-                                  >
-                                    {state.repairForm
-                                      ? FOLLOW_UP_OPTIONS.find(
-                                          (o) => o.id === state.repairForm
-                                        )?.label || state.repairForm
-                                      : "Pilih form tindak lanjut"}
+                                TINDAK LANJUT{" "}
+                                {state.condition === "RUSAK" ? (
+                                  <span className="text-red-500">*</span>
+                                ) : (
+                                  <span className="font-normal normal-case text-[#707784]">
+                                    (Opsional — pilih Form 065 bila butuh spare part)
                                   </span>
-                                </SelectTrigger>
-                                <SelectContent
-                                  alignItemWithTrigger={false}
-                                  className="rounded-xl border-[#dedede] bg-white shadow-xl"
+                                )}
+                              </p>
+                              {state.condition === "RUSAK" ? (
+                                <Select
+                                  value={state.repairForm || FORM_065_ID}
+                                  onValueChange={(val) =>
+                                    updateItem(item.id, {
+                                      repairForm: val || FORM_065_ID,
+                                    })
+                                  }
                                 >
-                                  {FOLLOW_UP_OPTIONS.map((opt) => (
-                                    <SelectItem
-                                      key={opt.id}
-                                      value={opt.id}
-                                      className="py-2.5 text-[13px] font-medium text-[#111111] hover:bg-[#fff7ed] hover:text-[#c2410c] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] cursor-pointer"
-                                    >
-                                      {opt.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                  <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#ff8a2a] focus:ring-offset-0">
+                                    <span className="flex-1 text-left truncate text-[#111111]">
+                                      {FOLLOW_UP_OPTIONS.find(
+                                        (o) => o.id === (state.repairForm || FORM_065_ID)
+                                      )?.label || FORM_065_ID}
+                                    </span>
+                                  </SelectTrigger>
+                                  <SelectContent
+                                    alignItemWithTrigger={false}
+                                    className="rounded-xl border-[#dedede] bg-white shadow-xl"
+                                  >
+                                    <SelectGroup>
+                                      {FOLLOW_UP_OPTIONS.map((opt) => (
+                                        <SelectItem
+                                          key={opt.id}
+                                          value={opt.id}
+                                          className="py-2.5 text-[13px] font-medium text-[#111111] hover:bg-[#fff7ed] hover:text-[#c2410c] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] cursor-pointer"
+                                        >
+                                          {opt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectGroup>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Select
+                                  value={state.repairForm || NO_FOLLOW_UP_VALUE}
+                                  onValueChange={(val) =>
+                                    updateItem(item.id, {
+                                      repairForm:
+                                        !val || val === NO_FOLLOW_UP_VALUE
+                                          ? undefined
+                                          : val,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className="w-full h-11 rounded-xl border-[#e8e8e6] bg-white text-[13px] text-[#111111] focus:ring-[#ff8a2a] focus:ring-offset-0">
+                                    <span className="flex-1 text-left truncate text-[#111111]">
+                                      {OPTIONAL_FOLLOW_UP_OPTIONS.find(
+                                        (o) =>
+                                          o.id ===
+                                          (state.repairForm || NO_FOLLOW_UP_VALUE)
+                                      )?.label || "Pilih tindak lanjut"}
+                                    </span>
+                                  </SelectTrigger>
+                                  <SelectContent
+                                    alignItemWithTrigger={false}
+                                    className="rounded-xl border-[#dedede] bg-white shadow-xl"
+                                  >
+                                    <SelectGroup>
+                                      {OPTIONAL_FOLLOW_UP_OPTIONS.map((opt) => (
+                                        <SelectItem
+                                          key={opt.id}
+                                          value={opt.id}
+                                          className="py-2.5 text-[13px] font-medium text-[#111111] hover:bg-[#fff7ed] hover:text-[#c2410c] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] cursor-pointer"
+                                        >
+                                          {opt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectGroup>
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </div>
 
-                            {/* 4. Catatan Keterangan Kerusakan (Opsional) */}
+                            {/* 4. Deskripsi / Keterangan Temuan (Wajib) */}
                             <div>
-                              <p className="mb-1 text-xs font-bold text-[#707784]">
-                                Keterangan Kerusakan (Opsional)
+                              <p className="mb-1.5 text-xs font-bold text-[#707784]">
+                                Keterangan / Deskripsi Temuan{" "}
+                                <span className="text-red-500">*</span>
                               </p>
-                              <Input
-                                placeholder="Detail kerusakan atau spare part yang diperlukan..."
+                              <textarea
+                                rows={2}
+                                placeholder="Jelaskan kondisi temuan, gejala kerusakan, atau tindak lanjut yang dilakukan..."
                                 value={state.notes}
                                 onChange={(e) =>
                                   updateItem(item.id, { notes: e.target.value })
                                 }
-                                className="h-9 border-[#e6e2de] bg-[#fbfbfa] text-xs focus-visible:border-[#ff8a2a] focus-visible:ring-[#ff8a2a]/20"
+                                className="w-full rounded-xl border border-[#e6e2de] bg-[#fbfbfa] p-2.5 text-xs text-[#111111] placeholder:text-[#a0a5ad] focus:border-[#ff8a2a] focus:outline-hidden focus:ring-2 focus:ring-[#ff8a2a]/20"
                               />
                             </div>
                           </div>
@@ -1003,17 +1002,27 @@ export function FrmTs041Form({
       <div className="sticky bottom-4 z-20 rounded-2xl border border-[#e6e2de] bg-white/95 p-4 shadow-[0_8px_30px_rgba(17,17,17,0.12)] backdrop-blur-md">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-[#707784]">
-            {evaluatedCount < totalCount ? (
+            {isRepairMode ? (
+              evaluatedCount === 0 ? (
+                <span className="font-semibold text-rose-600">
+                  Pilih minimal 1 item temuan sebelum mengirim laporan perbaikan.
+                </span>
+              ) : (
+                <span className="font-semibold text-[#c75f00]">
+                  {evaluatedCount} item temuan dipilih untuk laporan perbaikan.
+                </span>
+              )
+            ) : evaluatedCount < totalCount ? (
               <span className="font-semibold text-rose-600">
                 Lengkapi seluruh item ({evaluatedCount}/{totalCount}) sebelum submit.
               </span>
             ) : damagedCount > 0 ? (
               <span className="font-semibold text-[#c75f00]">
-                Terdapat {damagedCount} item temuan/rusak. Form follow-up akan otomatis diproses setelah submit.
+                Terdapat {damagedCount} item temuan (X/A/R/U).
               </span>
             ) : (
               <span className="font-semibold text-emerald-600">
-                Seluruh 66 item telah diperiksa dalam kondisi OK (V).
+                Seluruh {totalCount} item telah diperiksa tanpa temuan.
               </span>
             )}
           </div>

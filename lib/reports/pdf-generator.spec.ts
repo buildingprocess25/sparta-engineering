@@ -80,3 +80,53 @@ test("a report waiting for PJU is marked as pending, even after Requester approv
   assert.match(text, /Menunggu PJU/)
   assert.doesNotMatch(text, /Laporan Final/)
 })
+
+test("FRM_TS_041 and FRM_TS_028 PDFs render all V7 condition codes accurately without showing URGENT or ADJUST as BAIK", async () => {
+  const conveyorPdf = await renderedText({
+    ...report,
+    reportCode: "ENG-WH-202611-041",
+    formCode: "FRM_TS_041",
+    formName: "Checklist Conveyor",
+    isSafe: false,
+    items: [
+      { id: "i1", label: "Item OK", condition: "BAIK" },
+      { id: "i2", label: "Item NG", condition: "RUSAK", notes: "Belt sobek", photosCount: 1 },
+      { id: "i3", label: "Item Adj", condition: "ADJUST_OR_ADD", notes: "Setel ketegangan", photosCount: 1 },
+      { id: "i4", label: "Item Rep", condition: "REPAIR", notes: "Las dudukan", photosCount: 1 },
+      { id: "i5", label: "Item Urg", condition: "URGENT", notes: "Sensor mati total", photosCount: 1 },
+      { id: "i6", label: "Item None", condition: "TIDAK_ADA" },
+    ],
+  })
+  assert.match(conveyorPdf, /BAIK \(V\)/)
+  assert.match(conveyorPdf, /RUSAK \(X\)/)
+  assert.match(conveyorPdf, /ADJUST \(A\)/)
+  assert.match(conveyorPdf, /REPAIR \(R\)/)
+  assert.match(conveyorPdf, /URGENT \(U\)/)
+  assert.match(conveyorPdf, /NONE \(N\)/)
+  assert.match(conveyorPdf, /TS\/041/)
+
+  const urgentOnlyPdf = await renderedText({
+    ...report,
+    reportCode: "ENG-WH-202611-028",
+    formCode: "FRM_TS_028",
+    formName: "Form Monthly Checklist Battery",
+    isSafe: false,
+    items: [
+      { id: "b1", label: "Kabel baterai", condition: "URGENT", notes: "Kabel panas", photosCount: 1 },
+      { id: "b2", label: "Tray", condition: "TIDAK_ADA" },
+    ],
+  })
+  assert.match(urgentOnlyPdf, /URGENT \(U\)/)
+  assert.match(urgentOnlyPdf, /NONE \(N\)/)
+  assert.doesNotMatch(urgentOnlyPdf, /BAIK \(V\)/)
+
+  const forkliftBatteryPdf = await renderedText({
+    ...report,
+    reportCode: "ENG-WH-202611-068",
+    formCode: "FRM_TS_068",
+    formName: "Form Monthly Checklist Battery",
+    items: [{ id: "b3", label: "Soket", condition: "TIDAK_ADA" }],
+  })
+  assert.match(forkliftBatteryPdf, /TS\/068/)
+  assert.match(forkliftBatteryPdf, /TIDAK ADA/)
+})

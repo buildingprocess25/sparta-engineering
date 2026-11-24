@@ -70,6 +70,44 @@ const ACTION_REQUIRED_CONDITIONS = new Set<ChecklistCondition>([
   "CLEAN",
 ])
 
+const V7_TARGET_BASE_FORMS = new Set(["FRM_TS_041", "FRM_TS_028"])
+const FRM_TS_041_ALLOWED = new Set<ChecklistCondition>([
+  "BAIK",
+  "RUSAK",
+  "ADJUST_OR_ADD",
+  "REPAIR",
+  "URGENT",
+  "TIDAK_ADA",
+])
+const FRM_TS_041_FINDINGS = new Set<ChecklistCondition>([
+  "RUSAK",
+  "ADJUST_OR_ADD",
+  "REPAIR",
+  "URGENT",
+])
+const FRM_TS_028_ALLOWED = new Set<ChecklistCondition>([
+  "BAIK",
+  "RUSAK",
+  "REPAIR",
+  "URGENT",
+  "TIDAK_ADA",
+])
+const FRM_TS_028_FINDINGS = new Set<ChecklistCondition>([
+  "RUSAK",
+  "REPAIR",
+  "URGENT",
+])
+
+function hasFollowUpReference(item: Record<string, unknown>): boolean {
+  return Boolean(
+    (typeof item.repairForm === "string" && item.repairForm.trim()) ||
+      (typeof item.repairFormName === "string" && item.repairFormName.trim()) ||
+      item.followUp014 !== undefined ||
+      item.followUp065 !== undefined ||
+      item.followUpData !== undefined,
+  )
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
@@ -117,6 +155,13 @@ export function validateChecklistPayload(
   }
 
   const errors: string[] = []
+  const isRepairForm = payload.formCode.endsWith("_REPAIR")
+  const baseFormCode = payload.formCode.replace(/_REPAIR$/, "")
+  const isV7Form = V7_TARGET_BASE_FORMS.has(baseFormCode)
+
+  if (isV7Form && isRepairForm && payload.items.length === 0) {
+    errors.push("Minimal 1 item temuan wajib diisi pada laporan perbaikan/temuan.")
+  }
 
   for (const item of payload.items) {
     if (!isChecklistItem(item)) {
@@ -131,6 +176,38 @@ export function validateChecklistPayload(
       errors.push(
         `${item.label} wajib memiliki foto untuk kondisi ${item.condition}.`
       )
+    }
+
+    if (isV7Form) {
+      const allowed =
+        baseFormCode === "FRM_TS_041"
+          ? isRepairForm
+            ? FRM_TS_041_FINDINGS
+            : FRM_TS_041_ALLOWED
+          : isRepairForm
+            ? FRM_TS_028_FINDINGS
+            : FRM_TS_028_ALLOWED
+
+      if (!allowed.has(item.condition)) {
+        errors.push(
+          `${item.label} memiliki kondisi ${item.condition} yang tidak valid untuk form ${payload.formCode}.`
+        )
+      }
+
+      if (item.condition !== "RUSAK" && requiresAction && item.photos.length === 0) {
+        errors.push(
+          `${item.label} wajib memiliki foto untuk kondisi ${item.condition}.`
+        )
+      }
+
+      if (
+        (item.condition === "BAIK" || item.condition === "TIDAK_ADA") &&
+        hasFollowUpReference(item as unknown as Record<string, unknown>)
+      ) {
+        errors.push(
+          `${item.label} dengan kondisi ${item.condition} tidak boleh memiliki referensi form tindak lanjut.`
+        )
+      }
     }
 
     if (requiresAction) {
@@ -153,6 +230,9 @@ export function calculateChecklistIsSafe(payload: unknown): boolean {
   }
 
   return payload.items.every(
-    (item) => isChecklistItem(item) && item.condition !== "RUSAK"
+    (item) =>
+      isChecklistItem(item) &&
+      item.condition !== "RUSAK" &&
+      item.condition !== "URGENT"
   )
 }

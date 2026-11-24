@@ -6,7 +6,7 @@
 ## User Story
 
 - Sebagai **Coordinator (Level BMC) / Manager (Level BNM) / Head of Engineering**, saya ingin memantau dashboard operasional yang terhubung langsung ke **database riil PostgreSQL** (2.254 unit equipment, 468 ruangan, 162 teknisi ES, dan laporan aktif).
-- Sebagai **Coordinator & Manager**, saya ingin halaman **Laporan Maintenance** (`/dashboard/reports`) mengadopsi standar tampilan role BMC di `sparta-maintenance`, mencakup filter scope cepat (*Semua, Laporan Aktif, Review Coord, Review Manager, Selesai, Draft*), pencarian teknisi/aset, serta workbench review laporan berjenjang (*Setujui, Minta Revisi, Tolak*).
+- Sebagai **Coordinator & Manager**, saya ingin halaman **Laporan Maintenance** (`/dashboard/reports`) mengadopsi standar tampilan role BMC di `sparta-maintenance`, mencakup filter scope cepat (_Semua, Laporan Aktif, Review Coord, Review Manager, Selesai, Draft_), pencarian teknisi/aset, serta workbench review laporan berjenjang (_Setujui, Minta Revisi, Tolak_).
 
 ## Notifikasi dalam aplikasi
 
@@ -20,6 +20,7 @@
 ## Scope
 
 **Dalam scope:**
+
 1. **Koneksi Database Riil (Opsi A)**:
    - Mengambil metrik langsung dari database Prisma:
      - Total unit Equipment (`2.254 unit`)
@@ -55,7 +56,7 @@
      - `Biaya`: Format stacked label `Estimasi` dan `Realisasi`.
      - `Status`: Pill badge status berjenjang (`Draft`, `Selesai`, `Review Coord`, `Review Manager`, `Revisi`, `Ditolak`).
      - `Aksi`: Tombol aksi detail laporan.
-4. **Halaman Detail Laporan (`/dashboard/reports/[reportCode]`) Berstandar Sparta Maintenance**:
+5. **Halaman Detail Laporan (`/dashboard/reports/[reportCode]`) Berstandar Sparta Maintenance**:
    - Header & Navigasi: Breadcrumb `Laporan Maintenance > [reportCode]`, lonceng notifikasi, serta identitas user.
    - Hero Header: Kode laporan tebal, status badge, jumlah item bermasalah, serta tombol aksi:
      - `Laporan Final PDF` (membuka/mengunduh PDF laporan resmi langsung atau via link Google Drive).
@@ -70,14 +71,14 @@
      - Tab `Riwayat Aktivitas`: Kronologi status laporan dari pembuatan hingga persetujuan akhir.
      - Tab `Aksi`: Panel keputusan Coordinator & Manager (Setujui, Minta Revisi, Tolak).
 
-5. **Otomatisasi Generate PDF & Sinkronisasi Google Drive**:
+6. **Otomatisasi Generate PDF & Sinkronisasi Google Drive**:
    - Pemicu Submit: Saat teknisi ES melakukan submit laporan di `submitChecklistAction`, sistem langsung memproses pembuatan dokumen PDF resmi.
    - Format PDF Resmi SAT: Memuat identitas PT Sumber Alfaria Trijaya Tbk, Division Property & Development, Department Building & Maintenance, nomor formulir NRA, data unit/lokasi, tabel checklist terperinci, catatan teknisi, serta blok tanda tangan tiga tingkat (Teknisi ES, Coordinator, Manager).
    - Struktur Google Drive: Mengunggah PDF ke folder path terstruktur:
      `{branchName}/Engineering/Checklist/{areaName}/{periodKey}/{reportCode}/01 - Dokumen/{reportCode} - Laporan Final.pdf`.
    - Persistensi Database: Menyimpan `finalPdfDriveUrl` dan `finalPdfFolderUrl` di tabel `ChecklistReport` pada database PostgreSQL.
 
-6. **Widget Laporan Menunggu Review (Dashboard Utama)**:
+7. **Widget Laporan Menunggu Review (Dashboard Utama)**:
    - Menggantikan progress bar Distribusi Status & SLA lama dengan widget ringkasan "Laporan Menunggu Review" (100% terminologi SPARTA Engineering: Review Coord, Review Manager, tanpa label BMC toko).
    - Header widget: Judul "Laporan Menunggu Review", Subtitle "Estimasi dan penyelesaian pekerjaan yang perlu segera ditinjau", serta tombol aksi "Buka tabel ↗" menuju `/dashboard/reports`.
    - Kolom tabel ringkas: Laporan (nomor & tanggal), Lokasi & Target (area, ruangan/equipment, teknisi ES), Status badge (`Review Coord`, `Review Manager`), serta Umur laporan (dihitung sejak tanggal submit). Kolom biaya ditiadakan agar proporsional dan fokus pada validasi teknis.
@@ -85,6 +86,7 @@
    - Dashboard utama bersih dan fokus: alur persetujuan terpusat pada Laporan Maintenance (`/dashboard/reports`) dan Izin Kerja K3 (`/dashboard/work-permits`).
 
 **Luar scope:**
+
 - Modifikasi skema tabel Prisma yang telah ada.
 
 ## Aturan Bisnis & Tampilan

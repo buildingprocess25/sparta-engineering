@@ -1,5 +1,6 @@
 "use client"
 
+import { readPhotoUploadResponse } from "@/lib/photos/photo-upload-client"
 import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
@@ -30,22 +31,30 @@ import {
 } from "lucide-react"
 
 import { CameraCaptureButton } from "@/components/es-dashboard/camera-capture-button"
+import { ChecklistConditionSelect } from "@/components/es-dashboard/checklist-condition-select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
 import {
   BATTERY_INSPECTION_ITEMS,
+  FRM_TS_028_CONDITION_OPTIONS,
   FRM_TS_028_FORM_CODE,
   FRM_TS_028_NRA,
   FRM_TS_028_REF_NRA,
+  buildFrmTs028PayloadItems,
+  createInitialBatteryItems,
+  isFrmTs028FindingCondition,
+  transitionFrmTs028ItemCondition,
   type BatteryInspectionItem,
   type CellMeasurement,
+  type FrmTs028ItemState,
 } from "@/lib/checklists/frm-ts-028"
 import type {
   ChecklistCondition,
@@ -76,22 +85,29 @@ export type FrmTs028FormProps = {
   onSuccess?(data: { isSafe: boolean }): void
 }
 
+const FORM_065_ID = "SAT/FRM/TS/065_REV:00_161020"
+const NO_FOLLOW_UP_VALUE = "__NONE__"
+
 export const FOLLOW_UP_OPTIONS = [
   {
-    id: "SAT/FRM/TS/065_REV:00_161020",
+    id: FORM_065_ID,
     label: "Form Penggantian Spare Part (065)",
     badge: "065",
   },
 ]
 
-type ItemState = {
-  condition: ChecklistCondition | ""
-  notes: string
-  photos: ChecklistPhoto[]
-  handler?: "BES" | "EKSTERNAL"
-  repairForm?: string
-  uploading?: boolean
-}
+const OPTIONAL_FOLLOW_UP_OPTIONS = [
+  {
+    id: NO_FOLLOW_UP_VALUE,
+    label: "Tidak perlu Form 065 (Tanpa penggantian spare part)",
+  },
+  {
+    id: FORM_065_ID,
+    label: "Form Penggantian Spare Part (065)",
+  },
+]
+
+type ItemState = FrmTs028ItemState
 
 function readBatteryNotes(notes?: string): {
   warehouse?: string
@@ -189,22 +205,27 @@ export function FrmTs028Form({
     return validCount > 0 ? sum.toFixed(2) : "0.00"
   }, [cellData, cellCount])
 
+  const baseFormCode = formCode.replace(/_REPAIR$/, "")
+  const isFrmTs028 = baseFormCode === FRM_TS_028_FORM_CODE
+
   // 3. Inspection Items State (14 items)
   const [items, setItems] = React.useState<Record<string, ItemState>>(() => {
-    const initial: Record<string, ItemState> = {}
-    BATTERY_INSPECTION_ITEMS.forEach((it) => {
-      initial[it.id] = {
-        condition: isRepairMode ? "RUSAK" : "",
-        notes: "",
-        photos: [],
-      }
-    })
+    const initial = createInitialBatteryItems(isFrmTs028, isRepairMode)
     return restoreChecklistItems(initialPayload, initial)
   })
 
   const evaluatedCount = React.useMemo(
     () => BATTERY_INSPECTION_ITEMS.filter((it) => Boolean(items[it.id]?.condition)).length,
     [items]
+  )
+  const conditionSelectOptions = React.useMemo(
+    () =>
+      isRepairMode
+        ? FRM_TS_028_CONDITION_OPTIONS.filter((opt) =>
+            isFrmTs028FindingCondition(opt.value)
+          )
+        : FRM_TS_028_CONDITION_OPTIONS,
+    [isRepairMode]
   )
 
   // Photo preview lightbox state
@@ -227,7 +248,15 @@ export function FrmTs028Form({
   }
 
   // Set condition handler
-  const setCondition = (itemId: string, cond: ChecklistCondition) => {
+  const setCondition = (itemId: string, cond: ChecklistCondition | "") => {
+    if (isFrmTs028) {
+      setItems((prev) => ({
+        ...prev,
+        [itemId]: transitionFrmTs028ItemCondition(prev[itemId], cond),
+      }))
+      return
+    }
+
     setItems((prev) => {
       const isDefect = cond === "RUSAK" || cond === "REPAIR" || cond === "URGENT"
       return {
@@ -237,7 +266,7 @@ export function FrmTs028Form({
           condition: cond,
           handler: isDefect ? prev[itemId]?.handler || "BES" : prev[itemId]?.handler,
           repairForm: isDefect
-            ? prev[itemId]?.repairForm || "SAT/FRM/TS/065_REV:00_161020"
+            ? prev[itemId]?.repairForm || FORM_065_ID
             : prev[itemId]?.repairForm,
         },
       }
@@ -265,11 +294,7 @@ export function FrmTs028Form({
         method: "POST",
         body: formData,
       })
-      const payload = await response.json()
-
-      if (!response.ok || "error" in payload) {
-        throw new Error("error" in payload ? payload.error : "Upload foto gagal.")
-      }
+      const payload = await readPhotoUploadResponse(response)
 
       setItems((prev) => ({
         ...prev,
@@ -303,10 +328,17 @@ export function FrmTs028Form({
     setSubmitError(null)
 
     // Check unfilled items
-    const unfilled = BATTERY_INSPECTION_ITEMS.filter((it) => !items[it.id]?.condition)
-    if (unfilled.length > 0) {
-      setSubmitError(`Harap isi semua kondisi komponen. Ada ${unfilled.length} item yang belum diisi.`)
-      return
+    if (isFrmTs028 && isRepairMode) {
+      if (evaluatedCount === 0) {
+        setSubmitError("Pilih minimal 1 item temuan sebelum mengirim laporan perbaikan baterai.")
+        return
+      }
+    } else {
+      const unfilled = BATTERY_INSPECTION_ITEMS.filter((it) => !items[it.id]?.condition)
+      if (unfilled.length > 0) {
+        setSubmitError(`Harap isi semua kondisi komponen. Ada ${unfilled.length} item yang belum diisi.`)
+        return
+      }
     }
 
     if (!unitNo.trim()) {
@@ -343,23 +375,25 @@ export function FrmTs028Form({
     setIsSubmitting(true)
 
     // Build items payload
-    const payloadItems: ChecklistPayloadItem[] = BATTERY_INSPECTION_ITEMS.map((it) => {
-      const st = items[it.id]
-      const cond = (st?.condition || "BAIK") as ChecklistCondition
-      const isDefect = cond === "RUSAK" || cond === "REPAIR" || cond === "URGENT"
-      const followUp = FOLLOW_UP_OPTIONS.find((f) => f.id === st?.repairForm)
+    const payloadItems: ChecklistPayloadItem[] = isFrmTs028
+      ? buildFrmTs028PayloadItems(items, isRepairMode)
+      : BATTERY_INSPECTION_ITEMS.map((it) => {
+          const st = items[it.id]
+          const cond = (st?.condition || "BAIK") as ChecklistCondition
+          const isDefect = cond === "RUSAK" || cond === "REPAIR" || cond === "URGENT"
+          const followUp = FOLLOW_UP_OPTIONS.find((f) => f.id === st?.repairForm)
 
-      return {
-        id: it.id,
-        label: it.label,
-        condition: cond,
-        notes: st?.notes || (isDefect ? followUp?.label : undefined),
-        photos: st?.photos || [],
-        handler: isDefect ? st?.handler || "BES" : undefined,
-        repairForm: isDefect && st?.repairForm !== "REPAIR_TANPA_BIAYA" ? st?.repairForm : undefined,
-        repairFormName: isDefect && st?.repairForm !== "REPAIR_TANPA_BIAYA" ? followUp?.label : undefined,
-      }
-    })
+          return {
+            id: it.id,
+            label: it.label,
+            condition: cond,
+            notes: st?.notes || (isDefect ? followUp?.label : undefined),
+            photos: st?.photos || [],
+            handler: isDefect ? st?.handler || "BES" : undefined,
+            repairForm: isDefect && st?.repairForm !== "REPAIR_TANPA_BIAYA" ? st?.repairForm : undefined,
+            repairFormName: isDefect && st?.repairForm !== "REPAIR_TANPA_BIAYA" ? followUp?.label : undefined,
+          }
+        })
 
     const payload: ChecklistPayload = {
       formCode,
@@ -407,11 +441,6 @@ export function FrmTs028Form({
       if (onSuccess) {
         onSuccess({ isSafe: res.isSafe ?? true })
       } else {
-        const needsFollowUp = payloadItems.some(
-          (item) =>
-            item.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ||
-            item.repairForm === "SAT/FRM/TS/065_REV:00_161020"
-        )
         window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
       }
     } catch (err: any) {
@@ -606,7 +635,9 @@ export function FrmTs028Form({
           </div>
 
           <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-600">
-            {evaluatedCount} / {BATTERY_INSPECTION_ITEMS.length} Terisi
+            {isFrmTs028 && isRepairMode
+              ? `${evaluatedCount} Temuan Dipilih`
+              : `${evaluatedCount} / ${BATTERY_INSPECTION_ITEMS.length} Terisi`}
           </span>
         </div>
 
@@ -635,71 +666,85 @@ export function FrmTs028Form({
                   </div>
                 </div>
 
-                {/* 4-Column Button Grid for Touch Targets on Mobile */}
-                <div className="grid grid-cols-4 gap-2 pt-0.5">
-                  {(
-                    [
-                      {
-                        key: "BAIK",
-                        label: "V",
-                        title: "OK (Baik)",
-                        activeClass:
-                          "border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/30 shadow-xs",
-                        hoverClass:
-                          "hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700",
-                      },
-                      {
-                        key: "RUSAK",
-                        label: "X",
-                        title: "Not Good (Rusak)",
-                        activeClass:
-                          "border-rose-500 bg-rose-50 text-rose-700 ring-1 ring-rose-500/30 shadow-xs",
-                        hoverClass:
-                          "hover:border-rose-300 hover:bg-rose-50/50 hover:text-rose-700",
-                      },
-                      {
-                        key: "REPAIR",
-                        label: "R",
-                        title: "Repair (Perlu Perbaikan)",
-                        activeClass:
-                          "border-amber-500 bg-amber-50 text-amber-800 ring-1 ring-amber-500/30 shadow-xs",
-                        hoverClass:
-                          "hover:border-amber-300 hover:bg-amber-50/50 hover:text-amber-800",
-                      },
-                      {
-                        key: "URGENT",
-                        label: "U",
-                        title: "Urgent (Mendesak)",
-                        activeClass:
-                          "border-slate-500 bg-slate-100 text-slate-800 ring-1 ring-slate-500/30 shadow-xs",
-                        hoverClass:
-                          "hover:border-slate-400 hover:bg-slate-100/70 hover:text-slate-800",
-                      },
-                    ] as const
-                  ).map((btn) => {
-                    const isSelected = current === btn.key
+                {isFrmTs028 ? (
+                  <div className="pt-0.5">
+                    <ChecklistConditionSelect
+                      ariaLabel={`Kondisi ${item.label}`}
+                      value={current}
+                      options={conditionSelectOptions}
+                      placeholder={isRepairMode ? "Pilih temuan..." : "Pilih kondisi"}
+                      allowClear={isRepairMode}
+                      clearLabel="Hapus temuan"
+                      onValueChange={(nextCond) => setCondition(item.id, nextCond ?? "")}
+                    />
+                  </div>
+                ) : (
+                  /* 4-Column Button Grid for FRM_TS_068 (Existing Behavior Preserved) */
+                  <div className="grid grid-cols-4 gap-2 pt-0.5">
+                    {(
+                      [
+                        {
+                          key: "BAIK",
+                          label: "V",
+                          title: "OK (Baik)",
+                          activeClass:
+                            "border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/30 shadow-xs",
+                          hoverClass:
+                            "hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700",
+                        },
+                        {
+                          key: "RUSAK",
+                          label: "X",
+                          title: "Not Good (Rusak)",
+                          activeClass:
+                            "border-rose-500 bg-rose-50 text-rose-700 ring-1 ring-rose-500/30 shadow-xs",
+                          hoverClass:
+                            "hover:border-rose-300 hover:bg-rose-50/50 hover:text-rose-700",
+                        },
+                        {
+                          key: "REPAIR",
+                          label: "R",
+                          title: "Repair (Perlu Perbaikan)",
+                          activeClass:
+                            "border-amber-500 bg-amber-50 text-amber-800 ring-1 ring-amber-500/30 shadow-xs",
+                          hoverClass:
+                            "hover:border-amber-300 hover:bg-amber-50/50 hover:text-amber-800",
+                        },
+                        {
+                          key: "URGENT",
+                          label: "U",
+                          title: "Urgent (Mendesak)",
+                          activeClass:
+                            "border-slate-500 bg-slate-100 text-slate-800 ring-1 ring-slate-500/30 shadow-xs",
+                          hoverClass:
+                            "hover:border-slate-400 hover:bg-slate-100/70 hover:text-slate-800",
+                        },
+                      ] as const
+                    ).map((btn) => {
+                      const isSelected = current === btn.key
 
-                    return (
-                      <button
-                        key={btn.key}
-                        type="button"
-                        title={btn.title}
-                        onClick={() => setCondition(item.id, btn.key)}
-                        className={cn(
-                          "h-9 rounded-xl border text-xs font-bold transition-all flex items-center justify-center active:scale-[0.98]",
-                          isSelected
-                            ? btn.activeClass
-                            : cn(
-                              "border-[#dedede] bg-white text-[#525252]",
-                              btn.hoverClass
-                            )
-                        )}
-                      >
-                        {btn.label}
-                      </button>
-                    )
-                  })}
-                </div>
+                      return (
+                        <button
+                          key={btn.key}
+                          type="button"
+                          title={btn.title}
+                          onClick={() => setCondition(item.id, btn.key)}
+                          className={cn(
+                            "h-9 rounded-xl border text-xs font-bold transition-all flex items-center justify-center active:scale-[0.98]",
+                            isSelected
+                              ? btn.activeClass
+                              : cn(
+                                "border-[#dedede] bg-white text-[#525252]",
+                                btn.hoverClass
+                              )
+                          )}
+                        >
+                          {btn.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
 
                 {/* Damage Details Panel when RUSAK / REPAIR / URGENT (Consistent with other forms) */}
                 {isDefect && (
@@ -816,34 +861,83 @@ export function FrmTs028Form({
                     {/* 4. FORM TINDAK LANJUT */}
                     <div className="border-t border-[#eeeeec] pt-3.5">
                       <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
-                        FORM TINDAK LANJUT <span className="text-red-500">*</span>
+                        FORM TINDAK LANJUT{" "}
+                        {!isFrmTs028 || current === "RUSAK" ? (
+                          <span className="text-red-500">*</span>
+                        ) : (
+                          <span className="font-normal normal-case text-[#707784]">
+                            (Opsional — pilih Form 065 bila butuh spare part)
+                          </span>
+                        )}
                       </p>
-                      <Select
-                        value={items[item.id]?.repairForm || "SAT/FRM/TS/065_REV:00_161020"}
-                        onValueChange={(val) =>
-                          updateItem(item.id, {
-                            repairForm: val || undefined,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
-                          <SelectValue placeholder="Pilih form tindak lanjut" />
-                        </SelectTrigger>
-                        <SelectContent
-                          alignItemWithTrigger={false}
-                          className="rounded-xl border border-[#dedede] bg-white p-1 shadow-lg ring-1 ring-black/5"
+                      {!isFrmTs028 || current === "RUSAK" ? (
+                        <Select
+                          value={items[item.id]?.repairForm || FORM_065_ID}
+                          onValueChange={(val) =>
+                            updateItem(item.id, {
+                              repairForm: val || undefined,
+                            })
+                          }
                         >
-                          {FOLLOW_UP_OPTIONS.map((opt) => (
-                            <SelectItem
-                              key={opt.id}
-                              value={opt.id}
-                              className="rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium text-[#111111] cursor-pointer hover:bg-[#fff0e3] hover:text-[#ff8a2a] focus:bg-[#fff0e3] focus:text-[#ff8a2a] data-[state=checked]:bg-[#fff0e3] data-[state=checked]:text-[#ff8a2a] data-[state=checked]:font-semibold"
-                            >
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
+                            <SelectValue placeholder="Pilih form tindak lanjut" />
+                          </SelectTrigger>
+                          <SelectContent
+                            alignItemWithTrigger={false}
+                            className="rounded-xl border border-[#dedede] bg-white p-1 shadow-lg ring-1 ring-black/5"
+                          >
+                            <SelectGroup>
+                              {FOLLOW_UP_OPTIONS.map((opt) => (
+                                <SelectItem
+                                  key={opt.id}
+                                  value={opt.id}
+                                  className="rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium text-[#111111] cursor-pointer hover:bg-[#fff0e3] hover:text-[#ff8a2a] focus:bg-[#fff0e3] focus:text-[#ff8a2a] data-[state=checked]:bg-[#fff0e3] data-[state=checked]:text-[#ff8a2a] data-[state=checked]:font-semibold"
+                                >
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Select
+                          value={items[item.id]?.repairForm || NO_FOLLOW_UP_VALUE}
+                          onValueChange={(val) =>
+                            updateItem(item.id, {
+                              repairForm:
+                                !val || val === NO_FOLLOW_UP_VALUE
+                                  ? undefined
+                                  : val,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
+                            <span className="flex-1 truncate text-left text-[#111111]">
+                              {OPTIONAL_FOLLOW_UP_OPTIONS.find(
+                                (opt) =>
+                                  opt.id ===
+                                  (items[item.id]?.repairForm || NO_FOLLOW_UP_VALUE)
+                              )?.label || "Pilih tindak lanjut"}
+                            </span>
+                          </SelectTrigger>
+                          <SelectContent
+                            alignItemWithTrigger={false}
+                            className="rounded-xl border border-[#dedede] bg-white p-1 shadow-lg ring-1 ring-black/5"
+                          >
+                            <SelectGroup>
+                              {OPTIONAL_FOLLOW_UP_OPTIONS.map((opt) => (
+                                <SelectItem
+                                  key={opt.id}
+                                  value={opt.id}
+                                  className="rounded-lg py-2.5 px-3 text-xs sm:text-sm font-medium text-[#111111] cursor-pointer hover:bg-[#fff0e3] hover:text-[#ff8a2a] focus:bg-[#fff0e3] focus:text-[#ff8a2a] data-[state=checked]:bg-[#fff0e3] data-[state=checked]:text-[#ff8a2a] data-[state=checked]:font-semibold"
+                                >
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
                   </div>
                 )}
@@ -854,7 +948,15 @@ export function FrmTs028Form({
 
         {/* Legend per user guideline (plain uncolored) */}
         <div className="mt-3 border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
-          <strong>Ket. Kondisi :</strong> V = OK &nbsp;•&nbsp; X = Not Good &nbsp;•&nbsp; R = Repair &nbsp;•&nbsp; U = Urgent
+          {isFrmTs028 ? (
+            <>
+              <strong>Ket. Kondisi :</strong> V = OK &nbsp;•&nbsp; X = Not Good &nbsp;•&nbsp; R = Repair &nbsp;•&nbsp; U = Urgent &nbsp;•&nbsp; N = None
+            </>
+          ) : (
+            <>
+              <strong>Ket. Kondisi :</strong> V = OK &nbsp;•&nbsp; X = Not Good &nbsp;•&nbsp; R = Repair &nbsp;•&nbsp; U = Urgent
+            </>
+          )}
         </div>
       </div>
 
@@ -1050,7 +1152,9 @@ export function FrmTs028Form({
         <div className="flex items-center justify-between text-xs px-1">
           <span className="font-semibold text-slate-900">{FRM_TS_028_NRA}</span>
           <span className="font-mono text-xs font-semibold text-slate-600">
-            {evaluatedCount} / {BATTERY_INSPECTION_ITEMS.length} Terisi
+            {isFrmTs028 && isRepairMode
+              ? `${evaluatedCount} Temuan Dipilih`
+              : `${evaluatedCount} / ${BATTERY_INSPECTION_ITEMS.length} Terisi`}
           </span>
         </div>
 

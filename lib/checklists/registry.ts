@@ -9,7 +9,7 @@ import { FRM_TS_064_CONFIG } from "./frm-ts-064"
 import { FRM_TSM_008_CONFIG } from "./frm-tsm-008"
 import { FRM_TS_063_CONFIG } from "./frm-ts-063"
 import { FRM_TS_041_CONFIG } from "./frm-ts-041"
-import { FRM_TS_028_CONFIG } from "./frm-ts-028"
+import { FRM_TS_028_CONFIG, FRM_TS_068_CONFIG } from "./frm-ts-028"
 import { FRM_TS_062_CONFIG } from "./frm-ts-062"
 import { FRM_TS_043_CONFIG } from "./frm-ts-043"
 import { FRM_TS_045_CONFIG } from "./frm-ts-045"
@@ -53,7 +53,8 @@ export function getChecklistConfig(formCode: string): ChecklistConfig | null {
   if (formCode === "FRM_TSM_008") return FRM_TSM_008_CONFIG
   if (formCode === "FRM_TS_063") return FRM_TS_063_CONFIG
   if (formCode === "FRM_TS_041") return FRM_TS_041_CONFIG
-  if (formCode === "FRM_TS_028" || formCode === "FRM_TS_068") return FRM_TS_028_CONFIG
+  if (formCode === "FRM_TS_028") return FRM_TS_028_CONFIG
+  if (formCode === "FRM_TS_068") return FRM_TS_068_CONFIG
   if (formCode === "FRM_TS_062") return FRM_TS_062_CONFIG
   if (formCode === "FRM_TS_043") return FRM_TS_043_CONFIG
   if (formCode === "FRM_TS_045") return FRM_TS_045_CONFIG
@@ -75,7 +76,7 @@ export function getChecklistConfig(formCode: string): ChecklistConfig | null {
     FRM_TS_063: FRM_TS_063_CONFIG,
     FRM_TS_041: FRM_TS_041_CONFIG,
     FRM_TS_028: FRM_TS_028_CONFIG,
-    FRM_TS_068: FRM_TS_028_CONFIG,
+    FRM_TS_068: FRM_TS_068_CONFIG,
     FRM_TS_062: FRM_TS_062_CONFIG,
     FRM_TS_043: FRM_TS_043_CONFIG,
     FRM_TS_045: FRM_TS_045_CONFIG,

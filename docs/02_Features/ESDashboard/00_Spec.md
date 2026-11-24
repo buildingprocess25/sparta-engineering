@@ -11,6 +11,7 @@
 ## Scope Phase 1
 
 **Dalam scope:**
+
 - Route `/dashboard` sebagai layar awal ES.
 - Route `/dashboard/reports/new` sebagai layar awal pembuatan laporan baru.
 - Route `/dashboard/reports/new/checklist/area` untuk pemilihan area checklist.
@@ -25,6 +26,7 @@
 - Polish visual yang natural: gunakan pola mobile app yang familiar (app bar, welcome panel, CTA utama, rekap, stats, bottom navigation) dan hindari glow/dekorasi berlebihan, novelty badge, serta pattern dashboard generik yang terlihat AI-generated.
 
 **Luar scope Phase 1:**
+
 - Submit form ke database.
 - Upload foto.
 - Matriks checklist detail.
@@ -33,6 +35,7 @@
 - Auth role sungguhan (pengambilan ES NIK untuk tracking).
 
 ## Fitur Baru (Phase 2 & Phase 3)
+
 - **Preventive Tracker**: Dashboard menampilkan widget yang merekap persentase penyelesaian tugas preventif berdasarkan `ChecklistReport` (kategori PREVENTIVE) untuk `periodKey` minggu/bulan berjalan.
 - **Area Locking (Checklist Rutin)**: Pada flow Checklist Rutin, area yang periode preventifnya sudah lengkap di-lock (disabled dengan status ✅ Selesai).
 - **Incidental Freedom**: Flow Perbaikan/Temuan (Incidental) bebas dari locking dan dapat dipilih kapan saja.
@@ -115,6 +118,7 @@
 ## Data & API
 
 Phase berikutnya menggunakan data database:
+
 - Area diambil dari model `Area` dengan `isActive = true`.
 - Opsi period diambil dari relasi `AreaChecklistAvailability`.
 - Area berlaku global untuk semua cabang.
