@@ -6,8 +6,10 @@ import { getSession } from "@/lib/session"
 import {
   executeReportSparePartWork,
   saveChecklistReview,
+  type ReportExecutionAction,
   type SparePartExecutionAction,
 } from "@/lib/reports/checklist-review"
+import { generateAndUploadReportPdf } from "@/lib/reports/drive-pdf-service"
 
 export async function reviewReportDecision(
   reportId: string,
@@ -40,6 +42,14 @@ export async function reviewReportDecision(
     if (!result.nextStatus) return { error: result.error }
     const { nextStatus, reportCode } = result
 
+    if (reportCode) {
+      try {
+        await generateAndUploadReportPdf(reportCode)
+      } catch (pdfErr) {
+        console.error(`[PDF Sync Error] on review ${reportCode}:`, pdfErr)
+      }
+    }
+
     revalidatePath("/dashboard")
     revalidatePath("/dashboard/reports")
     revalidatePath("/dashboard/activity")
@@ -51,7 +61,7 @@ export async function reviewReportDecision(
       COMPLETED: "Laporan telah resmi disetujui final (Selesai).",
       PENDING_MANAGER: "Laporan diverifikasi Coordinator dan diteruskan ke Manager.",
       PENDING_REQUESTER: "Laporan disetujui Manager dan diteruskan ke Requester (WHM/DWHM).",
-      WAITING_PJU: "Form 014 disetujui Requester. Laporan menunggu proses PJU.",
+      WAITING_PJU: "Form 014 disetujui Requester. Laporan menunggu proses PJU Online.",
       WAITING_PB: "Usulan disetujui Requester. Menunggu proses pengadaan PB.",
       WAITING_PARTS: "Usulan disetujui Requester. Part dialokasikan dari stok gudang.",
     }
@@ -73,9 +83,13 @@ export async function reviewReportDecision(
 
 export async function executeReportSparePartAction(
   reportId: string,
-  action: SparePartExecutionAction,
+  action: ReportExecutionAction | SparePartExecutionAction,
   notes: string,
   version: string,
+  options?: {
+    referenceNo?: string
+    completionEvidence?: unknown
+  },
 ) {
   try {
     const session = await getSession()
@@ -89,9 +103,19 @@ export async function executeReportSparePartAction(
       actorId: session.userId,
       action,
       notes,
+      referenceNo: options?.referenceNo,
+      completionEvidence: options?.completionEvidence,
     })
     if (!result.nextStatus) return { error: result.error }
     const { nextStatus, reportCode } = result
+
+    if (reportCode) {
+      try {
+        await generateAndUploadReportPdf(reportCode)
+      } catch (pdfErr) {
+        console.error(`[PDF Sync Error] on execution ${reportCode}:`, pdfErr)
+      }
+    }
 
     revalidatePath("/dashboard")
     revalidatePath("/dashboard/reports")
@@ -100,15 +124,18 @@ export async function executeReportSparePartAction(
       revalidatePath(`/dashboard/reports/${reportCode}`)
     }
 
+    const actionMessage: Record<ReportExecutionAction, string> = {
+      PROCESS_PJU: "Proses PJU Online dicatat beserta timestamp server.",
+      PROCESS_PB: "Proses pengadaan PB dicatat. Status kini Menunggu Part.",
+      PICKUP_STOCK: "Pengambilan stock barang dicatat beserta timestamp server.",
+      START_WORK: "Pekerjaan perbaikan resmi dimulai (Sedang Dikerjakan).",
+      FINISH_WORK: "Bukti penyelesaian tervalidasi dan laporan resmi berstatus Selesai.",
+    }
+
     return {
       success: true,
       nextStatus,
-      message:
-        action === "PROCESS_PB"
-          ? "Proses pengadaan PB dicatat. Status kini Menunggu Part."
-          : action === "START_WORK"
-            ? "Pekerjaan perbaikan resmi dimulai (Sedang Dikerjakan)."
-            : "Pekerjaan perbaikan telah selesai (Status Selesai).",
+      message: actionMessage[action],
     }
   } catch {
     return { error: "Gagal memproses aksi pelaksanaan pekerjaan." }

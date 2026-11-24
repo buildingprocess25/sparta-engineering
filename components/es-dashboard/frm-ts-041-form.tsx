@@ -74,8 +74,13 @@ const NO_FOLLOW_UP_VALUE = "__NONE__"
 const FOLLOW_UP_OPTIONS = [
   {
     id: FORM_065_ID,
-    label: "Form Penggantian Spare Part (065)",
+    label: "Form Perbaikan / Penggantian Spare Part Equipment (065)",
     badge: "065",
+  },
+  {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+    badge: "Tanpa Biaya",
   },
 ]
 
@@ -85,8 +90,12 @@ const OPTIONAL_FOLLOW_UP_OPTIONS = [
     label: "Tidak perlu Form 065 (Tanpa penggantian spare part)",
   },
   {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+  },
+  {
     id: FORM_065_ID,
-    label: "Form Penggantian Spare Part (065)",
+    label: "Form Perbaikan / Penggantian Spare Part Equipment (065)",
   },
 ]
 

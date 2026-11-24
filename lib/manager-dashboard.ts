@@ -92,6 +92,7 @@ export async function getRealDashboardStats(areaFilter: AreaFilter, reportScope:
         room: true,
         equipment: true,
         items: true,
+        task: { select: { assignment: { select: { room: true } } } },
       },
     }),
   ])
@@ -170,7 +171,7 @@ export async function getRealDashboardStats(areaFilter: AreaFilter, reportScope:
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
         area: r.area,
-        room: r.room,
+        room: r.room ?? r.task?.assignment?.room ?? null,
         equipment: r.equipment,
         author: r.author,
         checklistPayload: r.checklistPayload,
@@ -240,6 +241,7 @@ export async function getRealAdminReports(reportScope: Prisma.ChecklistReportWhe
       room: true,
       equipment: true,
       items: true,
+      task: { select: { assignment: { select: { room: true } } } },
     },
   })
 
@@ -267,7 +269,7 @@ export async function getRealAdminReports(reportScope: Prisma.ChecklistReportWhe
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       area: r.area,
-      room: r.room,
+      room: r.room ?? r.task?.assignment?.room ?? null,
       equipment: r.equipment,
       author: r.author,
       checklistPayload: r.checklistPayload,

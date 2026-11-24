@@ -67,7 +67,8 @@ import {
 export { type PLTSCategory, PLTS_CATEGORIES }
 
 const FOLLOW_UP_OPTIONS = [
-  { id: "SAT/FRM/TS/065_REV:00_161020", label: "Form Penggantian Spare Part (065)" },
+  { id: "SAT/FRM/TS/065_REV:00_161020", label: "Form Perbaikan / Penggantian Spare Part Equipment (065)" },
+  { id: "REPAIR_TANPA_BIAYA", label: "Repair Tanpa Biaya" },
 ]
 
 type ItemState = {
@@ -185,10 +186,10 @@ export function FrmTsm007Form({
           condition: cond,
           photos: state?.photos || [],
           value: item.hasVoltageInput ? state?.voltageValue : undefined,
-          notes: state?.notes?.trim() || (cond === "RUSAK" ? state?.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ? "Form Estimasi Biaya ME (014)" : state?.repairForm === "REPAIR_TANPA_BIAYA" ? "Repair Tanpa Biaya" : "Form Penggantian Spare Part (065)" : ""),
+          notes: state?.notes?.trim() || (cond === "RUSAK" ? state?.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ? "Form Estimasi Biaya ME (014)" : state?.repairForm === "REPAIR_TANPA_BIAYA" ? "Repair Tanpa Biaya" : "Form Perbaikan / Penggantian Spare Part Equipment (065)" : ""),
           handler: state?.handler,
-          repairForm: state?.repairForm === "REPAIR_TANPA_BIAYA" ? undefined : state?.repairForm || undefined,
-          repairFormName: state?.repairForm === "SAT/FRM/TS/065_REV:00_161020" ? "Form Penggantian Spare Part (065)" : state?.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ? "Form Estimasi Biaya ME (014)" : state?.repairForm === "REPAIR_TANPA_BIAYA" ? "Repair Tanpa Biaya" : undefined,
+          repairForm: state?.repairForm || undefined,
+          repairFormName: state?.repairForm === "SAT/FRM/TS/065_REV:00_161020" ? "Form Perbaikan / Penggantian Spare Part Equipment (065)" : state?.repairForm === "SAT/FRM/TSM/014_REV:000_060423" ? "Form Estimasi Biaya ME (014)" : state?.repairForm === "REPAIR_TANPA_BIAYA" ? "Repair Tanpa Biaya" : undefined,
         }
       }),
     }

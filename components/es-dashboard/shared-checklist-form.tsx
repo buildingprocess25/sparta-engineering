@@ -93,6 +93,7 @@ type UploadNotice = {
 
 const FOLLOW_UP_LABELS: Record<string, string> = {
   "SAT/FRM/TSM/014_REV:000_060423": "Form Estimasi Biaya Sipil & ME (014)",
+  REPAIR_TANPA_BIAYA: "Repair Tanpa Biaya",
 }
 
 type PreviewPhoto = {
@@ -331,15 +332,12 @@ export function SharedChecklistForm({
           notes: state.notes,
           handler: state.handler,
           unitNo: state.unitNo?.trim() || undefined,
-          repairForm:
-            state.repairForm === "REPAIR_TANPA_BIAYA"
-              ? undefined
-              : state.repairForm,
+          repairForm: state.repairForm || undefined,
           repairFormName:
             state.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
               ? "Form Estimasi Biaya Sipil & ME (014)"
               : state.repairForm === "SAT/FRM/TS/065_REV:00_161020"
-              ? "Form Penggantian Spare Part (065)"
+              ? "Form Perbaikan / Penggantian Spare Part Equipment (065)"
               : state.repairForm === "REPAIR_TANPA_BIAYA"
               ? "Repair Tanpa Biaya"
               : undefined,
@@ -739,6 +737,12 @@ export function SharedChecklistForm({
                                           className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
                                         >
                                           Form Estimasi Biaya Sipil & ME (014)
+                                        </SelectItem>
+                                        <SelectItem
+                                          value="REPAIR_TANPA_BIAYA"
+                                          className="text-[#111111] hover:bg-[#fff7ed] focus:bg-[#fff7ed] focus:text-[#c2410c] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#c2410c] font-medium py-2.5 cursor-pointer"
+                                        >
+                                          Repair Tanpa Biaya
                                         </SelectItem>
                                       </SelectContent>
                                     </Select>

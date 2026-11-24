@@ -134,7 +134,9 @@ test("revision with 065 returns the same routine report to COORD and then Manage
   const report = {
     id: "report", reportCode, taskId: "cmwiybcfe0004vwuvb87hw4zs", authorId: "ES-OWNER",
     status: "PENDING_COORD" as ReportStatus, formCode: initial.formCode, period: initial.period,
-    periodKey, updatedAt: now, checklistPayload: initial, area: { code: areaCode }, author: { branchName: "HO" },
+    periodKey, updatedAt: now, checklistPayload: initial,
+    drivePhotoFileIds: [photo.fileId, "unit-photo-1", "selfie-photo-1"],
+    area: { code: areaCode }, author: { branchName: "HO" },
   }
   let revision: Record<string, unknown> | undefined
   const tx = {
@@ -230,18 +232,42 @@ test("revision with 065 returns the same routine report to COORD and then Manage
   assert.equal(report.status, "WAITING_PARTS")
 
   // BES execution: Start work (verified active permit) -> IN_PROGRESS
-  const exec = (actorId: string, action: "PROCESS_PB" | "START_WORK" | "FINISH_WORK", version = report.updatedAt.toISOString()) =>
-    executeReportSparePartWork(prisma, { reportId: report.id, version, actorId, action, notes: "Catatan eksekusi" })
+  const exec = (
+    actorId: string,
+    action: "PROCESS_PB" | "START_WORK" | "FINISH_WORK",
+    version = report.updatedAt.toISOString(),
+    completionEvidence?: unknown,
+  ) =>
+    executeReportSparePartWork(prisma, {
+      reportId: report.id,
+      version,
+      actorId,
+      action,
+      notes: "Catatan eksekusi",
+      completionEvidence,
+    })
 
   assert.equal((await exec("ES-OWNER", "START_WORK")).nextStatus, "IN_PROGRESS")
   assert.equal(report.status, "IN_PROGRESS")
 
-  // BES execution: Finish work -> COMPLETED (Selesai)
-  assert.equal((await exec("ES-OWNER", "FINISH_WORK")).nextStatus, "COMPLETED")
+  // BES execution: Finish work requires mandatory Form 065 completion evidence
+  assert.ok((await exec("ES-OWNER", "FINISH_WORK")).error)
+  assert.equal(report.status, "IN_PROGRESS")
+
+  const valid065Evidence = {
+    form065: {
+      handoverConfirmed: true,
+      handoverRecipient: "Kepala Gudang",
+      handoverNotes: "Unit berfungsi normal",
+      repairWithUnitPhotos: [{ fileId: "unit-photo-1", url: "/api/photos/unit-photo-1" }],
+      selfieWithUserPhotos: [{ fileId: "selfie-photo-1", url: "/api/photos/selfie-photo-1" }],
+    },
+  }
+  assert.equal((await exec("ES-OWNER", "FINISH_WORK", report.updatedAt.toISOString(), valid065Evidence)).nextStatus, "COMPLETED")
   assert.equal(report.status, "COMPLETED")
 })
 
-test("report with 065 PERBAIKAN completes directly on Manager approval", async () => {
+test("report with 065 PERBAIKAN routes through Requester (PENDING_REQUESTER) before WAITING_PARTS", async () => {
   const detailsPerbaikan = { ...details065, jenis: "PERBAIKAN" as const, parts: [] }
   const payload = { ...base, formCode: "FRM_TS_063", items: [{ ...item, followUp065: detailsPerbaikan }], followUpCompleted: true }
   const r = {
@@ -252,7 +278,10 @@ test("report with 065 PERBAIKAN completes directly on Manager approval", async (
   const tx = {
     user: {
       findUnique: async ({ where }: { where: { NIK: string } }) => ({
-        role: "MANAGER", name: where.NIK, branchName: "HO",
+        NIK: where.NIK,
+        role: where.NIK === "manager" ? "MANAGER" : "REQUESTER",
+        name: where.NIK,
+        branchName: "HO",
       }),
     },
     checklistReport: {
@@ -264,11 +293,17 @@ test("report with 065 PERBAIKAN completes directly on Manager approval", async (
     },
   }
   const prisma = { $transaction: (work: (client: typeof tx) => unknown) => work(tx) } as unknown as PrismaClient
-  const res = await saveChecklistReview(prisma, {
-    reportId: r.id, version: r.updatedAt.toISOString(), reviewerId: "manager", decision: "approve", notes: "ACC",
+  const resMgr = await saveChecklistReview(prisma, {
+    reportId: r.id, version: r.updatedAt.toISOString(), reviewerId: "manager", decision: "approve", notes: "ACC Manager",
   })
-  assert.equal(res.nextStatus, "COMPLETED")
-  assert.equal(r.status, "COMPLETED")
+  assert.equal(resMgr.nextStatus, "PENDING_REQUESTER")
+  assert.equal(r.status, "PENDING_REQUESTER")
+
+  const resReq = await saveChecklistReview(prisma, {
+    reportId: r.id, version: r.updatedAt.toISOString(), reviewerId: "requester", decision: "approve", notes: "ACC Requester",
+  })
+  assert.equal(resReq.nextStatus, "WAITING_PARTS")
+  assert.equal(r.status, "WAITING_PARTS")
 })
 
 test("report with 065 PB moves to WAITING_PB on Requester approval and advances to WAITING_PARTS when PB processed", async () => {

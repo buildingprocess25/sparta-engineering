@@ -40,9 +40,32 @@ import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
 import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
 import { GENSET_CATEGORIES } from "@/lib/checklists/frm-ts-022"
 import { getChecklistConfig } from "@/lib/checklists/registry"
-import { getReportItems, hasCostEstimateFollowUp, needsChecklistFollowUp, requiresRequesterReview } from "@/lib/reports/checklist-follow-up"
+import {
+  FORM_065_LABEL,
+  getReportItems,
+  hasCostEstimateFollowUp,
+  hasForm065FollowUp,
+  needsChecklistFollowUp,
+  REPAIR_TANPA_BIAYA,
+  REPAIR_TANPA_BIAYA_LABEL,
+  requiresRequesterReview,
+} from "@/lib/reports/checklist-follow-up"
+import {
+  COMPLETION_EVIDENCE_LABELS,
+  readStoredCompletionEvidence,
+} from "@/lib/reports/completion-evidence"
+import {
+  formatChecklistPeriodLabel,
+  getReportCompletenessSummary,
+  hasExecutionAction,
+  normalizeApprovalHistory,
+  normalizeExecutionHistory,
+} from "@/lib/reports/report-display"
 import type { ChecklistRevisionHistory } from "@/lib/reports/checklist-revision-history"
+import { CompletionEvidencePanel } from "@/components/es-dashboard/completion-evidence-panel"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { RevisionHistory } from "@/components/reports/checklist-revision-history"
 
 export interface ReportDetailViewProps {
@@ -286,15 +309,36 @@ export function ReportDetailView({
   const [selectedPhoto, setSelectedPhoto] = React.useState<{ url: string; title: string } | null>(null)
   const [isExecutionPending, startExecution] = React.useTransition()
   const [executionFeedback, setExecutionFeedback] = React.useState<{ message: string; isError: boolean } | null>(null)
+  const [execReferenceNo, setExecReferenceNo] = React.useState("")
+  const [execNotes, setExecNotes] = React.useState("")
+  const [syncedVersion, setSyncedVersion] = React.useState<{ base: string; latest: string } | null>(null)
+  const currentReportVersion =
+    syncedVersion && syncedVersion.base === report.updatedAt ? syncedVersion.latest : report.updatedAt
+  const setCurrentReportVersion = React.useCallback(
+    (nextVersion: string) => {
+      setSyncedVersion({ base: report.updatedAt, latest: nextVersion })
+    },
+    [report.updatedAt],
+  )
 
-  function handleExecuteAction(action: "PROCESS_PB" | "START_WORK" | "FINISH_WORK") {
+  function handleExecuteAction(
+    action: "PROCESS_PJU" | "PROCESS_PB" | "PICKUP_STOCK" | "START_WORK" | "FINISH_WORK",
+  ) {
     startExecution(async () => {
       try {
-        const result = await executeReportSparePartAction(report.id, action, "", report.updatedAt)
+        const result = await executeReportSparePartAction(
+          report.id,
+          action,
+          execNotes,
+          currentReportVersion,
+          execReferenceNo.trim() ? { referenceNo: execReferenceNo.trim() } : undefined,
+        )
         if (!result.success) {
           setExecutionFeedback({ message: result.error || "Gagal memproses pelaksanaan pekerjaan.", isError: true })
           return
         }
+        setExecReferenceNo("")
+        setExecNotes("")
         setExecutionFeedback({ message: result.message || "Aksi berhasil diproses.", isError: false })
         router.refresh()
       } catch {
@@ -545,6 +589,52 @@ export function ReportDetailView({
       (userRole === "MANAGER" && isManager) ||
       (userRole === "REQUESTER" && isPendingRequester))
   const isAuthor = currentUser?.NIK === report.author.NIK || userRole === "ES"
+  const formConfigForReport = getChecklistConfig(report.formCode || "")
+  const periodLabel = formatChecklistPeriodLabel(
+    report.period || payload.period,
+    report.periodKey || payload.periodKey,
+    payload.subPeriodLabel,
+  )
+  const completeness = getReportCompletenessSummary({
+    status: report.status,
+    checklistPayload: report.checklistPayload,
+    expectedItems: formConfigForReport?.items?.length ?? null,
+  })
+  const normalizedApproval = React.useMemo(
+    () => normalizeApprovalHistory(report.approvalHistory),
+    [report.approvalHistory],
+  )
+  const normalizedExecution = React.useMemo(
+    () => normalizeExecutionHistory(report.executionHistory),
+    [report.executionHistory],
+  )
+  const storedEvidence = React.useMemo(
+    () => readStoredCompletionEvidence(report.checklistPayload),
+    [report.checklistPayload],
+  )
+  const completionPhotoCount = React.useMemo(() => {
+    if (!storedEvidence) return 0
+    return (
+      (storedEvidence.form014?.workPhotos.length ?? 0) +
+      (storedEvidence.form014?.receiptPhotos.length ?? 0) +
+      (storedEvidence.form014?.refundTransferPhotos.length ?? 0) +
+      (storedEvidence.form065?.repairWithUnitPhotos.length ?? 0) +
+      (storedEvidence.form065?.selfieWithUserPhotos.length ?? 0)
+    )
+  }, [storedEvidence])
+  const totalCombinedPhotosCount = totalPhotosCount + completionPhotoCount
+  const actualCost = storedEvidence?.form014?.actualPurchaseAmount ?? null
+  const costVariance =
+    totalEstimasi !== null && actualCost !== null ? totalEstimasi - actualCost : null
+  const pjuRecorded = hasExecutionAction(report.executionHistory, "PROCESS_PJU")
+  const stockPickedUp = hasExecutionAction(report.executionHistory, "PICKUP_STOCK")
+
+  const lastRevIdx = normalizedApproval.map((h) => h.decision).lastIndexOf("reject_revision")
+  const activeCycleApprovals = lastRevIdx >= 0 ? normalizedApproval.slice(lastRevIdx + 1) : normalizedApproval
+  const latestCoordApproval = activeCycleApprovals.filter((h) => h.role === "COORD").slice(-1)[0]
+  const latestMgrApproval = activeCycleApprovals.filter((h) => h.role === "MANAGER").slice(-1)[0]
+  const latestReqApproval = activeCycleApprovals.filter((h) => h.role === "REQUESTER").slice(-1)[0]
+  const has065 = hasForm065FollowUp(payload)
 
   return (
     <div className="w-full bg-[#f8fafc] text-slate-800 antialiased">
@@ -634,8 +724,8 @@ export function ReportDetailView({
           </div>
         )}
 
-        {(isWaitingPb || isWaitingParts || isInProgress) && (
-          <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 text-xs text-slate-800 shadow-2xs">
+        {(isWaitingPju || isWaitingPb || isWaitingParts || isInProgress) && (
+          <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 text-xs text-slate-800 shadow-2xs space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-start sm:items-center gap-3">
                 <div className="rounded-lg bg-blue-100 p-2 text-blue-700 shrink-0">
@@ -643,24 +733,76 @@ export function ReportDetailView({
                 </div>
                 <div>
                   <p className="font-bold text-slate-900">
-                    {isWaitingPb
-                      ? "Tahap: Menunggu PB (Pengadaan Baru)"
-                      : isWaitingParts
-                        ? "Tahap: Menunggu Part (Siap Dialokasikan)"
-                        : "Tahap: Sedang Dikerjakan (Perbaikan Unit)"}
+                    {isWaitingPju
+                      ? "Tahap: Menunggu PJU Online (Form 014)"
+                      : isWaitingPb
+                        ? "Tahap: Menunggu PB (Pengadaan Baru)"
+                        : isWaitingParts
+                          ? "Tahap: Menunggu Part / Pengambilan Stock"
+                          : "Tahap: Sedang Dikerjakan (Perbaikan Unit)"}
                   </p>
                   <p className="text-[11px] text-slate-600 mt-0.5">
-                    {isWaitingPb
-                      ? "Usulan disetujui Requester. Lakukan proses pengadaan part (PB) dengan logistik, lalu konfirmasi setelah part siap."
-                      : isWaitingParts
-                        ? "Part telah siap di stok gudang. Pastikan Izin Kerja (MED/003) bulan berjalan aktif sebelum memulai perbaikan."
-                        : "Pekerjaan perbaikan sedang berlangsung. Setelah seluruh penggantian selesai dan diuji, tutup pekerjaan."}
+                    {isWaitingPju
+                      ? "Catat proses PJU Online terlebih dahulu sebelum teknisi memulai pekerjaan di lapangan."
+                      : isWaitingPb
+                        ? "Usulan disetujui Requester. Lakukan proses pengadaan part (PB) dengan logistik, lalu konfirmasi setelah part siap."
+                        : isWaitingParts
+                          ? "Catat pengambilan stock barang bila diperlukan dan pastikan Izin Kerja (MED/003) bulan berjalan aktif sebelum memulai."
+                          : "Pekerjaan perbaikan sedang berlangsung. Lengkapi seluruh bukti penyelesaian sebelum mengubah status menjadi Selesai."}
                   </p>
                 </div>
               </div>
+            </div>
 
-              {isAuthor && (
-                <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+            {isAuthor && !isInProgress && (
+              <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Input
+                    value={execReferenceNo}
+                    disabled={isExecutionPending}
+                    onChange={(e) => setExecReferenceNo(e.target.value)}
+                    placeholder={
+                      isWaitingPju
+                        ? "No. PJU Online (opsional)"
+                        : isWaitingPb
+                          ? "No. PB / Pengadaan (opsional)"
+                          : "No. Referensi (opsional)"
+                    }
+                    className="bg-white h-8 text-xs"
+                  />
+                  <Input
+                    value={execNotes}
+                    disabled={isExecutionPending}
+                    onChange={(e) => setExecNotes(e.target.value)}
+                    placeholder="Catatan pelaksanaan (opsional)"
+                    className="bg-white h-8 text-xs"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {isWaitingPju && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={isExecutionPending}
+                        onClick={() => handleExecuteAction("PROCESS_PJU")}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-600 px-3 text-xs font-bold text-white shadow-2xs hover:bg-amber-700 disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="size-3.5" />
+                        <span>{pjuRecorded ? "Catat Ulang PJU Online" : "Catat Proses PJU Online"}</span>
+                      </button>
+                      {pjuRecorded && (
+                        <button
+                          type="button"
+                          disabled={isExecutionPending}
+                          onClick={() => handleExecuteAction("START_WORK")}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          <Wrench className="size-3.5" />
+                          <span>Mulai Pekerjaan</span>
+                        </button>
+                      )}
+                    </>
+                  )}
                   {isWaitingPb && (
                     <button
                       type="button"
@@ -673,35 +815,55 @@ export function ReportDetailView({
                     </button>
                   )}
                   {isWaitingParts && (
-                    <button
-                      type="button"
-                      disabled={isExecutionPending}
-                      onClick={() => handleExecuteAction("START_WORK")}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      <Wrench className="size-3.5" />
-                      <span>Mulai Pekerjaan</span>
-                    </button>
-                  )}
-                  {isInProgress && (
-                    <button
-                      type="button"
-                      disabled={isExecutionPending}
-                      onClick={() => handleExecuteAction("FINISH_WORK")}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="size-3.5" />
-                      <span>Selesaikan Pekerjaan</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        disabled={isExecutionPending}
+                        onClick={() => handleExecuteAction("PICKUP_STOCK")}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="size-3.5" />
+                        <span>{stockPickedUp ? "Catat Ulang Pengambilan Stock" : "Catat Pengambilan Stock"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isExecutionPending}
+                        onClick={() => handleExecuteAction("START_WORK")}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        <Wrench className="size-3.5" />
+                        <span>Mulai Pekerjaan</span>
+                      </button>
+                    </>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {isAuthor && isInProgress && (
+              <CompletionEvidencePanel
+                reportId={report.id}
+                reportCode={report.reportCode}
+                reportVersion={currentReportVersion}
+                onVersionChange={setCurrentReportVersion}
+                checklistPayload={report.checklistPayload}
+                authorName={report.author.name}
+                authorNik={report.author.NIK}
+                disabled={isExecutionPending}
+                onSuccess={() => {
+                  setExecutionFeedback({
+                    message: "Bukti penyelesaian lengkap tersimpan dan laporan berstatus Selesai.",
+                    isError: false,
+                  })
+                  router.refresh()
+                }}
+              />
+            )}
 
             {executionFeedback && (
               <p
                 role={executionFeedback.isError ? "alert" : "status"}
-                className={cn("mt-2.5 text-[11px] font-semibold", executionFeedback.isError ? "text-rose-700" : "text-emerald-700")}
+                className={cn("text-[11px] font-semibold", executionFeedback.isError ? "text-rose-700" : "text-emerald-700")}
               >
                 {executionFeedback.message}
               </p>
@@ -818,14 +980,16 @@ export function ReportDetailView({
               <span>Siapkan Laporan Lengkap PDF</span>
             </button>
 
-            {/* Intervensi Action */}
-            <Link
-              href={`/dashboard/reports/${report.reportCode}/follow-up`}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-            >
-              <Wrench className="size-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Intervensi</span>
-            </Link>
+            {/* Intervensi Action (ES pembuat sebelum Selesai) */}
+            {isAuthor && !isCompleted && (
+              <Link
+                href={`/dashboard/reports/${report.reportCode}/follow-up`}
+                className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+              >
+                <Wrench className="size-3.5 text-slate-500" />
+                <span className="hidden sm:inline">Intervensi</span>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -883,17 +1047,32 @@ export function ReportDetailView({
                 Laporan
               </p>
               <div className="mt-2 space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Status:</span>
-                  <span className="font-bold text-slate-900">{report.status}</span>
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-500">Periode:</span>
+                  <span className="font-bold text-slate-900 text-right">{periodLabel}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-500">Item terisi:</span>
+                  <span className="font-bold text-slate-900">
+                    {completeness.filledItems}
+                    {completeness.expectedItems ? ` / ${completeness.expectedItems}` : ""} item
+                  </span>
+                </div>
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500">Item bermasalah:</span>
                   <span className="font-bold text-rose-600">{itemsWithIssues.length} item</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Pekerjaan ES:</span>
-                  <span className="font-bold text-slate-900">{itemsWithIssues.length} item</span>
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-500">Tindak lanjut:</span>
+                  <span className={cn("font-bold text-right", completeness.followUpComplete ? "text-emerald-700" : "text-amber-700")}>
+                    {completeness.followUpLabel}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-500">Bukti selesai:</span>
+                  <span className={cn("font-bold text-right", completeness.evidenceComplete ? "text-emerald-700" : "text-amber-700")}>
+                    {completeness.evidenceLabel}
+                  </span>
                 </div>
               </div>
             </div>
@@ -930,17 +1109,19 @@ export function ReportDetailView({
                 <div className="flex justify-between">
                   <span className="text-slate-500">Estimasi:</span>
                   <span className="font-bold text-[#ff8a2a]">
-                    {totalEstimasi === null ? "—" : formatRupiah(totalEstimasi)}
+                    {totalEstimasi === null ? "-" : formatRupiah(totalEstimasi)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Realisasi:</span>
-                  <span className="font-bold text-emerald-600">—</span>
+                  <span className="font-bold text-emerald-600">
+                    {actualCost === null ? "-" : formatRupiah(actualCost)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Selisih:</span>
                   <span className="font-bold text-indigo-600">
-                    —
+                    {costVariance === null ? "-" : formatRupiah(costVariance)}
                   </span>
                 </div>
               </div>
@@ -952,19 +1133,51 @@ export function ReportDetailView({
                 Persetujuan
               </p>
               <div className="mt-2 space-y-1.5 text-xs">
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500">Review Coord:</span>
-                  <span className="font-bold text-slate-800">
-                    {isCoord ? "Menunggu Review" : isManager || isCompleted ? "Disetujui" : "-"}
+                  <span className="font-bold text-slate-800 text-right">
+                    {latestCoordApproval
+                      ? latestCoordApproval.decision === "approve"
+                        ? `Disetujui (${latestCoordApproval.actorName})`
+                        : latestCoordApproval.decision === "reject_revision"
+                          ? "Minta Revisi"
+                          : "Ditolak"
+                      : isCoord
+                        ? "Menunggu Review"
+                        : "-"}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500">Review Manager:</span>
-                  <span className="font-bold text-slate-800">
-                    {isManager ? "Menunggu Review" : isCompleted ? "Disetujui" : "-"}
+                  <span className="font-bold text-slate-800 text-right">
+                    {latestMgrApproval
+                      ? latestMgrApproval.decision === "approve"
+                        ? `Disetujui (${latestMgrApproval.actorName})`
+                        : latestMgrApproval.decision === "reject_revision"
+                          ? "Minta Revisi"
+                          : "Ditolak"
+                      : isManager
+                        ? "Menunggu Review"
+                        : "-"}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                {(needsRequester || has065 || latestReqApproval) && (
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-500">Review Requester:</span>
+                    <span className="font-bold text-slate-800 text-right">
+                      {latestReqApproval
+                        ? latestReqApproval.decision === "approve"
+                          ? `Disetujui (${latestReqApproval.actorName})`
+                          : latestReqApproval.decision === "reject_revision"
+                            ? "Minta Revisi"
+                            : "Ditolak"
+                        : isPendingRequester
+                          ? "Menunggu Review"
+                          : "-"}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500">Google Drive:</span>
                   <span className="font-medium text-slate-700">
                     {currentPdfUrl ? (
@@ -1035,7 +1248,7 @@ export function ReportDetailView({
             <Camera className="size-4" />
             <span>Dokumentasi</span>
             <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
-              {totalPhotosCount}
+              {totalCombinedPhotosCount}
             </span>
           </button>
 
@@ -1288,7 +1501,7 @@ export function ReportDetailView({
                       <div key={item.id} className="py-3.5">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="font-mono text-xs font-bold text-slate-500">
                                 #{idx + 1}
                               </span>
@@ -1296,6 +1509,11 @@ export function ReportDetailView({
                               <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
                                 {getChecklistConditionDisplay(item.condition).shortLabel}
                               </span>
+                              {item.repairForm === REPAIR_TANPA_BIAYA && (
+                                <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-900">
+                                  {REPAIR_TANPA_BIAYA_LABEL}
+                                </Badge>
+                              )}
                             </div>
                             {item.notes && <p className="mt-1 text-xs text-slate-500">Catatan: {item.notes}</p>}
                           </div>
@@ -1362,7 +1580,7 @@ export function ReportDetailView({
 
                         {followUp065 && (
                           <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs">
-                            <h4 className="font-bold text-slate-900">Form 065 · Penggantian Spare Part Equipment</h4>
+                            <h4 className="font-bold text-slate-900">{FORM_065_LABEL}</h4>
                             <dl className="grid gap-3 sm:grid-cols-2">
                               {[
                                 ["Jenis pekerjaan", workType],
@@ -1433,6 +1651,51 @@ export function ReportDetailView({
                 </div>
               )}
             </div>
+
+            {storedEvidence && (storedEvidence.form014 || storedEvidence.form065) && (
+              <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-2xs space-y-3 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-xs font-black uppercase tracking-wide text-slate-900">
+                    Bukti Penyelesaian Pekerjaan
+                  </h3>
+                  <span className="text-[11px] text-slate-500">
+                    Dilaporkan oleh {storedEvidence.submittedByName || storedEvidence.submittedByNik || "-"} ·{" "}
+                    {storedEvidence.submittedAt ? formatIndoDateTime(storedEvidence.submittedAt) : "-"}
+                  </span>
+                </div>
+                {storedEvidence.form014 && (
+                  <div className="rounded-lg border border-orange-200 bg-orange-50/40 p-3 space-y-1.5">
+                    <p className="font-bold text-orange-950">
+                      Form 014 · Actual Pembelian Barang: {formatRupiah(storedEvidence.form014.actualPurchaseAmount)}
+                    </p>
+                    <p className="text-slate-700">
+                      Foto Saat Pekerjaan: {storedEvidence.form014.workPhotos.length} | Foto Bon Pembelian:{" "}
+                      {storedEvidence.form014.receiptPhotos.length} | Bukti Transfer Pengembalian:{" "}
+                      {storedEvidence.form014.refundTransferPhotos.length}
+                    </p>
+                  </div>
+                )}
+                {storedEvidence.form065 && (
+                  <div className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-3 space-y-1.5">
+                    <p className="font-bold text-indigo-950">
+                      Form 065 · Serah Terima Unit:{" "}
+                      {storedEvidence.form065.handoverConfirmed ? "Terkonfirmasi" : "Belum"} (Penerima:{" "}
+                      {storedEvidence.form065.handoverRecipient})
+                    </p>
+                    {storedEvidence.form065.handoverNotes && (
+                      <p className="text-slate-700">Catatan serah terima: {storedEvidence.form065.handoverNotes}</p>
+                    )}
+                    <p className="text-slate-700">
+                      Foto dengan Unit: {storedEvidence.form065.repairWithUnitPhotos.length} | Foto Selfie dengan User:{" "}
+                      {storedEvidence.form065.selfieWithUserPhotos.length}
+                    </p>
+                  </div>
+                )}
+                {storedEvidence.notes && (
+                  <p className="text-slate-600">Catatan penyelesaian: {storedEvidence.notes}</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1487,6 +1750,58 @@ export function ReportDetailView({
                 </div>
               )}
             </div>
+
+            {completionPhotoCount > 0 && storedEvidence && (
+              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+                <h3 className="text-xs font-black uppercase tracking-wide text-slate-900">
+                  Galeri Foto Bukti Penyelesaian Pekerjaan
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Dokumentasi pelaksanaan perbaikan, bon pembelian, bukti transfer pengembalian, dan serah terima unit.
+                </p>
+                <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+                  {[
+                    ...(storedEvidence.form014
+                      ? [
+                          { label: COMPLETION_EVIDENCE_LABELS.WORK_PROGRESS, photos: storedEvidence.form014.workPhotos },
+                          { label: COMPLETION_EVIDENCE_LABELS.PURCHASE_RECEIPT, photos: storedEvidence.form014.receiptPhotos },
+                          { label: COMPLETION_EVIDENCE_LABELS.REFUND_TRANSFER, photos: storedEvidence.form014.refundTransferPhotos },
+                        ]
+                      : []),
+                    ...(storedEvidence.form065
+                      ? [
+                          { label: COMPLETION_EVIDENCE_LABELS.REPAIR_UNIT, photos: storedEvidence.form065.repairWithUnitPhotos },
+                          { label: COMPLETION_EVIDENCE_LABELS.USER_SELFIE, photos: storedEvidence.form065.selfieWithUserPhotos },
+                        ]
+                      : []),
+                  ].flatMap((group) =>
+                    group.photos.map((photo, pIdx) => (
+                      <div
+                        key={`comp-${photo.fileId}-${pIdx}`}
+                        onClick={() =>
+                          setSelectedPhoto({
+                            url: photo.url,
+                            title: `${group.label} (${pIdx + 1})`,
+                          })
+                        }
+                        className="group relative cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-100 hover:border-[#ff8a2a] transition-all"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.url}
+                          alt={group.label}
+                          className="aspect-square size-full object-cover transition-transform group-hover:scale-105"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 text-white">
+                          <p className="line-clamp-1 text-[10px] font-bold">{group.label}</p>
+                          <p className="text-[9px] text-slate-300 font-mono">{photo.fileId.slice(0, 8)}</p>
+                        </div>
+                      </div>
+                    )),
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1526,7 +1841,7 @@ export function ReportDetailView({
                 )}
 
                 {/* Riwayat Approval Multilevel */}
-                {Array.isArray(report.approvalHistory) && (report.approvalHistory as any[]).map((app: any, idx: number) => {
+                {normalizedApproval.map((app, idx) => {
                   const isApprove = app.decision === "approve"
                   const isRevision = app.decision === "reject_revision"
                   return (
@@ -1537,13 +1852,13 @@ export function ReportDetailView({
                       )} />
                       <p className="text-xs font-bold text-slate-900">
                         {isApprove
-                          ? `Disetujui oleh ${app.role} (${app.approverName})`
+                          ? `Disetujui oleh ${app.role} (${app.actorName})`
                           : isRevision
-                            ? `Minta Revisi oleh ${app.role} (${app.approverName})`
-                            : `Ditolak oleh ${app.role} (${app.approverName})`}
+                            ? `Minta Revisi oleh ${app.role} (${app.actorName})`
+                            : `Ditolak oleh ${app.role} (${app.actorName})`}
                       </p>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        Tahap: {app.stage} · NIK: {app.approverNik}
+                        Tahap: {app.stage || "-"} · NIK: {app.actorNik || "-"}
                         {app.notes ? ` · Catatan: "${app.notes}"` : ""}
                       </p>
                       <p className="text-[10px] text-slate-400 mt-1 font-mono">
@@ -1554,29 +1869,22 @@ export function ReportDetailView({
                 })}
 
                 {/* Riwayat Pelaksanaan Pekerjaan */}
-                {Array.isArray(report.executionHistory) && (report.executionHistory as any[]).map((ex: any, idx: number) => {
-                  const label =
-                    ex.action === "PROCESS_PB"
-                      ? "Proses Pengadaan PB Dicatat"
-                      : ex.action === "START_WORK"
-                        ? "Pekerjaan Perbaikan Dimulai"
-                        : "Pekerjaan Perbaikan Selesai (Final)"
-                  return (
-                    <div key={`exec-${idx}`} className="relative pl-6">
-                      <div className="absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white bg-blue-600" />
-                      <p className="text-xs font-bold text-slate-900">
-                        {label} · {ex.actorName} ({ex.actorNik})
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        Status: {ex.previousStatus} → {ex.nextStatus}
-                        {ex.notes ? ` · Catatan: "${ex.notes}"` : ""}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                        {formatIndoDateTime(ex.performedAt)}
-                      </p>
-                    </div>
-                  )
-                })}
+                {normalizedExecution.map((ex, idx) => (
+                  <div key={`exec-${idx}`} className="relative pl-6">
+                    <div className="absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white bg-blue-600" />
+                    <p className="text-xs font-bold text-slate-900">
+                      {ex.actionLabel} · {ex.actorName} ({ex.actorNik})
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Status: {ex.previousStatus} → {ex.nextStatus}
+                      {ex.referenceNo ? ` · Ref: ${ex.referenceNo}` : ""}
+                      {ex.notes ? ` · Catatan: "${ex.notes}"` : ""}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                      {formatIndoDateTime(ex.performedAt)}
+                    </p>
+                  </div>
+                ))}
 
                 {isCompleted && (
                   <div className="relative pl-6">
@@ -1623,7 +1931,7 @@ export function ReportDetailView({
                         ? needsRequester
                           ? "Setujui & Teruskan ke Requester (WHM/DWHM)"
                           : "Setujui Final"
-                        : hasForm014 ? "Setujui Estimasi Form 014" : "Setujui Usulan Spare Part"}
+                        : hasForm014 ? "Setujui Estimasi Form 014" : "Setujui Form 065"}
                   </button>
                   <button
                     type="button"
@@ -1664,23 +1972,28 @@ export function ReportDetailView({
                             : "Setujui laporan ini secara final?"
                           : hasForm014
                             ? "Setujui Form 014 dan lanjut ke tahap Menunggu PJU?"
-                            : "Setujui usulan penggantian spare part ini?"
+                            : "Setujui Form 065 ini?"
                       : reviewDecision === "reject_revision"
                         ? "Kembalikan laporan untuk revisi?"
                         : "Tolak laporan ini?"}
                   </p>
-                  {reviewDecision !== "approve" && (
-                    <label className="mt-3 block text-xs font-medium">
-                      Catatan keputusan
-                      <textarea
-                        className="mt-1 block w-full rounded-lg border border-slate-300 p-2"
-                        value={reviewNotes}
-                        onChange={(event) => setReviewNotes(event.target.value)}
-                        disabled={isReviewPending}
-                        rows={3}
-                      />
-                    </label>
-                  )}
+                  <label className="mt-3 block text-xs font-medium">
+                    {reviewDecision === "approve"
+                      ? "Catatan persetujuan (opsional)"
+                      : "Catatan keputusan (wajib)"}
+                    <Textarea
+                      className="mt-1.5"
+                      value={reviewNotes}
+                      onChange={(event) => setReviewNotes(event.target.value)}
+                      disabled={isReviewPending}
+                      placeholder={
+                        reviewDecision === "approve"
+                          ? "Tambahkan catatan persetujuan jika diperlukan..."
+                          : "Tuliskan alasan revisi atau penolakan..."
+                      }
+                      rows={3}
+                    />
+                  </label>
                   <div className="mt-3 flex gap-2">
                     <button
                       type="button"

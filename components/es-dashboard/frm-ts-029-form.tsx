@@ -83,8 +83,13 @@ type ItemState = {
 const FOLLOW_UP_OPTIONS = [
   {
     id: "SAT/FRM/TS/065_REV:00_161020",
-    label: "Form Penggantian Spare Part (065)",
+    label: "Form Perbaikan / Penggantian Spare Part Equipment (065)",
     badge: "065",
+  },
+  {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+    badge: "Tanpa Biaya",
   },
 ]
 
@@ -326,14 +331,18 @@ export function FrmTs029Form({
           notes:
             itemNotes ||
             (condition === "RUSAK"
-              ? "Form Penggantian Spare Part (065)"
+              ? state?.repairForm === "REPAIR_TANPA_BIAYA"
+                ? "Repair Tanpa Biaya"
+                : "Form Perbaikan / Penggantian Spare Part Equipment (065)"
               : ""),
           handler: state?.handler,
           repairForm: condition === "RUSAK" ? (state?.repairForm || "SAT/FRM/TS/065_REV:00_161020") : state?.repairForm,
           repairFormName:
-            condition === "RUSAK" || state?.repairForm === "SAT/FRM/TS/065_REV:00_161020"
-              ? "Form Penggantian Spare Part (065)"
-              : undefined,
+            state?.repairForm === "REPAIR_TANPA_BIAYA"
+              ? "Repair Tanpa Biaya"
+              : condition === "RUSAK" || state?.repairForm === "SAT/FRM/TS/065_REV:00_161020"
+                ? "Form Perbaikan / Penggantian Spare Part Equipment (065)"
+                : undefined,
         }
       }),
     }

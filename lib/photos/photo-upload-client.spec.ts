@@ -9,6 +9,21 @@ const photo = await readPhotoUploadResponse(
 )
 assert.deepEqual(photo, { fileId: "drive-file-1", url: "/api/photos/drive-file-1" })
 
+const syncedPhoto = await readPhotoUploadResponse(
+  response(
+    JSON.stringify({
+      fileId: "drive-file-2",
+      url: "/api/photos/drive-file-2",
+      reportVersion: "2026-11-24T06:00:00.000Z",
+    }),
+  ),
+)
+assert.deepEqual(syncedPhoto, {
+  fileId: "drive-file-2",
+  url: "/api/photos/drive-file-2",
+  reportVersion: "2026-11-24T06:00:00.000Z",
+})
+
 await assert.rejects(
   () => readPhotoUploadResponse(response(JSON.stringify({ ok: true, photo: {} }))),
   /ID dan alamat foto/,

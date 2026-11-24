@@ -12,8 +12,30 @@ export type PdfReportPhoto = {
 }
 
 import { getChecklistConditionDisplay } from "@/lib/checklists/condition-display"
+import {
+  FORM_014,
+  FORM_065,
+  FORM_065_LABEL,
+  getReportItems,
+  hasCostEstimateFollowUp,
+  hasForm065FollowUp,
+  hasRepairWithoutCost,
+  REPAIR_TANPA_BIAYA,
+  requiresRequesterReview,
+} from "@/lib/reports/checklist-follow-up"
+import {
+  readStoredCompletionEvidence,
+  type ReportCompletionEvidence,
+} from "@/lib/reports/completion-evidence"
+import {
+  normalizeApprovalHistory,
+  normalizeExecutionHistory,
+} from "@/lib/reports/report-display"
 
 export function formatPdfCondition(condition?: string | null, formCode?: string | null) {
+  if ((condition || "").toUpperCase() === "BUKTI_SELESAI") {
+    return { text: "BUKTI SELESAI", color: rgb(0.1, 0.45, 0.7), isBad: false }
+  }
   const baseCode = (formCode || "").replace(/_REPAIR$/i, "").toUpperCase()
   const isV7Form = baseCode === "FRM_TS_041" || baseCode === "FRM_TS_028"
   const display = getChecklistConditionDisplay(condition, {
@@ -75,7 +97,9 @@ export type PdfReportData = {
   isSafe: boolean
   status?: string | null
   approvalHistory?: ApprovalHistoryRecord[] | unknown[] | null
+  executionHistory?: unknown[] | null
   checklistPayload?: unknown
+  completionEvidence?: ReportCompletionEvidence | null
   generalNotes?: string | null
   items: Array<{
     id: string
@@ -103,22 +127,22 @@ export function isSparePartProposal(payload: unknown): boolean {
 
 export function isReportFinal(data: PdfReportData): boolean {
   if (data.status !== "COMPLETED") return false
-  const history = Array.isArray(data.approvalHistory) ? (data.approvalHistory as ApprovalHistoryRecord[]) : []
+  const history = normalizeApprovalHistory(data.approvalHistory)
   if (history.length === 0) return false
 
   const lastRevIdx = history.map((h) => h.decision).lastIndexOf("reject_revision")
   const activeCycle = lastRevIdx >= 0 ? history.slice(lastRevIdx + 1) : history
 
   const hasCoord = activeCycle.some(
-    (h) => h.decision === "approve" && (h.reviewerRole === "COORD" || h.stage === "PENDING_COORD")
+    (h) => h.decision === "approve" && (h.role === "COORD" || h.stage === "PENDING_COORD")
   )
   const hasManager = activeCycle.some(
-    (h) => h.decision === "approve" && (h.reviewerRole === "MANAGER" || h.stage === "PENDING_MANAGER")
+    (h) => h.decision === "approve" && (h.role === "MANAGER" || h.stage === "PENDING_MANAGER")
   )
 
-  if (isSparePartProposal(data.checklistPayload)) {
+  if (requiresRequesterReview(data.checklistPayload) || isSparePartProposal(data.checklistPayload)) {
     const hasRequester = activeCycle.some(
-      (h) => h.decision === "approve" && (h.reviewerRole === "REQUESTER" || h.stage === "PENDING_REQUESTER")
+      (h) => h.decision === "approve" && (h.role === "REQUESTER" || h.stage === "PENDING_REQUESTER")
     )
     return hasCoord && hasManager && hasRequester
   }
@@ -830,14 +854,156 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
   }
 
   // ==========================================
+  // SECTION: TINDAK LANJUT, HISTORI PELAKSANAAN & BUKTI PENYELESAIAN
+  // ==========================================
+  const ensureSectionSpace = (needed: number) => {
+    if (currentY - needed < 65) {
+      drawPageFooter(page, nraInfo)
+      page = pdfDoc.addPage([pageWidth, pageHeight])
+      drawHeader(page)
+      currentY = pageHeight - 106
+    }
+  }
+
+  const drawBandHeader = (title: string) => {
+    ensureSectionSpace(42)
+    page.drawRectangle({
+      x: marginX,
+      y: currentY - 15,
+      width: contentWidth,
+      height: 15,
+      color: rgb(0.04, 0.09, 0.16),
+    })
+    page.drawText(title, {
+      x: marginX + 6,
+      y: currentY - 10.5,
+      size: 7,
+      font: fontBold,
+      color: rgb(1, 1, 1),
+    })
+    currentY -= 20
+  }
+
+  const formatPdfCurrency = (val: number) =>
+    `Rp ${Math.round(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`
+
+  const payloadItems = getReportItems(data.checklistPayload)
+  const needs014Summary = hasCostEstimateFollowUp(data.checklistPayload)
+  const needs065Summary = hasForm065FollowUp(data.checklistPayload)
+  const hasNoCostRepair = hasRepairWithoutCost(data.checklistPayload)
+
+  if (needs014Summary || needs065Summary || hasNoCostRepair) {
+    drawBandHeader("RINGKASAN TINDAK LANJUT & KEPUTUSAN PERBAIKAN")
+
+    const summaryLines: string[] = []
+    for (const item of payloadItems) {
+      const rec = item as Record<string, unknown>
+      if (item.repairForm === REPAIR_TANPA_BIAYA) {
+        summaryLines.push(`- ${item.label}: Repair Tanpa Biaya (diselesaikan internal ES)`)
+      } else if (item.repairForm === FORM_014) {
+        const f014 = (rec.followUp014 ?? rec.followUpData) as Record<string, unknown> | undefined
+        const cost = Number(f014?.totalCost ?? 0)
+        const mats = Array.isArray(f014?.materials) ? f014.materials.length : 0
+        summaryLines.push(
+          `- ${item.label}: Form 014 (${mats} item material, Estimasi ${Number.isFinite(cost) ? formatPdfCurrency(cost) : "-"})`,
+        )
+      } else if (item.repairForm === FORM_065) {
+        const f065 = (rec.followUp065 ?? rec.followUpData) as Record<string, unknown> | undefined
+        const jenis = f065?.jenis === "PENGGANTIAN_SPARE_PART" ? "Penggantian Spare Part" : "Perbaikan"
+        const partsCount = Array.isArray(f065?.parts) ? f065.parts.length : 0
+        const unitLabel = [f065?.namaUnit, f065?.merk, f065?.nomorUnit].filter(Boolean).join(" / ")
+        summaryLines.push(
+          `- ${item.label}: ${FORM_065_LABEL} | Jenis: ${jenis}${unitLabel ? ` | Unit: ${unitLabel}` : ""}${partsCount > 0 ? ` (${partsCount} spare part)` : ""}`,
+        )
+      }
+    }
+
+    for (const line of summaryLines) {
+      ensureSectionSpace(14)
+      page.drawText(line.slice(0, 108), {
+        x: marginX + 4,
+        y: currentY,
+        size: 6.8,
+        font: fontRegular,
+        color: rgb(0.15, 0.2, 0.28),
+      })
+      currentY -= 11
+    }
+    currentY -= 6
+  }
+
+  const normalizedExecution = normalizeExecutionHistory(data.executionHistory)
+  if (normalizedExecution.length > 0) {
+    drawBandHeader("HISTORI PELAKSANAAN PEKERJAAN (TIMESTAMP SERVER)")
+    for (const entry of normalizedExecution) {
+      ensureSectionSpace(16)
+      const refPart = entry.referenceNo ? ` | Ref: ${entry.referenceNo}` : ""
+      const notePart = entry.notes ? ` | Catatan: ${entry.notes}` : ""
+      const line = `${formatWib(entry.performedAt)} - ${entry.actionLabel} oleh ${entry.actorName} (${entry.actorNik})${refPart}${notePart}`
+      page.drawText(line.slice(0, 110), {
+        x: marginX + 4,
+        y: currentY,
+        size: 6.6,
+        font: fontRegular,
+        color: rgb(0.15, 0.2, 0.28),
+      })
+      currentY -= 11
+    }
+    currentY -= 6
+  }
+
+  const evidence = data.completionEvidence ?? readStoredCompletionEvidence(data.checklistPayload)
+  if (evidence && (evidence.form014 || evidence.form065)) {
+    drawBandHeader("BUKTI PENYELESAIAN PEKERJAAN")
+    const evLines: string[] = []
+    if (evidence.form014) {
+      evLines.push(
+        `Form 014 - Actual Pembelian: ${formatPdfCurrency(evidence.form014.actualPurchaseAmount)} | Foto Kerja: ${evidence.form014.workPhotos.length} | Foto Bon: ${evidence.form014.receiptPhotos.length} | Bukti Transfer: ${evidence.form014.refundTransferPhotos.length}`,
+      )
+    }
+    if (evidence.form065) {
+      evLines.push(
+        `Form 065 - Serah Terima: ${evidence.form065.handoverConfirmed ? "Dikonfirmasi" : "Belum"} (Penerima: ${evidence.form065.handoverRecipient}) | Foto Unit: ${evidence.form065.repairWithUnitPhotos.length} | Selfie User: ${evidence.form065.selfieWithUserPhotos.length}`,
+      )
+      if (evidence.form065.handoverNotes) {
+        evLines.push(`Catatan Serah Terima: ${evidence.form065.handoverNotes}`)
+      }
+    }
+    if (evidence.submittedByName || evidence.submittedAt) {
+      evLines.push(
+        `Dilaporkan oleh: ${evidence.submittedByName || evidence.submittedByNik || "-"} (${formatWib(evidence.submittedAt)})`,
+      )
+    }
+    if (evidence.notes) {
+      evLines.push(`Catatan Penyelesaian: ${evidence.notes}`)
+    }
+
+    for (const line of evLines) {
+      ensureSectionSpace(14)
+      page.drawText(line.slice(0, 110), {
+        x: marginX + 4,
+        y: currentY,
+        size: 6.8,
+        font: fontRegular,
+        color: rgb(0.12, 0.18, 0.24),
+      })
+      currentY -= 11
+    }
+    currentY -= 8
+  }
+
+  // ==========================================
   // SECTION: KOTAK TANDA TANGAN 3 TINGKAT
   // (Diletakkan di BAWAH section foto)
   // ==========================================
   const sigTableHeight = 80
   const sigColWidth = contentWidth / 3
+  const needsRequesterBox =
+    requiresRequesterReview(data.checklistPayload) || isSparePartProposal(data.checklistPayload)
+  const requiredSigHeight = needsRequesterBox ? sigTableHeight + 52 : sigTableHeight
 
   // Ensure enough space for signature table, otherwise add new page
-  if (currentY - sigTableHeight < 60) {
+  if (currentY - requiredSigHeight < 60) {
     drawPageFooter(page, nraInfo)
     page = pdfDoc.addPage([pageWidth, pageHeight])
     drawHeader(page)
@@ -922,12 +1088,22 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
     color: rgb(0.08, 0.1, 0.15),
   })
 
-  const history = Array.isArray(data.approvalHistory) ? (data.approvalHistory as ApprovalHistoryRecord[]) : []
-  const coordApproval = history
-    .filter((h) => h.reviewerRole === "COORD" || h.stage === "PENDING_COORD")
+  const history = normalizeApprovalHistory(data.approvalHistory)
+  const lastRevSigIdx = history.map((h) => h.decision).lastIndexOf("reject_revision")
+  const activeSigCycle =
+    lastRevSigIdx >= 0
+      ? data.status === "NEEDS_REVISION" || data.status === "REJECTED"
+        ? history
+        : history.slice(lastRevSigIdx + 1)
+      : history
+  const coordApproval = activeSigCycle
+    .filter((h) => h.role === "COORD" || h.stage === "PENDING_COORD")
     .slice(-1)[0]
-  const mgrApproval = history
-    .filter((h) => h.reviewerRole === "MANAGER" || h.stage === "PENDING_MANAGER")
+  const mgrApproval = activeSigCycle
+    .filter((h) => h.role === "MANAGER" || h.stage === "PENDING_MANAGER")
+    .slice(-1)[0]
+  const reqApproval = activeSigCycle
+    .filter((h) => h.role === "REQUESTER" || h.stage === "PENDING_REQUESTER")
     .slice(-1)[0]
 
   // Diperiksa oleh (Coordinator)
@@ -954,14 +1130,14 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
           ? "Minta Revisi"
           : "Ditolak"
     const dateText = formatWib(coordApproval.decidedAt)
-    page.drawText(`${coordApproval.reviewerName}`, {
+    page.drawText(`${coordApproval.actorName}`, {
       x: marginX + sigColWidth + 8,
       y: currentY - 36,
       size: 7,
       font: fontBold,
       color: rgb(0.08, 0.1, 0.15),
     })
-    page.drawText(`${coordApproval.reviewerRole || "COORD"} · ${decText}`, {
+    page.drawText(`${coordApproval.role || "COORD"} · ${decText}`, {
       x: marginX + sigColWidth + 8,
       y: currentY - 47,
       size: 6.5,
@@ -981,7 +1157,7 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
         y: currentY - 69,
         size: 6,
         font: fontRegular,
-        color: rgb(0.7, 0.2, 0.1),
+        color: coordApproval.decision === "approve" ? rgb(0.22, 0.28, 0.36) : rgb(0.7, 0.2, 0.1),
       })
     }
   } else if (data.status === "COMPLETED") {
@@ -1026,14 +1202,14 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
           ? "Minta Revisi"
           : "Ditolak"
     const dateText = formatWib(mgrApproval.decidedAt)
-    page.drawText(`${mgrApproval.reviewerName}`, {
+    page.drawText(`${mgrApproval.actorName}`, {
       x: marginX + sigColWidth * 2 + 8,
       y: currentY - 36,
       size: 7,
       font: fontBold,
       color: rgb(0.08, 0.1, 0.15),
     })
-    page.drawText(`${mgrApproval.reviewerRole || "MANAGER"} · ${decText}`, {
+    page.drawText(`${mgrApproval.role || "MANAGER"} · ${decText}`, {
       x: marginX + sigColWidth * 2 + 8,
       y: currentY - 47,
       size: 6.5,
@@ -1053,7 +1229,7 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
         y: currentY - 69,
         size: 6,
         font: fontRegular,
-        color: rgb(0.7, 0.2, 0.1),
+        color: mgrApproval.decision === "approve" ? rgb(0.22, 0.28, 0.36) : rgb(0.7, 0.2, 0.1),
       })
     }
   } else if (data.status === "COMPLETED") {
@@ -1072,6 +1248,53 @@ export async function generateReportPdfBuffer(data: PdfReportData): Promise<Buff
       font: fontRegular,
       color: rgb(0.5, 0.55, 0.6),
     })
+  }
+
+  if (needsRequesterBox || reqApproval) {
+    const reqTopY = currentY - sigTableHeight - 8
+    const reqBoxH = 40
+    page.drawRectangle({
+      x: marginX,
+      y: reqTopY - reqBoxH,
+      width: contentWidth,
+      height: reqBoxH,
+      borderWidth: 0.8,
+      borderColor: rgb(0.8, 0.83, 0.87),
+      color: rgb(0.99, 0.99, 1),
+    })
+    page.drawText("Persetujuan Requester (Form 014 / Form 065) :", {
+      x: marginX + 8,
+      y: reqTopY - 12,
+      size: 7,
+      font: fontBold,
+      color: rgb(0.1, 0.15, 0.2),
+    })
+    if (reqApproval) {
+      const decText =
+        reqApproval.decision === "approve"
+          ? "Disetujui"
+          : reqApproval.decision === "reject_revision"
+            ? "Minta Revisi"
+            : "Ditolak"
+      page.drawText(
+        `${reqApproval.actorName} (${reqApproval.role || "REQUESTER"}) · ${decText} · ${formatWib(reqApproval.decidedAt)}${reqApproval.notes ? ` · ${reqApproval.notes.slice(0, 40)}` : ""}`,
+        {
+          x: marginX + 8,
+          y: reqTopY - 26,
+          size: 6.8,
+          font: fontRegular,
+          color: rgb(0.15, 0.2, 0.25),
+        },
+      )
+    } else {
+      page.drawText("( Menunggu persetujuan Requester )", {
+        x: marginX + 8,
+        y: reqTopY - 26,
+        size: 6.8,
+        font: fontRegular,
+        color: rgb(0.5, 0.55, 0.6),
+      })
+    }
   }
 
   // Final footer on last page

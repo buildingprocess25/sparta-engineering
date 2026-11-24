@@ -92,8 +92,13 @@ const MONTH_LIST = [
 const FOLLOW_UP_OPTIONS = [
   {
     id: "SAT/FRM/TS/065_REV:00_161020",
-    label: "Form Penggantian Spare Part (065)",
+    label: "Form Perbaikan / Penggantian Spare Part Equipment (065)",
     badge: "065",
+  },
+  {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+    badge: "Tanpa Biaya",
   },
 ] as const
 
@@ -379,6 +384,9 @@ export function FrmTsm008Form({
             (isAction ? "Pemeriksaan unit sewa bulanan" : undefined),
           handler: isAction ? state.handler || "EKSTERNAL" : state.handler,
           repairForm: state.repairForm,
+          repairFormName: state.repairForm
+            ? FOLLOW_UP_OPTIONS.find((f) => f.id === state.repairForm)?.label
+            : undefined,
         }
       })
 

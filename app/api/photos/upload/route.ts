@@ -1,6 +1,9 @@
 import { getDriveCdnClient } from "@/lib/google-drive/cdn-client"
 import { createGoogleFolderGateway } from "@/lib/google-drive/folder-gateway"
-import { ensureChecklistEvidenceFolder } from "@/lib/google-drive/hierarchy-service"
+import {
+  ensureChecklistEvidenceFolder,
+  ensureCompletionEvidenceFolder,
+} from "@/lib/google-drive/hierarchy-service"
 import { uploadPhotoToDriveCdn } from "@/lib/storage/drive-photo-service"
 
 import { createPhotoUploadPostHandler } from "./handler"
@@ -12,6 +15,37 @@ export const POST = createPhotoUploadPostHandler({
     ])
     const user = await getWorkPermitUser()
     return user?.NIK === authorId && Boolean(await getActiveWorkPermit(user))
+  },
+  async recordUploadedPhoto(reportCode, fileId, kind) {
+    const { getPrisma } = await import("@/lib/prisma")
+    const prisma = getPrisma()
+    const report = await prisma.checklistReport.findUnique({
+      where: { reportCode },
+      select: { id: true, updatedAt: true, drivePhotoFileIds: true },
+    })
+    if (!report) return
+    const existing = Array.isArray(report.drivePhotoFileIds)
+      ? report.drivePhotoFileIds.filter((x): x is string => typeof x === "string")
+      : []
+    if (existing.includes(fileId)) {
+      return report.updatedAt.toISOString()
+    }
+    if (kind === "COMPLETION_EVIDENCE") {
+      const updated = await prisma.checklistReport.update({
+        where: { id: report.id },
+        data: { drivePhotoFileIds: [...existing, fileId] },
+        select: { updatedAt: true },
+      })
+      return updated.updatedAt.toISOString()
+    }
+    await prisma.checklistReport.update({
+      where: { id: report.id },
+      data: {
+        drivePhotoFileIds: [...existing, fileId],
+        updatedAt: report.updatedAt,
+      },
+    })
+    return report.updatedAt.toISOString()
   },
   async getSession() {
     const session = await import("@/lib/session")
@@ -58,6 +92,13 @@ export const POST = createPhotoUploadPostHandler({
   async ensureEvidenceFolder(input) {
     const { drive } = getDriveCdnClient()
     return ensureChecklistEvidenceFolder(
+      { gateway: createGoogleFolderGateway(drive) },
+      input
+    )
+  },
+  async ensureCompletionEvidenceFolder(input) {
+    const { drive } = getDriveCdnClient()
+    return ensureCompletionEvidenceFolder(
       { gateway: createGoogleFolderGateway(drive) },
       input
     )

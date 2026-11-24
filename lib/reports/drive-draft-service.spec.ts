@@ -101,3 +101,56 @@ test("resumes a submitted checklist with an unfinished follow-up for its owner",
   assert.deepEqual(await reserveChecklistDraft(repository, { ...reservation, authorId: "ES002" }), { unavailable: "conflict" })
   assert.deepEqual(repository.created, [])
 })
+
+test("does not hijack a PENDING routine task when a completed detached report or incidental report exists on the same room", async () => {
+  const repository = new FakeRepository()
+  const completedDetached: ChecklistDraft = {
+    ...roomDraft,
+    id: "report-old-completed",
+    reportCode: "ENG-WHP-RT-415892",
+    status: "COMPLETED",
+    category: "PREVENTIVE",
+    taskId: null,
+    canRebind: false,
+  }
+  const incidentalReport: ChecklistDraft = {
+    ...roomDraft,
+    id: "report-incidental",
+    reportCode: "ENG-WHP-NR-999",
+    status: "COMPLETED",
+    category: "INCIDENTAL",
+    formCode: "FRM_TSM_003_REPAIR",
+    taskId: null,
+    canRebind: false,
+  }
+  repository.candidates = [completedDetached, incidentalReport]
+
+  const result = await reserveChecklistDraft(repository, {
+    ...reservation,
+    taskId: "task-receiving-pending",
+  })
+
+  assert.deepEqual(result, { reportCode: "ENG-OFFICE-202609-002" })
+  assert.equal(repository.created.length, 1)
+  assert.equal(repository.created[0]?.taskId, "task-receiving-pending")
+  assert.equal(repository.created[0]?.roomId, null)
+})
+
+test("non-task routine checklist ignores INCIDENTAL _REPAIR reports on the same room", async () => {
+  const repository = new FakeRepository()
+  repository.candidates = [
+    {
+      ...roomDraft,
+      id: "report-repair",
+      reportCode: "ENG-WHP-NR-123",
+      status: "COMPLETED",
+      category: "INCIDENTAL",
+      formCode: "FRM_TSM_003",
+      canRebind: false,
+    },
+  ]
+
+  const result = await reserveChecklistDraft(repository, reservation)
+  assert.deepEqual(result, { reportCode: "ENG-OFFICE-202609-002" })
+  assert.equal(repository.created.length, 1)
+})

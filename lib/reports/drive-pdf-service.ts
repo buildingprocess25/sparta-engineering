@@ -7,9 +7,8 @@ import {
   buildFinalPdfName,
 } from "@/lib/google-drive/hierarchy-policy"
 import { ensureDriveFolderPath, uploadPdfToDrive, downloadFileFromDrive } from "@/lib/google-drive/files"
-import { generateReportPdfBuffer, isReportFinal, type PdfReportData, type PdfReportPhoto } from "./pdf-generator"
-import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
-import { getReportItems } from "./checklist-follow-up"
+import { generateReportPdfBuffer, isReportFinal } from "./pdf-generator"
+import { buildReportPdfData } from "./report-pdf-mapper"
 
 export type GenerateAndUploadResult = {
   ok: boolean
@@ -31,6 +30,7 @@ export async function generateAndUploadReportPdf(
       room: true,
       equipment: true,
       author: true,
+      task: { select: { assignment: { select: { room: true } } } },
     },
   })
 
@@ -38,77 +38,14 @@ export async function generateAndUploadReportPdf(
     return { ok: false, reportCode, error: "Laporan tidak ditemukan" }
   }
 
-  // Parse payload
-  const rawPayload = (report.checklistPayload as unknown as ChecklistPayload) || {}
-  const rawItems = getReportItems(report.checklistPayload)
-
-  const formattedItems: PdfReportData["items"] = rawItems.map(
-    (item: ChecklistPayloadItem, index: number) => ({
-      id: item.id || String(index + 1),
-      label: item.label || `Item ${index + 1}`,
-      condition: item.condition || "BAIK",
-      actionCode: (item as unknown as { actionCode?: string }).actionCode || "Ch",
-      notes: item.notes || undefined,
-      handler: item.handler || undefined,
-      photosCount: Array.isArray(item.photos) ? item.photos.length : 0,
-    })
+  const pdfData = await buildReportPdfData(
+    { ...report, room: report.room ?? report.task?.assignment?.room ?? null },
+    reportCode,
+    downloadFileFromDrive,
   )
-
-  // Collect photos from items
-  const photosList: PdfReportPhoto[] = []
-  for (let idx = 0; idx < rawItems.length; idx++) {
-    const item = rawItems[idx]
-    if (Array.isArray(item.photos) && item.photos.length > 0) {
-      for (const p of item.photos) {
-        if (p.fileId) {
-          let imgBytes: Buffer | null = null
-          try {
-            imgBytes = await downloadFileFromDrive(p.fileId)
-          } catch {
-            // fallback gracefully
-          }
-          photosList.push({
-            itemNo: idx + 1,
-            label: item.label,
-            condition: item.condition || "BAIK",
-            notes: item.notes,
-            fileId: p.fileId,
-            imageBytes: imgBytes,
-          })
-        }
-      }
-    }
-  }
-
-  const branchName =
-    report.equipment?.branchName || report.author.branchName || "HEAD OFFICE"
-  const areaName = report.area.name
-  const periodKey = report.periodKey || "2026-10"
-
-  const pdfData: PdfReportData = {
-    reportCode: report.reportCode || reportCode,
-    formCode: report.formCode || rawPayload.formCode || "FRM_TS_016",
-    formName: rawPayload.formName || `FORM CHECKLIST ${report.formCode || ""}`,
-    periodKey: periodKey,
-    periodLabel: report.period || "MONTHLY",
-    createdAt: report.createdAt,
-    branchName: branchName,
-    areaName: areaName,
-    roomName: report.room?.name,
-    equipmentName: report.equipment?.name,
-    equipmentCode: report.equipment?.code,
-    equipmentSerial: rawPayload.unitNo || report.equipment?.code || null,
-    equipmentBrand: rawPayload.unitBrand || null,
-    authorName: report.author.name,
-    authorNik: report.author.NIK,
-    isSafe: report.isSafe,
-    status: report.status,
-    approvalHistory: ((report as { approvalHistory?: unknown }).approvalHistory as any) || [],
-    checklistPayload: report.checklistPayload,
-    generalNotes: rawPayload.generalNotes,
-    items: formattedItems,
-    photos: photosList,
-  }
+  const branchName = pdfData.branchName
+  const areaName = pdfData.areaName
+  const periodKey = pdfData.periodKey
 
   // 1. Generate PDF buffer
   let pdfBuffer: Buffer

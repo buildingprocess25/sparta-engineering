@@ -2,6 +2,7 @@ export const ENGINEERING_FOLDER = "Engineering"
 export const CHECKLIST_FOLDER = "Checklist"
 export const REPORT_DOCUMENT_FOLDER = "01 - Dokumen"
 export const CHECKLIST_PHOTO_FOLDER = "02 - Foto Checklist"
+export const COMPLETION_PHOTO_FOLDER = "03 - Bukti Penyelesaian"
 
 export type ChecklistReportPathInput = {
   branchName: string
@@ -41,6 +42,10 @@ export function buildChecklistEvidenceRelativePath(
     sanitizeDriveSegment(input.formCode),
     `${sanitizeDriveSegment(input.itemId)} - ${sanitizeDriveSegment(input.itemName)}`,
   ]
+}
+
+export function buildCompletionEvidenceRelativePath(evidenceType: string): string[] {
+  return [COMPLETION_PHOTO_FOLDER, sanitizeDriveSegment(evidenceType)]
 }
 
 export function buildFinalPdfName(reportCode: string): string {

@@ -1,6 +1,7 @@
 import {
   buildChecklistEvidenceRelativePath,
   buildChecklistReportRelativePath,
+  buildCompletionEvidenceRelativePath,
   type ChecklistEvidencePathInput,
   type ChecklistReportPathInput,
   REPORT_DOCUMENT_FOLDER,
@@ -79,4 +80,16 @@ export async function ensureChecklistDocumentFolder(
   return ensureFolderPath(deps.gateway, reportFolderId, [
     REPORT_DOCUMENT_FOLDER,
   ])
+}
+
+export async function ensureCompletionEvidenceFolder(
+  deps: DriveHierarchyDeps,
+  input: ChecklistReportFolderInput & { evidenceType: string }
+): Promise<string> {
+  const reportFolderId = await ensureChecklistReportFolder(deps, input)
+  return ensureFolderPath(
+    deps.gateway,
+    reportFolderId,
+    buildCompletionEvidenceRelativePath(input.evidenceType)
+  )
 }

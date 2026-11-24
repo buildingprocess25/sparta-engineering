@@ -1,16 +1,30 @@
 import type { Prisma, PrismaClient, ReportStatus } from "@/generated/prisma"
 import {
+  asPayloadRecord,
+  getReportItems,
   hasCostEstimateFollowUp,
   requiresRequesterReview,
   needsChecklistFollowUp,
   needsPbProcurement,
 } from "./checklist-follow-up"
 import { nextChecklistVersion } from "./checklist-submission"
+import {
+  extractCompletionEvidencePhotoIds,
+  readStoredCompletionEvidence,
+  validateCompletionEvidence,
+} from "./completion-evidence"
+import { hasExecutionAction } from "./report-display"
 import { selectActiveWorkPermit } from "../work-permits/active-period"
 import { getWorkPermitCalendarPeriod } from "../work-permits/calendar"
 
 export type ReportReviewDecision = "approve" | "reject_revision" | "reject"
-export type SparePartExecutionAction = "PROCESS_PB" | "START_WORK" | "FINISH_WORK"
+export type ReportExecutionAction =
+  | "PROCESS_PJU"
+  | "PROCESS_PB"
+  | "PICKUP_STOCK"
+  | "START_WORK"
+  | "FINISH_WORK"
+export type SparePartExecutionAction = ReportExecutionAction
 
 export async function saveChecklistReview(prisma: PrismaClient, input: {
   reportId: string
@@ -131,8 +145,10 @@ export async function executeReportSparePartWork(
     reportId: string
     version: string
     actorId: string
-    action: SparePartExecutionAction
+    action: ReportExecutionAction
     notes?: string
+    referenceNo?: string
+    completionEvidence?: unknown
   },
 ) {
   return prisma.$transaction(async (tx) => {
@@ -152,6 +168,8 @@ export async function executeReportSparePartWork(
         reportCode: true,
         updatedAt: true,
         authorId: true,
+        checklistPayload: true,
+        drivePhotoFileIds: true,
         executionHistory: true,
         author: { select: { branchName: true, NIK: true } },
       },
@@ -166,26 +184,60 @@ export async function executeReportSparePartWork(
       return { error: "Hanya teknisi pembuat laporan yang dapat mencatat pelaksanaan pekerjaan." }
     }
 
-    const stale = { error: "Status laporan sudah berubah atau tidak valid. Muat ulang halaman." }
-    if (report.updatedAt.toISOString() !== input.version) return stale
+    if (report.status === "COMPLETED") {
+      return { error: "Laporan yang telah berstatus Selesai tidak dapat diubah kembali." }
+    }
+
+    const versionMismatch = { error: "Versi laporan sudah berubah karena ada pembaruan terbaru. Muat ulang halaman lalu coba lagi." }
+    const invalidStatus = { error: "Status laporan tidak sesuai dengan tahapan pelaksanaan yang diminta. Muat ulang halaman." }
+    if (report.updatedAt.toISOString() !== input.version) return versionMismatch
 
     let expectedStatus: ReportStatus
     let nextStatus: ReportStatus
+    let nextPayload: Prisma.InputJsonValue | undefined
+    let nextDrivePhotoFileIds: string[] | undefined
 
-    if (input.action === "PROCESS_PB") {
+    if (input.action === "PROCESS_PJU") {
+      if (report.status !== "WAITING_PJU" || !hasCostEstimateFollowUp(report.checklistPayload)) {
+        return invalidStatus
+      }
+      expectedStatus = "WAITING_PJU"
+      nextStatus = "WAITING_PJU"
+    } else if (input.action === "PROCESS_PB") {
+      if (report.status !== "WAITING_PB") {
+        return invalidStatus
+      }
       expectedStatus = "WAITING_PB"
       nextStatus = "WAITING_PARTS"
-    } else if (input.action === "START_WORK") {
+    } else if (input.action === "PICKUP_STOCK") {
+      if (report.status !== "WAITING_PARTS") {
+        return invalidStatus
+      }
       expectedStatus = "WAITING_PARTS"
+      nextStatus = "WAITING_PARTS"
+    } else if (input.action === "START_WORK") {
+      if (report.status === "WAITING_PJU") {
+        if (!hasExecutionAction(report.executionHistory, "PROCESS_PJU")) {
+          return { error: "Catat proses PJU Online terlebih dahulu sebelum memulai pekerjaan." }
+        }
+        expectedStatus = "WAITING_PJU"
+      } else if (report.status === "WAITING_PARTS") {
+        expectedStatus = "WAITING_PARTS"
+      } else {
+        return invalidStatus
+      }
       nextStatus = "IN_PROGRESS"
     } else if (input.action === "FINISH_WORK") {
+      if (report.status !== "IN_PROGRESS") {
+        return invalidStatus
+      }
       expectedStatus = "IN_PROGRESS"
       nextStatus = "COMPLETED"
     } else {
       return { error: "Aksi pelaksanaan pekerjaan tidak valid." }
     }
 
-    if (report.status !== expectedStatus) return stale
+    if (report.status !== expectedStatus) return invalidStatus
 
     // Periksa izin kerja aktif untuk aksi START_WORK dan FINISH_WORK
     if (input.action === "START_WORK" || input.action === "FINISH_WORK") {
@@ -212,6 +264,51 @@ export async function executeReportSparePartWork(
     }
 
     const now = nextChecklistVersion(report.updatedAt)
+
+    if (input.action === "FINISH_WORK") {
+      const evidenceCheck = validateCompletionEvidence(
+        report.checklistPayload,
+        input.completionEvidence,
+      )
+      if (!evidenceCheck.valid || !evidenceCheck.normalized) {
+        return { error: evidenceCheck.errors.join(" ") }
+      }
+
+      const storedDriveIds = Array.isArray(report.drivePhotoFileIds)
+        ? report.drivePhotoFileIds.filter((id): id is string => typeof id === "string")
+        : []
+      const existingCompletionIds = extractCompletionEvidencePhotoIds(
+        readStoredCompletionEvidence(report.checklistPayload),
+      )
+      const existingChecklistIds = getReportItems(report.checklistPayload).flatMap((item) =>
+        Array.isArray(item.photos) ? item.photos.map((p) => p.fileId) : [],
+      )
+      const allowedPhotoIds = new Set([
+        ...storedDriveIds,
+        ...existingCompletionIds,
+        ...existingChecklistIds,
+      ])
+
+      const submittedPhotoIds = extractCompletionEvidencePhotoIds(evidenceCheck.normalized)
+      if (submittedPhotoIds.some((id) => !allowedPhotoIds.has(id))) {
+        return {
+          error: "Referensi foto bukti penyelesaian tidak valid atau bukan milik laporan ini.",
+        }
+      }
+
+      const storedEvidence = {
+        ...evidenceCheck.normalized,
+        submittedAt: now.toISOString(),
+        submittedByNik: actor.NIK,
+        submittedByName: actor.name,
+      }
+      nextPayload = {
+        ...asPayloadRecord(report.checklistPayload),
+        completionEvidence: storedEvidence,
+      } as Prisma.InputJsonValue
+      nextDrivePhotoFileIds = [...new Set([...storedDriveIds, ...submittedPhotoIds])]
+    }
+
     const existingHistory = Array.isArray(report.executionHistory)
       ? (report.executionHistory as Array<Record<string, unknown>>)
       : []
@@ -223,6 +320,7 @@ export async function executeReportSparePartWork(
       action: input.action,
       previousStatus: expectedStatus,
       nextStatus,
+      referenceNo: input.referenceNo?.trim() || undefined,
       notes: input.notes?.trim() || "",
       performedAt: now.toISOString(),
     }
@@ -237,9 +335,11 @@ export async function executeReportSparePartWork(
         status: nextStatus,
         updatedAt: now,
         executionHistory: [...existingHistory, auditRecord] as Prisma.InputJsonValue,
+        ...(nextPayload !== undefined ? { checklistPayload: nextPayload } : {}),
+        ...(nextDrivePhotoFileIds !== undefined ? { drivePhotoFileIds: nextDrivePhotoFileIds } : {}),
       },
     })
-    if (!updated.count) return stale
+    if (!updated.count) return versionMismatch
 
     return { nextStatus, reportCode: report.reportCode }
   })

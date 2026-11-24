@@ -2,6 +2,7 @@ import "server-only"
 
 import { Readable } from "node:stream"
 
+import { getDriveCdnClient } from "@/lib/google-drive/cdn-client"
 import { getGoogleDriveClient } from "@/lib/google-drive/client"
 import { createGoogleFolderGateway } from "@/lib/google-drive/folder-gateway"
 
@@ -132,6 +133,19 @@ export async function downloadFileFromDrive(fileId: string): Promise<Buffer | nu
     )
     if (response?.data) {
       return Buffer.from(response.data as ArrayBuffer)
+    }
+  } catch (err) {
+    console.warn(`[Drive download fallback] primary failed for ${fileId}:`, err)
+  }
+
+  try {
+    const { drive: cdnDrive } = getDriveCdnClient()
+    const cdnResp = await cdnDrive.files.get(
+      { fileId, alt: "media", supportsAllDrives: true },
+      { responseType: "arraybuffer" }
+    )
+    if (cdnResp?.data) {
+      return Buffer.from(cdnResp.data as ArrayBuffer)
     }
     return null
   } catch (err) {

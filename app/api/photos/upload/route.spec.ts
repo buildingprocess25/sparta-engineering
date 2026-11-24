@@ -170,3 +170,72 @@ const driveRejects = createPhotoUploadPostHandler({
 const rejectedResponse = await driveRejects(await makeRequest(goodContext))
 assert.equal(rejectedResponse.status, 502)
 assert.equal(typeof (await rejectedResponse.json()).error, "string")
+
+// Completion evidence upload: allowed in IN_PROGRESS with active permit and records photo ownership.
+const recordedIds: string[] = []
+const completionHandler = createPhotoUploadPostHandler({
+  getSession: async () => ({ userId: "ES001", role: "ES" }),
+  loadReport: async () => ({
+    reportCode: "ENG-OFFICE-202609-001",
+    authorId: "ES001",
+    status: "IN_PROGRESS",
+    formCode: "FRM_TSM_003",
+    periodKey: "2026-09",
+    area: { name: "Office" },
+    author: { branchName: "BANJARMASIN" },
+  }),
+  hasActiveWorkPermit: async (authorId) => authorId === "ES001",
+  recordUploadedPhoto: async (_code, fileId, kind) => {
+    recordedIds.push(`${kind}:${fileId}`)
+    return "2026-11-24T06:30:00.000Z"
+  },
+  rootFolderId: "root",
+  ensureEvidenceFolder: async () => "evidence-unused",
+  ensureCompletionEvidenceFolder: async () => "completion-folder-1",
+  uploadPhoto: async () => ({
+    success: true,
+    fileId: "comp-photo-1",
+    url: "/api/photos/comp-photo-1",
+  }),
+})
+const compOk = await completionHandler(
+  await makeRequest({
+    kind: "COMPLETION_EVIDENCE",
+    reportCode: "ENG-OFFICE-202609-001",
+    evidenceType: "WORK_PROGRESS",
+  }),
+)
+assert.equal(compOk.status, 200)
+assert.deepEqual(await compOk.json(), {
+  fileId: "comp-photo-1",
+  url: "/api/photos/comp-photo-1",
+  reportVersion: "2026-11-24T06:30:00.000Z",
+})
+assert.deepEqual(recordedIds, ["COMPLETION_EVIDENCE:comp-photo-1"])
+
+// Completion evidence rejected when report is COMPLETED or draft without IN_PROGRESS.
+const completedReject = createPhotoUploadPostHandler({
+  getSession: async () => ({ userId: "ES001", role: "ES" }),
+  loadReport: async () => ({
+    reportCode: "ENG-OFFICE-202609-001",
+    authorId: "ES001",
+    status: "COMPLETED",
+    formCode: "FRM_TSM_003",
+    periodKey: "2026-09",
+    area: { name: "Office" },
+    author: { branchName: "BANJARMASIN" },
+  }),
+  hasActiveWorkPermit: async () => true,
+  rootFolderId: "root",
+  ensureEvidenceFolder: async () => "evidence-unused",
+  ensureCompletionEvidenceFolder: async () => "completion-folder-1",
+  uploadPhoto: async () => ({ success: true, fileId: "comp-photo-2", url: "/api/photos/comp-photo-2" }),
+})
+const compCompletedResp = await completedReject(
+  await makeRequest({
+    kind: "COMPLETION_EVIDENCE",
+    reportCode: "ENG-OFFICE-202609-001",
+    evidenceType: "WORK_PROGRESS",
+  }),
+)
+assert.equal(compCompletedResp.status, 422)

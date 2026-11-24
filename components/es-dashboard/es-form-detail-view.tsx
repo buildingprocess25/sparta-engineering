@@ -29,9 +29,11 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChecklistStatusBadge } from "@/components/es-dashboard/checklist-status-badge"
+import { CompletionEvidencePanel } from "@/components/es-dashboard/completion-evidence-panel"
 import { WORK_PERMIT_STATUS_LABELS } from "@/lib/work-permits/status-labels"
 import type { WorkPermitStatus } from "@/generated/prisma"
 import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
@@ -42,10 +44,44 @@ import { PALLET_MOVER_CATEGORIES } from "@/lib/checklists/frm-ts-016"
 import { FORKLIFT_MONTHLY_CATEGORIES } from "@/lib/checklists/frm-ts-029"
 import { GENSET_CATEGORIES } from "@/lib/checklists/frm-ts-022"
 import { getChecklistConfig } from "@/lib/checklists/registry"
-import { getReportItems } from "@/lib/reports/checklist-follow-up"
+import {
+  FORM_014_LABEL,
+  FORM_065_LABEL,
+  getReportItems,
+  REPAIR_TANPA_BIAYA,
+  REPAIR_TANPA_BIAYA_LABEL,
+} from "@/lib/reports/checklist-follow-up"
+import {
+  COMPLETION_EVIDENCE_LABELS,
+  readStoredCompletionEvidence,
+} from "@/lib/reports/completion-evidence"
+import {
+  formatChecklistPeriodLabel,
+  getReportCompletenessSummary,
+  hasExecutionAction,
+  normalizeApprovalHistory,
+  normalizeExecutionHistory,
+} from "@/lib/reports/report-display"
 import type { ChecklistRevisionHistory } from "@/lib/reports/checklist-revision-history"
 import { RevisionHistory } from "@/components/reports/checklist-revision-history"
 import { executeReportSparePartAction } from "@/app/dashboard/reports/actions"
+
+function formatIndoWib(dateInput?: string | null): string {
+  if (!dateInput) return "-"
+  const d = new Date(dateInput)
+  if (Number.isNaN(d.getTime())) return "-"
+  return (
+    new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d) + " WIB"
+  )
+}
 
 export interface EsFormDetailViewProps {
   report: {
@@ -85,6 +121,8 @@ export interface EsFormDetailViewProps {
       branchName: string | null
     }
     checklistPayload: unknown
+    approvalHistory?: unknown
+    executionHistory?: unknown
     revisions: ChecklistRevisionHistory[]
     workPermit?: {
       id: string
@@ -121,15 +159,36 @@ export function EsFormDetailView({
   const [openCategories, setOpenCategories] = React.useState<Record<string, boolean>>({})
   const [isExecutionPending, startExecution] = React.useTransition()
   const [executionFeedback, setExecutionFeedback] = React.useState<{ message: string; isError: boolean } | null>(null)
+  const [execReferenceNo, setExecReferenceNo] = React.useState("")
+  const [execNotes, setExecNotes] = React.useState("")
+  const [syncedVersion, setSyncedVersion] = React.useState<{ base: string; latest: string } | null>(null)
+  const currentReportVersion =
+    syncedVersion && syncedVersion.base === report.updatedAt ? syncedVersion.latest : report.updatedAt
+  const setCurrentReportVersion = React.useCallback(
+    (nextVersion: string) => {
+      setSyncedVersion({ base: report.updatedAt, latest: nextVersion })
+    },
+    [report.updatedAt],
+  )
 
-  function handleExecuteAction(action: "PROCESS_PB" | "START_WORK" | "FINISH_WORK") {
+  function handleExecuteAction(
+    action: "PROCESS_PJU" | "PROCESS_PB" | "PICKUP_STOCK" | "START_WORK" | "FINISH_WORK",
+  ) {
     startExecution(async () => {
       try {
-        const result = await executeReportSparePartAction(report.id, action, "", report.updatedAt)
+        const result = await executeReportSparePartAction(
+          report.id,
+          action,
+          execNotes,
+          currentReportVersion,
+          execReferenceNo.trim() ? { referenceNo: execReferenceNo.trim() } : undefined,
+        )
         if (!result.success) {
           setExecutionFeedback({ message: result.error || "Gagal memproses aksi pelaksanaan.", isError: true })
           return
         }
+        setExecReferenceNo("")
+        setExecNotes("")
         setExecutionFeedback({ message: result.message || "Aksi berhasil diproses.", isError: false })
         router.refresh()
       } catch {
@@ -166,15 +225,39 @@ export function EsFormDetailView({
         ? "Checklist FORKLIFT Weekly"
         : `Checklist ${formCode || "Pemeriksaan"}`)
 
-  // Week calculation from periodKey / payload
-  const weekLabel = React.useMemo(() => {
-    if (payload.subPeriodLabel) return payload.subPeriodLabel
-    if (payload.periodKey && payload.periodKey.includes("-W")) {
-      const match = payload.periodKey.match(/-W0?(\d+)/)
-      if (match) return `Minggu ${match[1]}`
-    }
-    return "Minggu Berjalan"
-  }, [payload.periodKey, payload.subPeriodLabel])
+  const periodLabel = React.useMemo(
+    () =>
+      formatChecklistPeriodLabel(
+        report.period || payload.period,
+        report.periodKey || payload.periodKey,
+        payload.subPeriodLabel,
+      ),
+    [report.period, report.periodKey, payload.period, payload.periodKey, payload.subPeriodLabel],
+  )
+
+  const completeness = React.useMemo(
+    () =>
+      getReportCompletenessSummary({
+        status: report.status,
+        checklistPayload: report.checklistPayload,
+        expectedItems: formConfig?.items?.length ?? null,
+      }),
+    [report.status, report.checklistPayload, formConfig?.items?.length],
+  )
+  const normalizedApproval = React.useMemo(
+    () => normalizeApprovalHistory(report.approvalHistory),
+    [report.approvalHistory],
+  )
+  const normalizedExecution = React.useMemo(
+    () => normalizeExecutionHistory(report.executionHistory),
+    [report.executionHistory],
+  )
+  const storedEvidence = React.useMemo(
+    () => readStoredCompletionEvidence(report.checklistPayload),
+    [report.checklistPayload],
+  )
+  const pjuRecorded = hasExecutionAction(report.executionHistory, "PROCESS_PJU")
+  const stockPickedUp = hasExecutionAction(report.executionHistory, "PICKUP_STOCK")
 
   // Count conditions
   const conditionStats = React.useMemo(() => {
@@ -371,56 +454,138 @@ export function EsFormDetailView({
           </section>
         )}
         <RevisionHistory revisions={report.revisions.filter((entry) => entry.resubmittedAt)} />
-        {(report.status === "WAITING_PB" || report.status === "WAITING_PARTS" || report.status === "IN_PROGRESS") && (
+        {(report.status === "WAITING_PJU" ||
+          report.status === "WAITING_PB" ||
+          report.status === "WAITING_PARTS" ||
+          report.status === "IN_PROGRESS") && (
           <Card>
             <CardHeader>
               <CardTitle>
-                {report.status === "WAITING_PB"
-                  ? "Pengadaan spare part"
-                  : report.status === "WAITING_PARTS"
-                    ? "Penyiapan spare part"
-                    : "Perbaikan unit"}
+                {report.status === "WAITING_PJU"
+                  ? "Proses PJU Online (Form 014)"
+                  : report.status === "WAITING_PB"
+                    ? "Pengadaan Baru (PB)"
+                    : report.status === "WAITING_PARTS"
+                      ? "Pengambilan Stock & Penyiapan Unit"
+                      : "Pelaksanaan & Bukti Penyelesaian"}
               </CardTitle>
               <CardDescription>
-                {report.status === "WAITING_PB"
-                  ? "Koordinasikan pengadaan dengan logistik, lalu konfirmasi saat spare part siap."
-                  : report.status === "WAITING_PARTS"
-                    ? "Spare part tersedia. Pastikan izin kerja bulan ini aktif sebelum mulai."
-                    : "Setelah penggantian dan uji coba selesai, catat penyelesaian pekerjaan."}
+                {report.status === "WAITING_PJU"
+                  ? "Catat nomor/keterangan PJU Online terlebih dahulu sebelum memulai pekerjaan lapangan."
+                  : report.status === "WAITING_PB"
+                    ? "Catat proses pengadaan PB setelah konfirmasi dari logistik."
+                    : report.status === "WAITING_PARTS"
+                      ? "Catat pengambilan stock barang bila diperlukan, lalu pastikan Izin Kerja bulan berjalan aktif sebelum memulai pekerjaan."
+                      : "Lengkapi seluruh bukti penyelesaian pekerjaan untuk menutup laporan menjadi Selesai."}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap items-center gap-2">
-                {report.status === "WAITING_PB" && (
-                  <Button
-                    disabled={isExecutionPending}
-                    onClick={() => handleExecuteAction("PROCESS_PB")}
-                    size="lg"
-                  >
-                    Konfirmasi PB Diproses / Part Siap
-                  </Button>
-                )}
-                {report.status === "WAITING_PARTS" && (
-                  <Button
-                    disabled={isExecutionPending}
-                    onClick={() => handleExecuteAction("START_WORK")}
-                    size="lg"
-                  >
-                    Mulai Pekerjaan Perbaikan
-                  </Button>
-                )}
-                {report.status === "IN_PROGRESS" && (
-                  <Button
-                    disabled={isExecutionPending}
-                    onClick={() => handleExecuteAction("FINISH_WORK")}
-                    size="lg"
-                  >
-                    Selesaikan Pekerjaan (Selesai)
-                  </Button>
-                )}
-              </div>
+            <CardContent className="flex flex-col gap-3">
+              {report.status !== "IN_PROGRESS" && (
+                <>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Input
+                      value={execReferenceNo}
+                      disabled={isExecutionPending}
+                      onChange={(e) => setExecReferenceNo(e.target.value)}
+                      placeholder={
+                        report.status === "WAITING_PJU"
+                          ? "No. PJU Online (opsional)"
+                          : report.status === "WAITING_PB"
+                            ? "No. PB / Pengadaan (opsional)"
+                            : "No. Referensi / Dokumen (opsional)"
+                      }
+                    />
+                    <Input
+                      value={execNotes}
+                      disabled={isExecutionPending}
+                      onChange={(e) => setExecNotes(e.target.value)}
+                      placeholder="Catatan tahap pelaksanaan (opsional)"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {report.status === "WAITING_PJU" && (
+                      <>
+                        <Button
+                          disabled={isExecutionPending}
+                          variant={pjuRecorded ? "outline" : "default"}
+                          onClick={() => handleExecuteAction("PROCESS_PJU")}
+                          size="lg"
+                        >
+                          {pjuRecorded ? "Catat Ulang Proses PJU Online" : "Catat Proses PJU Online"}
+                        </Button>
+                        {pjuRecorded && (
+                          <Button
+                            disabled={isExecutionPending}
+                            onClick={() => handleExecuteAction("START_WORK")}
+                            size="lg"
+                          >
+                            Mulai Pekerjaan Perbaikan
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    {report.status === "WAITING_PB" && (
+                      <Button
+                        disabled={isExecutionPending}
+                        onClick={() => handleExecuteAction("PROCESS_PB")}
+                        size="lg"
+                      >
+                        Konfirmasi PB Diproses / Part Siap
+                      </Button>
+                    )}
+                    {report.status === "WAITING_PARTS" && (
+                      <>
+                        <Button
+                          disabled={isExecutionPending}
+                          variant={stockPickedUp ? "outline" : "secondary"}
+                          onClick={() => handleExecuteAction("PICKUP_STOCK")}
+                          size="lg"
+                        >
+                          {stockPickedUp
+                            ? "Catat Ulang Pengambilan Stock"
+                            : "Catat Pengambilan Stock Barang"}
+                        </Button>
+                        <Button
+                          disabled={isExecutionPending}
+                          onClick={() => handleExecuteAction("START_WORK")}
+                          size="lg"
+                        >
+                          Mulai Pekerjaan Perbaikan
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {report.status === "IN_PROGRESS" && (
+                <CompletionEvidencePanel
+                  reportId={report.id}
+                  reportCode={report.reportCode}
+                  reportVersion={currentReportVersion}
+                  onVersionChange={setCurrentReportVersion}
+                  checklistPayload={report.checklistPayload}
+                  authorName={report.author.name}
+                  authorNik={report.author.NIK}
+                  disabled={isExecutionPending}
+                  onSuccess={() => {
+                    setExecutionFeedback({
+                      message: "Bukti penyelesaian lengkap tersimpan dan laporan berstatus Selesai.",
+                      isError: false,
+                    })
+                    router.refresh()
+                  }}
+                />
+              )}
+
               {executionFeedback && (
-                <p className={cn("mt-2 text-xs font-semibold", executionFeedback.isError ? "text-rose-700" : "text-emerald-700")}>
+                <p
+                  role={executionFeedback.isError ? "alert" : "status"}
+                  className={cn(
+                    "text-xs font-semibold",
+                    executionFeedback.isError ? "text-rose-700" : "text-emerald-700",
+                  )}
+                >
                   {executionFeedback.message}
                 </p>
               )}
@@ -444,7 +609,7 @@ export function EsFormDetailView({
             <div className="flex flex-col items-end shrink-0">
               <span className="inline-flex items-center gap-1 rounded-md bg-[#f5f5f3] border border-[#e8e8e6] px-2 py-1 text-[11px] font-bold text-[#111111]">
                 <Calendar className="size-3 text-[#ff8a2a]" />
-                {weekLabel}
+                {periodLabel}
               </span>
             </div>
           </div>
@@ -526,21 +691,48 @@ export function EsFormDetailView({
           </div>
         </div>
 
-        {/* Summary Condition Counts Bar */}
-        <div className="flex items-center justify-between rounded-xl border border-[#dedede] bg-white p-3 shadow-xs text-xs">
-          <div>
-            <span className="font-bold text-[#111111]">Total Titik Periksa</span>
-            <p className="text-[11px] text-[#707784]">{conditionStats.total} item checklist</p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="rounded-md bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800 text-[11px]">
-              {conditionStats.baik} Baik
-            </span>
-            {conditionStats.rusak > 0 && (
-              <span className="rounded-md bg-rose-100 px-2 py-0.5 font-bold text-rose-800 text-[11px]">
-                {conditionStats.rusak} Rusak
+        {/* Summary Condition Counts & Completeness Bar */}
+        <div className="flex flex-col gap-2 rounded-xl border border-[#dedede] bg-white p-3 shadow-xs text-xs">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="font-bold text-[#111111]">Total Titik Periksa</span>
+              <p className="text-[11px] text-[#707784]">
+                {completeness.filledItems}
+                {completeness.expectedItems ? ` / ${completeness.expectedItems}` : ""} item checklist
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="rounded-md bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800 text-[11px]">
+                {conditionStats.baik} Baik
               </span>
-            )}
+              {conditionStats.rusak > 0 && (
+                <span className="rounded-md bg-rose-100 px-2 py-0.5 font-bold text-rose-800 text-[11px]">
+                  {conditionStats.rusak} Bermasalah
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-[#f0f0f0] pt-2">
+            <Badge
+              variant="outline"
+              className={
+                completeness.followUpComplete
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : "border-amber-200 bg-amber-50 text-amber-900"
+              }
+            >
+              Tindak Lanjut: {completeness.followUpLabel}
+            </Badge>
+            <Badge
+              variant="outline"
+              className={
+                completeness.evidenceComplete
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : "border-amber-200 bg-amber-50 text-amber-900"
+              }
+            >
+              {completeness.evidenceLabel}
+            </Badge>
           </div>
         </div>
 
@@ -686,6 +878,7 @@ export function EsFormDetailView({
                                           className="block w-full text-left outline-none"
                                         >
                                           <Image
+                                            unoptimized
                                             src={photo.url}
                                             alt={`Foto bukti ${item.label}`}
                                             width={640}
@@ -725,12 +918,13 @@ export function EsFormDetailView({
                                     <Badge variant="outline" className="h-auto max-w-full whitespace-normal border-orange-200 bg-orange-50 text-orange-900">
                                       <Wrench data-icon="inline-start" aria-hidden="true" />
                                       <span>
-                                        {item.repairFormName ||
-                                          (item.repairForm?.includes("065")
-                                            ? "Form Penggantian Spare Part (065)"
+                                        {item.repairForm === REPAIR_TANPA_BIAYA
+                                          ? REPAIR_TANPA_BIAYA_LABEL
+                                          : item.repairForm?.includes("065")
+                                            ? FORM_065_LABEL
                                             : item.repairForm?.includes("014")
-                                              ? "Form Estimasi Biaya Sipil & ME (014)"
-                                              : item.repairForm)}
+                                              ? FORM_014_LABEL
+                                              : item.repairFormName || item.repairForm}
                                       </span>
                                     </Badge>
                                   </dd>
@@ -747,6 +941,112 @@ export function EsFormDetailView({
             )
           })}
         </div>
+
+        {/* Stored Completion Evidence Summary */}
+        {storedEvidence && (storedEvidence.form014 || storedEvidence.form065) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Bukti Penyelesaian Tersimpan</CardTitle>
+              <CardDescription>
+                Dilaporkan oleh {storedEvidence.submittedByName || storedEvidence.submittedByNik || "-"} pada{" "}
+                {formatIndoWib(storedEvidence.submittedAt)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 text-xs">
+              {storedEvidence.form014 && (
+                <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-3 flex flex-col gap-2">
+                  <p className="font-bold text-orange-950">
+                    Actual Pembelian Barang (Form 014): Rp{" "}
+                    {storedEvidence.form014.actualPurchaseAmount.toLocaleString("id-ID")}
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: COMPLETION_EVIDENCE_LABELS.WORK_PROGRESS, photos: storedEvidence.form014.workPhotos },
+                      { label: COMPLETION_EVIDENCE_LABELS.PURCHASE_RECEIPT, photos: storedEvidence.form014.receiptPhotos },
+                      { label: COMPLETION_EVIDENCE_LABELS.REFUND_TRANSFER, photos: storedEvidence.form014.refundTransferPhotos },
+                    ].map((group) =>
+                      group.photos.map((photo, idx) => (
+                        <button
+                          key={photo.fileId}
+                          type="button"
+                          onClick={() => setPreviewPhoto({ itemLabel: `${group.label} (${idx + 1})`, url: photo.url })}
+                          className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white"
+                        >
+                          <Image unoptimized src={photo.url} alt={group.label} fill sizes="120px" className="object-cover" />
+                        </button>
+                      )),
+                    )}
+                  </div>
+                </div>
+              )}
+              {storedEvidence.form065 && (
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3 flex flex-col gap-2">
+                  <p className="font-bold text-indigo-950">
+                    Serah Terima Unit (Form 065): {storedEvidence.form065.handoverRecipient}
+                  </p>
+                  {storedEvidence.form065.handoverNotes && (
+                    <p className="text-slate-700">{storedEvidence.form065.handoverNotes}</p>
+                  )}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: COMPLETION_EVIDENCE_LABELS.REPAIR_UNIT, photos: storedEvidence.form065.repairWithUnitPhotos },
+                      { label: COMPLETION_EVIDENCE_LABELS.USER_SELFIE, photos: storedEvidence.form065.selfieWithUserPhotos },
+                    ].map((group) =>
+                      group.photos.map((photo, idx) => (
+                        <button
+                          key={photo.fileId}
+                          type="button"
+                          onClick={() => setPreviewPhoto({ itemLabel: `${group.label} (${idx + 1})`, url: photo.url })}
+                          className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white"
+                        >
+                          <Image unoptimized src={photo.url} alt={group.label} fill sizes="120px" className="object-cover" />
+                        </button>
+                      )),
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Approval & Execution Timelines */}
+        {(normalizedApproval.length > 0 || normalizedExecution.length > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Histori Persetujuan &amp; Pelaksanaan</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 text-xs">
+              {normalizedApproval.map((entry, idx) => (
+                <div key={`app-${idx}`} className="flex flex-col gap-0.5 border-l-2 border-emerald-400 pl-3">
+                  <span className="font-bold text-slate-900">
+                    {entry.decision === "approve"
+                      ? `Disetujui ${entry.role} (${entry.actorName})`
+                      : entry.decision === "reject_revision"
+                        ? `Minta Revisi ${entry.role} (${entry.actorName})`
+                        : `Ditolak ${entry.role} (${entry.actorName})`}
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {formatIndoWib(entry.decidedAt)}
+                    {entry.notes ? ` · "${entry.notes}"` : ""}
+                  </span>
+                </div>
+              ))}
+              {normalizedExecution.map((entry, idx) => (
+                <div key={`exec-${idx}`} className="flex flex-col gap-0.5 border-l-2 border-blue-400 pl-3">
+                  <span className="font-bold text-slate-900">
+                    {entry.actionLabel} · {entry.actorName} ({entry.actorNik})
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {formatIndoWib(entry.performedAt)}
+                    {entry.referenceNo ? ` · Ref: ${entry.referenceNo}` : ""}
+                    {entry.notes ? ` · ${entry.notes}` : ""}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* General Notes (if any) */}
         {payload.generalNotes && (
@@ -790,6 +1090,7 @@ export function EsFormDetailView({
             onClick={(e) => e.stopPropagation()}
           >
             <Image
+              unoptimized
               src={previewPhoto.url}
               alt={`Preview foto bukti ${previewPhoto.itemLabel}`}
               width={1280}

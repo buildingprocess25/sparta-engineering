@@ -2,7 +2,11 @@ import type { ChecklistPayloadItem } from "@/lib/checklists/payload"
 import { isFrmTsm001Payload } from "@/lib/checklists/payload-001"
 
 export const FORM_014 = "SAT/FRM/TSM/014_REV:000_060423"
+export const FORM_014_LABEL = "Form Estimasi Biaya Sipil & ME (014)"
 export const FORM_065 = "SAT/FRM/TS/065_REV:00_161020"
+export const FORM_065_LABEL = "Form Perbaikan / Penggantian Spare Part Equipment (065)"
+export const REPAIR_TANPA_BIAYA = "REPAIR_TANPA_BIAYA"
+export const REPAIR_TANPA_BIAYA_LABEL = "Repair Tanpa Biaya"
 
 type Material = {
   id: string
@@ -146,8 +150,20 @@ export function hasCostEstimateFollowUp(payload: unknown): boolean {
   return getReportItems(payload).some((item) => followUpForm(item) === FORM_014)
 }
 
+export function hasForm065FollowUp(payload: unknown): boolean {
+  const data = asPayloadRecord(payload)
+  const isV7Form = isV7TargetFormCode(data.formCode)
+  return getReportItems(payload).some((item) => followUpForm(item, isV7Form) === FORM_065)
+}
+
+export function hasRepairWithoutCost(payload: unknown): boolean {
+  return getReportItems(payload).some(
+    (item) => item.repairForm === REPAIR_TANPA_BIAYA || item.repairFormName === REPAIR_TANPA_BIAYA_LABEL,
+  )
+}
+
 export function requiresRequesterReview(payload: unknown): boolean {
-  return hasCostEstimateFollowUp(payload) || hasSparePartReplacement(payload)
+  return hasCostEstimateFollowUp(payload) || hasForm065FollowUp(payload) || hasSparePartReplacement(payload)
 }
 
 export function needsPbProcurement(payload: unknown): boolean {

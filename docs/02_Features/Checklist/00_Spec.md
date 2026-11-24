@@ -97,7 +97,9 @@ Master pilihan area aktif, ruangan aktif, dan ketersediaan form disimpan dalam N
 
 - Endpoint `POST /api/photos/upload` (`app/api/photos/upload/handler.ts`) memvalidasi payload `multipart/form-data` yang gagal diparsing (`400`), file kosong `0 byte` (`400`), tipe MIME gambar (`image/jpeg`, `image/jpg`, `image/png`, `image/webp`; selainnya `400`), serta batas ukuran maksimal `4 MB` (`400`).
 - Kegagalan unggah yang ditolak Google Drive (`!uploaded.success`) mengembalikan HTTP `502`, sedangkan exception layanan penyimpanan mengembalikan HTTP `500` dengan payload JSON `{ error }`.
-- Respons sukses memakai kontrak JSON `{ fileId, url }` yang diparsing secara seragam oleh klien melalui helper `readPhotoUploadResponse` (`lib/photos/photo-upload-client.ts`), termasuk pada `FRM_TS_041`, `FRM_TSM_006`, dan `FRM_TSM_007`, serta tercakup unit test regresi pada `app/api/photos/upload/route.spec.ts` dan `lib/photos/photo-upload-client.spec.ts`.
+- Respons sukses memakai kontrak JSON `{ fileId, url, reportVersion? }` yang diparsing secara seragam oleh klien melalui helper `readPhotoUploadResponse` (`lib/photos/photo-upload-client.ts`), termasuk pada `FRM_TS_041`, `FRM_TSM_006`, dan `FRM_TSM_007`, serta tercakup unit test regresi pada `app/api/photos/upload/route.spec.ts` dan `lib/photos/photo-upload-client.spec.ts`. Saat unggah `COMPLETION_EVIDENCE` memperbarui `drivePhotoFileIds` di `ChecklistReport`, endpoint mengembalikan `reportVersion` (`updatedAt.toISOString()`) terbaru agar OCC pada form bukti penyelesaian tetap sinkron tanpa menghapus isian pengguna.
+- Tampilan foto terautentikasi `/api/photos/[fileId]` dimuat langsung oleh browser tanpa melewati Image Optimizer Next.js (`images: { unoptimized: true }` / `unoptimized`) sehingga cookie sesi tetap terkirim; header respons menyertakan `Vary: Cookie` dan `Cache-Control: private, max-age=3600`, serta resolver kepemilikan mendukung pencarian via `drivePhotoFileIds` dan fallback payload laporan.
+- Isolasi tugas **Checklist Rutin**: laporan non-rutin (`category: "INCIDENTAL"` atau `formCode` berakhiran `_REPAIR`) maupun laporan lama yang tidak terikat tugas (`taskId: null`) tidak boleh mengalihkan tugas preventif berstatus `PENDING` saat ES menekan **Kerjakan checklist**; sistem membuat draft baru yang terikat langsung ke `taskId` tersebut tanpa menghapus atau mengubah laporan historis.
 
 ## Aktivitas BES
 
@@ -734,9 +736,10 @@ Required behavior:
 Sesuai flowchart SPARTA Engineering, jika terdapat temuan kerusakan pada checklist:
 
 1. **Pilihan Form Tindak Lanjut Spesifik Kategori**:
-   - **Kategori Equipment / Alat Operasional**: Otomatis menggunakan `SAT/FRM/TS/065_REV:00_161020` (Form Penggantian Spare Part Equipment).
-   - **Kategori Ruangan / Fasilitas Bangunan**: Otomatis menggunakan `SAT/FRM/TSM/014_REV:000_060423` (Form Estimasi Biaya Sipil & ME).
-   - Opsi "Repair Tanpa Biaya" ditiadakan dari opsi tindak lanjut temuan kerusakan agar seluruh temuan kerusakan tercatat melalui form resmi (065 atau 014).
+   - **Kategori Equipment / Alat Operasional**: Routing otomatis tetap terpisah menggunakan `SAT/FRM/TS/065_REV:00_161020` (**Form Perbaikan / Penggantian Spare Part Equipment (065)**), disertai pilihan eksplisit **Repair Tanpa Biaya** (`REPAIR_TANPA_BIAYA`). Form 014 dan Form 065 tidak digabungkan menjadi pilihan manual.
+   - **Kategori Ruangan / Fasilitas Bangunan**: Routing otomatis tetap terpisah menggunakan `SAT/FRM/TSM/014_REV:000_060423` (**Form Estimasi Biaya Sipil & ME (014)**), disertai pilihan eksplisit **Repair Tanpa Biaya** (`REPAIR_TANPA_BIAYA`).
+   - Keputusan **Repair Tanpa Biaya** disimpan secara eksplisit (`repairForm = "REPAIR_TANPA_BIAYA"`, `repairFormName = "Repair Tanpa Biaya"`), tidak memicu pengisian Form 014/065, dan tetap mengikuti persetujuan **BEC (`COORD`) → Manager (`MANAGER`) → Selesai (`COMPLETED`)**.
+   - Validasi backend memeriksa kelengkapan item checklist sesuai form & periode aktif (termasuk `FRM_TSM_006` Hydrant dan `FRM_TSM_007` PLTS, serta minimal 1 temuan pada jalur `_REPAIR`), kepemilikan referensi foto terhadap `drivePhotoFileIds` laporan terkait, serta otorisasi akses laporan, foto (`/api/photos/[fileId]`), dan PDF (`/api/reports/[reportCode]/pdf`).
 
 2. **Alur Halaman Rekapitulasi Tindak Lanjut (`/dashboard/reports/[reportCode]/follow-up`)**:
    - Jika checklist memiliki item rusak, setelah submit checklist user diarahkan ke halaman pengisian form lanjutan (`/dashboard/reports/[reportCode]/follow-up`) sesuai jenisnya (065 untuk unit mesin/equipment, 014 untuk ruangan/gedung). Standardisasi ini berlaku di seluruh formulir checklist (FRM_TSM_001 s.d. FRM_TSM_013, FRM_TS_016 s.d. FRM_TS_064).

@@ -90,8 +90,13 @@ type ItemState = {
 const FOLLOW_UP_OPTIONS = [
   {
     id: "SAT/FRM/TS/065_REV:00_161020",
-    label: "Form Penggantian Spare Part (065)",
+    label: "Form Perbaikan / Penggantian Spare Part Equipment (065)",
     badge: "065",
+  },
+  {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+    badge: "Tanpa Biaya",
   },
 ]
 
@@ -335,6 +340,9 @@ export function FrmTsm013Form({
             : state.notes || (state.actionTaken ? `Tindakan: ${state.actionTaken}` : isAction ? "Pemeriksaan rutin berkala" : undefined),
           handler: isAction ? (state.handler || "BES") : state.handler,
           repairForm: state.repairForm,
+          repairFormName: state.repairForm
+            ? FOLLOW_UP_OPTIONS.find((f) => f.id === state.repairForm)?.label
+            : undefined,
           value: state.meterValue,
         }
       })

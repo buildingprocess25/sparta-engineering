@@ -157,6 +157,13 @@ export default async function FollowUpOrchestratorPage({
           targetName,
           isRoutine,
           createdAt: report.createdAt.toISOString(),
+          equipment: report.equipment
+            ? {
+                name: report.equipment.name,
+                unitNo: report.equipment.unitNo,
+                code: report.equipment.code,
+              }
+            : undefined,
         }}
       />
     </ReportFlowShell>

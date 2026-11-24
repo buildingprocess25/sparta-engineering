@@ -56,20 +56,20 @@
      - `Biaya`: Format stacked label `Estimasi` dan `Realisasi`.
      - `Status`: Pill badge status berjenjang (`Draft`, `Selesai`, `Review Coord`, `Review Manager`, `Revisi`, `Ditolak`).
      - `Aksi`: Tombol aksi detail laporan.
-5. **Halaman Detail Laporan (`/dashboard/reports/[reportCode]`) Berstandar Sparta Maintenance**:
+- **Halaman Detail Laporan (`/dashboard/reports/[reportCode]`) Berstandar Sparta Maintenance**:
    - Header & Navigasi: Breadcrumb `Laporan Maintenance > [reportCode]`, lonceng notifikasi, serta identitas user.
    - Hero Header: Kode laporan tebal, status badge, jumlah item bermasalah, serta tombol aksi:
-     - `Laporan Final PDF` (membuka/mengunduh PDF laporan resmi langsung atau via link Google Drive).
+     - `Laporan Final PDF` / `Lihat Draft PDF` (membuka `/api/reports/[reportCode]/pdf` yang terproteksi autentikasi & otorisasi).
      - `Siapkan Laporan Lengkap PDF` (generate/sinkronisasi ulang PDF ke Google Drive secara instan).
    - Metadata Info Card (2 baris informatif):
      - Baris 1: Target/Objek, Kode Unit/Ruangan, NIK & Nama Teknisi ES, Cabang.
-     - Baris 2: Komposisi Laporan (Status, Item bermasalah, Pekerjaan), Riwayat Waktu (Dibuat, Update, Selesai), Estimasi & Realisasi Biaya.
+     - Baris 2: Komposisi & Kelengkapan Form (Status, Item bermasalah, Indikator kelengkapan checklist/tindak lanjut/bukti penyelesaian, Label periode checklist sesuai `Bulanan`/`Mingguan`/`3 Bulanan`/`6 Bulanan`), Riwayat Waktu (Dibuat, Update, Selesai), Estimasi, Realisasi, & Selisih Biaya (Form 014), serta status Persetujuan aktual (`BEC`, `Manager`, `Requester` beserta timestamp WIB).
    - Tab Navigasi Terpadu:
-     - Tab `Checklist`: Kategori item form checklist resmi SAT (contoh: Pallet Mover `FRM_TS_016`, Fisik Gedung `FRM_TSM_005`, ME `FRM_TSM_002`/`003`) dengan ID, Item, Kondisi (`BAIK`, `RUSAK`, `REPAIR`, `TIDAK_ADA`), estimasi, dan foto bukti. Dilengkapi sub-filter (`Semua`, `Bermasalah`, `Ada foto`).
-     - Tab `Pekerjaan & Biaya`: Rincian perbaikan dan estimasi spare part temuan.
-     - Tab `Dokumentasi`: Galeri foto bukti visual checklist lapangan.
-     - Tab `Riwayat Aktivitas`: Kronologi status laporan dari pembuatan hingga persetujuan akhir.
-     - Tab `Aksi`: Panel keputusan Coordinator & Manager (Setujui, Minta Revisi, Tolak).
+     - Tab `Checklist`: Kategori item form checklist resmi SAT dengan ID, Item, Kondisi sesuai nilai tersimpan, estimasi, dan foto bukti. Dilengkapi sub-filter (`Semua`, `Bermasalah`, `Ada foto`).
+     - Tab `Pekerjaan & Biaya`: Rincian Form 014 (Estimasi Biaya Sipil & ME), Form 065 (Form Perbaikan / Penggantian Spare Part Equipment), atau status eksplisit `Repair Tanpa Biaya`, serta rincian bukti penyelesaian pekerjaan (foto pekerjaan, bon pembelian, transfer pengembalian dana, actual Rp untuk 014; serah terima unit, foto dengan unit saat perbaikan, foto selfie dengan user untuk 065). Untuk laporan historis yang berstatus `COMPLETED` sebelum aturan bukti penyelesaian diterapkan, indikator kelengkapan menampilkan `Selesai (Laporan Historis)` tanpa mewajibkan unggahan retroaktif.
+     - Tab `Dokumentasi`: Galeri foto bukti visual checklist lapangan & bukti penyelesaian pekerjaan.
+     - Tab `Riwayat Aktivitas`: Kronologi status laporan mencakup histori revisi, histori approval berjenjang (`BEC`, `Manager`, `Requester`) beserta catatan persetujuan opsional, serta histori pelaksanaan pekerjaan (`PJU Online`, `Proses PB`, `Pengambilan Stock`, `Mulai Pekerjaan`, `Selesai`) dengan timestamp server WIB dan identitas pelaksana.
+     - Tab `Aksi`: Panel keputusan Coordinator, Manager, & Requester (Setujui dengan kolom catatan opsional, Minta Revisi dan Tolak dengan catatan wajib). Modal review cepat di `/dashboard/reports` juga menyediakan kolom catatan persetujuan opsional untuk ACC.
 
 6. **Otomatisasi Generate PDF & Sinkronisasi Google Drive**:
    - Pemicu Submit: Saat teknisi ES melakukan submit laporan di `submitChecklistAction`, sistem langsung memproses pembuatan dokumen PDF resmi.

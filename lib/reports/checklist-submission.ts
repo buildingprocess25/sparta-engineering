@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma"
-import { completeChecklistFollowUp, needsChecklistFollowUp, retainChecklistFollowUp } from "./checklist-follow-up"
+import { completeChecklistFollowUp, getReportItems, needsChecklistFollowUp, retainChecklistFollowUp } from "./checklist-follow-up"
 
 export const editableChecklistOwner = (authorId: string) => ({
   authorId,
@@ -43,7 +43,7 @@ export async function saveChecklistSubmission(prisma: PrismaClient, input: {
       where: { reportCode: input.reportCode, status, ...owner },
       select: {
         id: true, taskId: true, formCode: true, period: true, periodKey: true,
-        updatedAt: true, checklistPayload: true, area: { select: { code: true } },
+        updatedAt: true, checklistPayload: true, drivePhotoFileIds: true, area: { select: { code: true } },
       },
     })
     if (!report || (isRevision && report.updatedAt.toISOString() !== input.revisionVersion)) return null
@@ -51,15 +51,25 @@ export async function saveChecklistSubmission(prisma: PrismaClient, input: {
       (report.periodKey && report.periodKey !== input.payload.periodKey) ||
       report.area.code !== input.payload.areaCode) return null
 
+    const storedDriveIds = Array.isArray(report.drivePhotoFileIds)
+      ? report.drivePhotoFileIds.filter((id): id is string => typeof id === "string")
+      : []
+    const existingItemPhotoIds = getReportItems(report.checklistPayload).flatMap((item) =>
+      Array.isArray(item.photos) ? item.photos.map((photo) => photo.fileId) : [],
+    )
+    const allowedPhotoIds = new Set([...storedDriveIds, ...existingItemPhotoIds])
+    if (input.photoFileIds.some((fileId) => !allowedPhotoIds.has(fileId))) return null
+
     const answers = { ...input.payload, period: report.period ?? input.payload.period }
     const payload = asChecklistJson(retainChecklistFollowUp(isRevision ? report.checklistPayload : null, answers))
     const pendingFollowUp = needsChecklistFollowUp(payload)
+    const mergedPhotoIds = [...new Set([...storedDriveIds, ...input.photoFileIds])]
     const now = nextChecklistVersion(report.updatedAt)
     const updated = await tx.checklistReport.updateMany({
       where: { id: report.id, status, updatedAt: report.updatedAt, ...owner },
       data: {
         checklistPayload: payload,
-        drivePhotoFileIds: input.photoFileIds,
+        drivePhotoFileIds: mergedPhotoIds,
         isSafe: input.isSafe,
         workPermitId: input.permitId,
         updatedAt: now,

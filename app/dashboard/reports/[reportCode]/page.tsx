@@ -31,7 +31,7 @@ export default async function ReportDetailPage({
       equipment: true,
       author: { select: { NIK: true, name: true, role: true, branchName: true } },
       workPermit: { select: { id: true, permitCode: true, status: true } },
-      task: { select: { assignment: { select: { userNik: true } } } },
+      task: { select: { assignment: { select: { userNik: true, room: true } } } },
       revisions: { orderBy: [{ requestedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }] },
     },
   })
@@ -64,6 +64,7 @@ export default async function ReportDetailPage({
 
   const serializedReport = {
     ...report,
+    room: report.room ?? report.task?.assignment?.room ?? null,
     reportCode,
     createdAt: report.createdAt.toISOString(),
     updatedAt: report.updatedAt.toISOString(),

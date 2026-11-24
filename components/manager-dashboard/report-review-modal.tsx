@@ -503,6 +503,21 @@ export function ReportReviewModal({
                     : "Laporan akan berstatus selesai dan diarsipkan ke riwayat pemeliharaan engineering."}
                 </p>
 
+                <label className="mt-3 block text-xs font-bold text-slate-700">
+                  Catatan persetujuan (opsional)
+                  <textarea
+                    rows={3}
+                    value={decisionNotes}
+                    disabled={isSubmitting}
+                    onChange={(e) => {
+                      setDecisionNotes(e.target.value)
+                      if (notesError) setNotesError(null)
+                    }}
+                    placeholder="Tambahkan catatan persetujuan jika diperlukan..."
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 p-2.5 text-xs font-normal text-slate-900 focus:border-[#ff8a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8a2a]/20"
+                  />
+                </label>
+
                 <div className="mt-4 flex items-center justify-end gap-2">
                   <button
                     type="button"

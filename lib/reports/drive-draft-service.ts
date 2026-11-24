@@ -17,6 +17,7 @@ export type ChecklistDraft = {
   authorId: string
   areaId: string
   roomId: string | null
+  category?: "PREVENTIVE" | "INCIDENTAL"
   period: ChecklistDraftPeriod | null
   periodKey: string | null
   formCode: string | null
@@ -27,6 +28,14 @@ export type ChecklistDraft = {
   updatedAt: Date
   canRebind: boolean
   pendingFollowUp: boolean
+}
+
+function isRoutineDraft(draft: ChecklistDraft): boolean {
+  if (draft.category === "INCIDENTAL") return false
+  if (typeof draft.formCode === "string" && draft.formCode.toUpperCase().endsWith("_REPAIR")) {
+    return false
+  }
+  return true
 }
 
 export type CreateChecklistDraftInput = ReserveChecklistDraftInput & {
@@ -61,16 +70,63 @@ export async function reserveChecklistDraft(
   repository: ChecklistDraftRepository,
   input: ReserveChecklistDraftInput,
 ): Promise<ReservationResult> {
+  const wantsRoutine = !input.formCode.toUpperCase().endsWith("_REPAIR")
+
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidates = await repository.findCandidates(input)
+    const matchingKindCandidates = wantsRoutine
+      ? candidates.filter(isRoutineDraft)
+      : candidates.filter((report) => !isRoutineDraft(report))
+
     const taskReport = input.taskId ? candidates.find((report) => report.taskId === input.taskId) : undefined
     const roomReport = input.roomId
-      ? candidates.find((report) => matchesLocationAndPeriod(report, input))
+      ? matchingKindCandidates.find((report) => matchesLocationAndPeriod(report, input))
       : undefined
+    const slotOccupied = Boolean(
+      input.roomId && candidates.some((report) => matchesLocationAndPeriod(report, input)),
+    )
+
+    if (input.taskId && !taskReport) {
+      if (
+        roomReport &&
+        roomReport.taskId === null &&
+        roomReport.status === "DRAFT" &&
+        roomReport.authorId === input.authorId
+      ) {
+        const matchesEquipment = roomReport.equipmentId === (input.equipmentId ?? null)
+        if (roomReport.reportCode && matchesEquipment) {
+          if (await repository.rebindDraft(roomReport, { ...input, reportCode: roomReport.reportCode })) {
+            return { reportCode: roomReport.reportCode }
+          }
+          continue
+        }
+      }
+
+      const reportCode = await repository.generateReportCode(input)
+      if (
+        await repository.createDraft({
+          ...input,
+          roomId: slotOccupied ? null : input.roomId,
+          reportCode,
+        })
+      ) {
+        return { reportCode }
+      }
+      continue
+    }
+
     const existing = taskReport ?? roomReport
     if (!existing) {
       const reportCode = await repository.generateReportCode(input)
-      if (await repository.createDraft({ ...input, reportCode })) return { reportCode }
+      if (
+        await repository.createDraft({
+          ...input,
+          roomId: slotOccupied ? null : input.roomId,
+          reportCode,
+        })
+      ) {
+        return { reportCode }
+      }
       continue
     }
 

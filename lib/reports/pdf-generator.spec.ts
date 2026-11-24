@@ -130,3 +130,79 @@ test("FRM_TS_041 and FRM_TS_028 PDFs render all V7 condition codes accurately wi
   assert.match(forkliftBatteryPdf, /TS\/068/)
   assert.match(forkliftBatteryPdf, /TIDAK ADA/)
 })
+
+test("PDF renders normalized approverName, Requester approval, execution timestamps, and completion evidence", async () => {
+  const payload = {
+    formCode: "FRM_TS_063",
+    items: [
+      {
+        id: "fan",
+        label: "Motor Kipas",
+        condition: "RUSAK",
+        repairForm: "SAT/FRM/TS/065_REV:00_161020",
+        followUp065: {
+          jenis: "PERBAIKAN",
+          namaUnit: "Exhaust Fan 1",
+          parts: [],
+        },
+      },
+    ],
+  }
+  const missingReqText = await renderedText({
+    ...report,
+    status: "COMPLETED",
+    checklistPayload: payload,
+    approvalHistory: [
+      { approverNik: "C001", approverName: "Andi Coord", role: "COORD", stage: "PENDING_COORD", decision: "approve", decidedAt: "2026-11-17T01:00:00Z" },
+      { approverNik: "M001", approverName: "Dewi Manager", role: "MANAGER", stage: "PENDING_MANAGER", decision: "approve", decidedAt: "2026-11-17T02:00:00Z" },
+    ],
+  })
+  assert.doesNotMatch(missingReqText, /Laporan Final/)
+
+  const fullText = await renderedText({
+    ...report,
+    status: "COMPLETED",
+    checklistPayload: payload,
+    approvalHistory: [
+      { approverNik: "C001", approverName: "Andi Coord", role: "COORD", stage: "PENDING_COORD", decision: "approve", decidedAt: "2026-11-17T01:00:00Z" },
+      { approverNik: "M001", approverName: "Dewi Manager", role: "MANAGER", stage: "PENDING_MANAGER", decision: "approve", decidedAt: "2026-11-17T02:00:00Z" },
+      { approverNik: "R001", approverName: "Sari Requester", role: "REQUESTER", stage: "PENDING_REQUESTER", decision: "approve", decidedAt: "2026-11-17T03:00:00Z" },
+    ],
+    executionHistory: [
+      {
+        actorNik: "E001",
+        actorName: "Teknisi BES",
+        action: "PICKUP_STOCK",
+        performedAt: "2026-11-17T04:00:00Z",
+        notes: "Ambil baut",
+      },
+      {
+        actorNik: "E001",
+        actorName: "Teknisi BES",
+        action: "FINISH_WORK",
+        performedAt: "2026-11-17T06:00:00Z",
+        notes: "Uji normal",
+      },
+    ],
+    completionEvidence: {
+      form065: {
+        handoverConfirmed: true,
+        handoverRecipient: "Pak Joko",
+        handoverNotes: "Berjalan normal",
+        repairWithUnitPhotos: [{ fileId: "u1", url: "/api/photos/u1" }],
+        selfieWithUserPhotos: [{ fileId: "s1", url: "/api/photos/s1" }],
+      },
+      submittedByNik: "E001",
+      submittedByName: "Teknisi BES",
+      submittedAt: "2026-11-17T06:00:00Z",
+    },
+  })
+
+  assert.match(fullText, /Laporan Final/)
+  assert.match(fullText, /Andi Coord/)
+  assert.match(fullText, /Dewi Manager/)
+  assert.match(fullText, /Sari Requester/)
+  assert.match(fullText, /Form Perbaikan \/ Penggantian Spare Part Equipment/)
+  assert.match(fullText, /Pengambilan Stock Barang Dicatat/)
+  assert.match(fullText, /Pak Joko/)
+})

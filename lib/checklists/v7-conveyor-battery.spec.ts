@@ -526,7 +526,7 @@ test("Adjust/Repair/Urgent without Form 065 still follow COORD -> MANAGER approv
       periodKey: "2026-11",
       updatedAt: now,
       checklistPayload: {} as unknown,
-      drivePhotoFileIds: [] as string[],
+      drivePhotoFileIds: [photo.fileId],
       isSafe: true,
       workPermitId: null as string | null,
       approvalHistory: [] as unknown[],

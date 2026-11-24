@@ -91,8 +91,13 @@ const NO_FOLLOW_UP_VALUE = "__NONE__"
 export const FOLLOW_UP_OPTIONS = [
   {
     id: FORM_065_ID,
-    label: "Form Penggantian Spare Part (065)",
+    label: "Form Perbaikan / Penggantian Spare Part Equipment (065)",
     badge: "065",
+  },
+  {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+    badge: "Tanpa Biaya",
   },
 ]
 
@@ -102,8 +107,12 @@ const OPTIONAL_FOLLOW_UP_OPTIONS = [
     label: "Tidak perlu Form 065 (Tanpa penggantian spare part)",
   },
   {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+  },
+  {
     id: FORM_065_ID,
-    label: "Form Penggantian Spare Part (065)",
+    label: "Form Perbaikan / Penggantian Spare Part Equipment (065)",
   },
 ]
 
@@ -390,8 +399,18 @@ export function FrmTs028Form({
             notes: st?.notes || (isDefect ? followUp?.label : undefined),
             photos: st?.photos || [],
             handler: isDefect ? st?.handler || "BES" : undefined,
-            repairForm: isDefect && st?.repairForm !== "REPAIR_TANPA_BIAYA" ? st?.repairForm : undefined,
-            repairFormName: isDefect && st?.repairForm !== "REPAIR_TANPA_BIAYA" ? followUp?.label : undefined,
+            repairForm:
+              st?.repairForm === "REPAIR_TANPA_BIAYA"
+                ? "REPAIR_TANPA_BIAYA"
+                : isDefect
+                  ? st?.repairForm
+                  : undefined,
+            repairFormName:
+              st?.repairForm === "REPAIR_TANPA_BIAYA"
+                ? "Repair Tanpa Biaya"
+                : isDefect
+                  ? followUp?.label
+                  : undefined,
           }
         })
 

@@ -28,6 +28,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select"
 import { ReportCompletionSuccess } from "@/components/es-dashboard/report-completion-success"
+import { buildInitialForm065State } from "@/lib/reports/follow-up-prefill"
 
 interface MaterialItem {
   id: string
@@ -87,6 +88,11 @@ interface FollowUpFormsEditorProps {
     targetName?: string
     isRoutine?: boolean
     createdAt: string
+    equipment?: {
+      name: string
+      unitNo: number
+      code: string
+    }
   }
 }
 
@@ -185,26 +191,16 @@ export function FollowUpFormsEditor({
       if (unit.formType === "065") {
         const item = rawItems[unit.rawIndex]
         const existing = item?.followUp065 || item?.followUpData
-        initial[unit.key] = {
-          jenis: existing?.jenis || "PENGGANTIAN_SPARE_PART",
-          namaUnit: existing?.namaUnit ?? unit.label,
-          merk: existing?.merk ?? "",
-          nomorUnit: existing?.nomorUnit ?? item?.unitNo ?? "",
-          nomorTiketProblem: existing?.nomorTiketProblem ?? "",
-          analisa: existing?.analisa ?? unit.notes ?? "",
-          tindakan: existing?.tindakan ?? "",
-          parts: existing?.parts && Array.isArray(existing.parts) && existing.parts.length > 0
-            ? existing.parts
-            : [
-                {
-                  id: `part-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                  namaPart: existing?.namaPart || "",
-                  nomorPart: existing?.nomorPart || "",
-                  asalPart: existing?.asalPart || "STOCK",
-                  jumlahPart: existing?.jumlahPart ? Number(existing.jumlahPart) : 1,
-                },
-              ],
-        }
+        initial[unit.key] = buildInitialForm065State({
+          existing,
+          itemUnitNo: item?.unitNo,
+          itemLabel: unit.label,
+          itemNotes: unit.notes,
+          payloadUnitModel: payload?.unitModel,
+          payloadUnitBrand: payload?.unitBrand,
+          payloadUnitNo: payload?.unitNo,
+          equipment: context.equipment,
+        })
       }
     })
     return initial
@@ -601,7 +597,7 @@ export function FollowUpFormsEditor({
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#ffd7bc] bg-[#fff5ed] px-2.5 py-1 text-xs font-bold text-[#c75f00]">
                 <Wrench className="size-3.5" />
-                Form 065 (Spare Part)
+                Form 065 (Perbaikan / Spare Part)
               </span>
             )}
           </div>
@@ -777,7 +773,7 @@ export function FollowUpFormsEditor({
             <div className="rounded-xl border border-[#ffd7bc] bg-[#fff8f3] p-4 text-xs">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-bold text-[#c75f00]">
-                  Form Penggantian Spare Part Equipment (065)
+                  Form Perbaikan / Penggantian Spare Part Equipment (065)
                 </span>
                 {activeUnit.notes && (
                   <span className="text-[11px] text-[#a64f00] italic truncate max-w-[200px]">
@@ -917,7 +913,8 @@ export function FollowUpFormsEditor({
             </div>
 
             {/* Spare Parts Card List (if Penggantian Spare Part) */}
-            <div className="flex flex-col gap-3">
+            {itemData.jenis === "PENGGANTIAN_SPARE_PART" ? (
+              <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-[#111111] uppercase tracking-wider">
                   Daftar Spare Part yang Dibutuhkan
@@ -1046,7 +1043,12 @@ export function FollowUpFormsEditor({
                 <Plus className="size-4" />
                 Tambah Baris Spare Part
               </button>
-            </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-[#e8e8e6] bg-[#fafaf9] p-4 text-xs text-[#555555]">
+                Jenis pekerjaan <strong>Perbaikan</strong> dipilih. Tidak memerlukan daftar rincian spare part baru; laporan tetap melalui persetujuan BEC, Manager, dan Requester.
+              </div>
+            )}
           </div>
         )
       })()}

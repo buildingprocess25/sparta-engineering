@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPrisma } from "@/lib/prisma"
-import { generateReportPdfBuffer, isReportFinal, type PdfReportData } from "@/lib/reports/pdf-generator"
-import type { ChecklistPayload, ChecklistPayloadItem } from "@/lib/checklists/payload"
-
+import { generateReportPdfBuffer, isReportFinal } from "@/lib/reports/pdf-generator"
 import { downloadFileFromDrive } from "@/lib/google-drive/files"
-import type { PdfReportPhoto } from "@/lib/reports/pdf-generator"
+import { getWorkPermitUser } from "@/lib/work-permits/current-user"
+import { canUserAccessReport } from "@/lib/reports/report-access"
+import { buildReportPdfData } from "@/lib/reports/report-pdf-mapper"
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ reportCode: string }> }
 ) {
+  const user = await getWorkPermitUser()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { reportCode } = await params
   const prisma = getPrisma()
 
@@ -20,6 +25,7 @@ export async function GET(
       room: true,
       equipment: true,
       author: true,
+      task: { select: { assignment: { select: { room: true } } } },
     },
   })
 
@@ -27,72 +33,15 @@ export async function GET(
     return NextResponse.json({ error: "Laporan tidak ditemukan" }, { status: 404 })
   }
 
-  const rawPayload = (report.checklistPayload as unknown as ChecklistPayload) || {}
-  const rawItems = Array.isArray(rawPayload.items) ? rawPayload.items : []
+  if (!canUserAccessReport(user, report)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
 
-  const formattedItems: PdfReportData["items"] = rawItems.map(
-    (item: ChecklistPayloadItem, index: number) => ({
-      id: item.id || String(index + 1),
-      label: item.label || `Item ${index + 1}`,
-      condition: item.condition || "BAIK",
-      actionCode: (item as unknown as { actionCode?: string }).actionCode || "Ch",
-      notes: item.notes || undefined,
-      handler: item.handler || undefined,
-      photosCount: Array.isArray(item.photos) ? item.photos.length : 0,
-    })
+  const pdfData = await buildReportPdfData(
+    { ...report, room: report.room ?? report.task?.assignment?.room ?? null },
+    reportCode,
+    downloadFileFromDrive,
   )
-
-  // Collect photos from items
-  const photosList: PdfReportPhoto[] = []
-  for (let idx = 0; idx < rawItems.length; idx++) {
-    const item = rawItems[idx]
-    if (Array.isArray(item.photos) && item.photos.length > 0) {
-      for (const p of item.photos) {
-        if (p.fileId) {
-          let imgBytes: Buffer | null = null
-          try {
-            imgBytes = await downloadFileFromDrive(p.fileId)
-          } catch {
-            // fallback gracefully
-          }
-          photosList.push({
-            itemNo: idx + 1,
-            label: item.label,
-            condition: item.condition || "BAIK",
-            notes: item.notes,
-            fileId: p.fileId,
-            imageBytes: imgBytes,
-          })
-        }
-      }
-    }
-  }
-
-  const pdfData: PdfReportData = {
-    reportCode: report.reportCode || reportCode,
-    formCode: report.formCode || rawPayload.formCode || "FRM_TS_016",
-    formName: rawPayload.formName || `FORM CHECKLIST ${report.formCode || ""}`,
-    periodKey: report.periodKey || "2026-10",
-    periodLabel: report.period || "MONTHLY",
-    createdAt: report.createdAt,
-    branchName:
-      report.equipment?.branchName || report.author.branchName || "HEAD OFFICE",
-    areaName: report.area.name,
-    roomName: report.room?.name,
-    equipmentName: report.equipment?.name,
-    equipmentCode: report.equipment?.code,
-    equipmentSerial: rawPayload.unitNo || report.equipment?.code || null,
-    equipmentBrand: rawPayload.unitBrand || null,
-    authorName: report.author.name,
-    authorNik: report.author.NIK,
-    isSafe: report.isSafe,
-    status: report.status,
-    approvalHistory: ((report as { approvalHistory?: unknown }).approvalHistory as any) || [],
-    checklistPayload: report.checklistPayload,
-    generalNotes: rawPayload.generalNotes,
-    items: formattedItems,
-    photos: photosList,
-  }
 
   try {
     const pdfBuffer = await generateReportPdfBuffer(pdfData)

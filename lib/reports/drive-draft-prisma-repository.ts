@@ -59,6 +59,7 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
           updatedAt: true,
           areaId: true,
           roomId: true,
+          category: true,
           period: true,
           periodKey: true,
           formCode: true,
@@ -114,14 +115,32 @@ export function createPrismaChecklistDraftRepository(): ChecklistDraftRepository
     },
 
     async createDraft(input) {
+      const category = input.formCode.toUpperCase().endsWith("_REPAIR") ? "INCIDENTAL" : "PREVENTIVE"
       try {
         await getPrisma().checklistReport.create({
-          data: { ...draftContext(input), authorId: input.authorId, category: "PREVENTIVE", status: "DRAFT" },
+          data: { ...draftContext(input), authorId: input.authorId, category, status: "DRAFT" },
         })
         return true
       } catch (error) {
-        if (isUniqueConflict(error)) return false
-        throw error
+        if (!isUniqueConflict(error)) throw error
+        if (input.taskId && input.roomId) {
+          const existingForTask = await getPrisma().checklistReport.findUnique({
+            where: { taskId: input.taskId },
+            select: { id: true },
+          })
+          if (!existingForTask) {
+            try {
+              await getPrisma().checklistReport.create({
+                data: { ...draftContext({ ...input, roomId: null }), authorId: input.authorId, category, status: "DRAFT" },
+              })
+              return true
+            } catch (retryError) {
+              if (isUniqueConflict(retryError)) return false
+              throw retryError
+            }
+          }
+        }
+        return false
       }
     },
 

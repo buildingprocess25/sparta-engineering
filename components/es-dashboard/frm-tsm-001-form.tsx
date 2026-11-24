@@ -55,8 +55,13 @@ const OPERATIONAL_TYPES = ["Pemanasan", "Pemadaman", "Test ATS"] as const
 const FOLLOW_UP_OPTIONS = [
   {
     id: "SAT/FRM/TS/065_REV:00_161020",
-    label: "Form Penggantian Spare Part (065)",
+    label: "Form Perbaikan / Penggantian Spare Part Equipment (065)",
     badge: "065",
+  },
+  {
+    id: "REPAIR_TANPA_BIAYA",
+    label: "Repair Tanpa Biaya",
+    badge: "Tanpa Biaya",
   },
 ]
 
@@ -208,12 +213,21 @@ export function FrmTsm001Form({
       runningLog,
       atsTest: {
         ...atsTest,
+        repairFormName:
+          atsTest.systemAtsStatus === "NOK"
+            ? atsTest.repairForm === "REPAIR_TANPA_BIAYA"
+              ? "Repair Tanpa Biaya"
+              : FOLLOW_UP_OPTIONS.find((f) => f.id === atsTest.repairForm)?.label ||
+                "Form Perbaikan / Penggantian Spare Part Equipment (065)"
+            : undefined,
         notes:
           atsTest.notes?.trim() ||
           (atsTest.systemAtsStatus === "NOK"
             ? atsTest.repairForm === "SAT/FRM/TSM/014_REV:000_060423"
               ? "Form Estimasi Biaya Sipil & ME (014)"
-              : "Form Penggantian Spare Part (065)"
+              : atsTest.repairForm === "REPAIR_TANPA_BIAYA"
+                ? "Repair Tanpa Biaya"
+                : "Form Perbaikan / Penggantian Spare Part Equipment (065)"
             : "Sistem ATS Berfungsi Normal"),
       },
       catatanKeterangan: catatanKeterangan.trim(),

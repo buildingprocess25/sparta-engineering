@@ -29,7 +29,9 @@ export const FRM_TS_041_REF_NRA =
   "SAT/SOP/TS/011 Prosedur Monitoring Perawatan Dan Perbaikan Equipment Branch/Depo/Bulky/WH"
 
 const FORM_065_CODE = "SAT/FRM/TS/065_REV:00_161020"
-const FORM_065_LABEL = "Form Penggantian Spare Part (065)"
+const FORM_065_LABEL = "Form Perbaikan / Penggantian Spare Part Equipment (065)"
+const REPAIR_TANPA_BIAYA_CODE = "REPAIR_TANPA_BIAYA"
+const REPAIR_TANPA_BIAYA_LABEL = "Repair Tanpa Biaya"
 
 export type ConveyorItem = {
   id: string
@@ -752,7 +754,12 @@ export function buildFrmTs041PayloadItems(
     }
 
     const trimmedNotes = state.notes.trim()
-    const repairForm = state.repairForm === FORM_065_CODE ? FORM_065_CODE : undefined
+    const repairForm =
+      state.repairForm === FORM_065_CODE
+        ? FORM_065_CODE
+        : state.repairForm === REPAIR_TANPA_BIAYA_CODE
+          ? REPAIR_TANPA_BIAYA_CODE
+          : undefined
     return {
       id: it.id,
       label: it.label,
@@ -761,7 +768,12 @@ export function buildFrmTs041PayloadItems(
       notes: trimmedNotes || undefined,
       handler: state.handler || "BES",
       repairForm,
-      repairFormName: repairForm ? FORM_065_LABEL : undefined,
+      repairFormName:
+        repairForm === FORM_065_CODE
+          ? FORM_065_LABEL
+          : repairForm === REPAIR_TANPA_BIAYA_CODE
+            ? REPAIR_TANPA_BIAYA_LABEL
+            : undefined,
     }
   })
 }

@@ -2,6 +2,7 @@
 export type UploadedChecklistPhoto = {
   fileId: string
   url: string
+  reportVersion?: string
 }
 
 export async function readPhotoUploadResponse(
@@ -40,5 +41,12 @@ export async function readPhotoUploadResponse(
     throw new Error("Server tidak mengirim ID dan alamat foto yang valid.")
   }
 
-  return { fileId: data.fileId, url: data.url }
+  const reportVersion =
+    typeof data.reportVersion === "string" && data.reportVersion.trim()
+      ? data.reportVersion.trim()
+      : undefined
+
+  return reportVersion
+    ? { fileId: data.fileId, url: data.url, reportVersion }
+    : { fileId: data.fileId, url: data.url }
 }

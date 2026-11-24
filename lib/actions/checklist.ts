@@ -9,12 +9,14 @@ import { getWorkPermitUser } from "@/lib/work-permits/current-user"
 
 import type { ChecklistPayload, ChecklistPayloadItem, ChecklistPhoto } from "@/lib/checklists/payload"
 import { validateChecklistPayload, calculateChecklistIsSafe } from "@/lib/checklists/payload"
+import { validateChecklistCompleteness } from "@/lib/checklists/completeness"
 import type { FrmTsm004Payload } from "@/lib/checklists/payload-004"
 import { validateFrmTsm004Payload } from "@/lib/checklists/payload-004"
 import type { FrmTsm001Payload } from "@/lib/checklists/payload-001"
 import { validateFrmTsm001Payload } from "@/lib/checklists/payload-001"
 import { generateAndUploadReportPdf } from "@/lib/reports/drive-pdf-service"
 import { saveChecklistSubmission } from "@/lib/reports/checklist-submission"
+import { canUserAccessReport } from "@/lib/reports/report-access"
 
 type SubmitChecklistInput = {
   reportCode: string
@@ -69,6 +71,9 @@ async function submitChecklist(input: SubmitChecklistInput, revisionVersion?: st
     baseFormId === "FRM_TS_068"
   ) {
     validationResult = validateChecklistPayload(input.payload)
+    if (validationResult.valid) {
+      validationResult = validateChecklistCompleteness(input.payload as ChecklistPayload)
+    }
     isSafe = calculateChecklistIsSafe(input.payload)
     if (validationResult.valid) {
       photoFileIds = (input.payload as ChecklistPayload).items.flatMap((item: ChecklistPayloadItem) =>
@@ -133,6 +138,25 @@ async function submitChecklist(input: SubmitChecklistInput, revisionVersion?: st
 
 export async function triggerReportPdfUploadAction(reportCode: string) {
   try {
+    const user = await getWorkPermitUser()
+    if (!user) {
+      return { ok: false, reportCode, error: "Sesi tidak valid." }
+    }
+
+    const report = await getPrisma().checklistReport.findUnique({
+      where: { reportCode },
+      select: {
+        authorId: true,
+        author: { select: { branchName: true } },
+      },
+    })
+    if (!report) {
+      return { ok: false, reportCode, error: "Laporan tidak ditemukan." }
+    }
+    if (!canUserAccessReport(user, report)) {
+      return { ok: false, reportCode, error: "Anda tidak berwenang mengakses dokumen ini." }
+    }
+
     const res = await generateAndUploadReportPdf(reportCode)
     revalidatePath(`/dashboard/reports/${reportCode}`)
     revalidatePath("/dashboard/reports")
