@@ -20,6 +20,8 @@ import {
 import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service"
 
 import { SpartaFilterSelect } from "@/components/ui/sparta-filter-select"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 const PERIOD_LABEL: Record<string, string> = {
   WEEKLY: "Mingguan",
@@ -57,7 +59,7 @@ function getStatus(task: UserTodoTaskItem) {
     return { label: "Sudah Preventif", pill: "border-emerald-200 bg-emerald-50 text-emerald-800", dot: "bg-emerald-500" }
   }
   if (task.status === "OVERDUE") {
-    return { label: "Terlewat", pill: "border-slate-300 bg-slate-100 text-slate-700", dot: "bg-slate-500" }
+    return { label: "Terlewat", pill: "border-red-200 bg-red-50 text-red-800", dot: "bg-red-500" }
   }
   return { label: "Belum Preventif", pill: "border-orange-200 bg-orange-50 text-orange-800", dot: "bg-orange-500" }
 }
@@ -149,7 +151,7 @@ export function ChecklistRoutineView({ todoData, hasActivePermit, initialStatus 
           { label: "Total tugas", count: counts.all, Icon: ClipboardList, mark: "bg-slate-300", iconClass: "bg-slate-100 text-slate-700" },
           { label: "Belum Preventif", count: counts.pending, Icon: CalendarDays, mark: "bg-orange-400", iconClass: "bg-orange-50 text-orange-700" },
           { label: "Sudah Preventif", count: counts.completed, Icon: CheckCircle2, mark: "bg-emerald-500", iconClass: "bg-emerald-50 text-emerald-700" },
-          { label: "Terlewat", count: counts.overdue, Icon: AlertTriangle, mark: "bg-slate-500", iconClass: "bg-slate-100 text-slate-600" },
+          { label: "Terlewat", count: counts.overdue, Icon: AlertTriangle, mark: "bg-red-500", iconClass: "bg-red-50 text-red-700" },
         ].map(({ label, count, Icon, mark, iconClass }) => (
           <div key={label} className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <span className={`absolute inset-x-0 top-0 h-1 ${mark}`} />
@@ -171,20 +173,20 @@ export function ChecklistRoutineView({ todoData, hasActivePermit, initialStatus 
             <p className="mt-0.5 text-xs text-slate-500">Pilih area, periode, atau jenis objek yang ingin diperiksa.</p>
           </div>
           {hasFilters && (
-            <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-orange-800 transition hover:bg-orange-50">
+            <Button variant="ghost" type="button" onClick={resetFilters} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-orange-800 transition hover:bg-orange-50">
               <RotateCcw className="size-3.5" aria-hidden="true" /> Reset filter
-            </button>
+            </Button>
           )}
         </div>
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-          <input
+          <Input
             type="search" id="routine-task-search" aria-label="Cari tugas checklist" value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Cari nama equipment, ruangan, atau kode form..."
             className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
           />
-          {query && <button type="button" aria-label="Hapus pencarian" onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 hover:bg-slate-100"><X className="size-4" /></button>}
+          {query && <Button variant="ghost" size="icon-sm" type="button" aria-label="Hapus pencarian" onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 hover:bg-slate-100"><X className="size-4" /></Button>}
         </div>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
@@ -238,7 +240,7 @@ export function ChecklistRoutineView({ todoData, hasActivePermit, initialStatus 
         </div>
         <div className="flex w-full gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter status preventif">
           {statuses.map((item) => (
-            <button
+            <Button variant="ghost"
               key={item.key} type="button" onClick={() => setStatus(item.key)} aria-pressed={status === item.key}
               className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-orange-500 ${status === item.key
                 ? "border-orange-300 bg-orange-50 text-orange-800"
@@ -246,7 +248,7 @@ export function ChecklistRoutineView({ todoData, hasActivePermit, initialStatus 
             >
               {item.label}
               <span className={`rounded-full px-1.5 py-0.5 text-[11px] tabular-nums ${status === item.key ? "bg-orange-100 text-orange-900" : "bg-slate-100 text-slate-600"}`}>{item.count}</span>
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -257,7 +259,7 @@ export function ChecklistRoutineView({ todoData, hasActivePermit, initialStatus 
             <p className="mt-1 max-w-sm text-xs leading-5 text-slate-600">
               {tasks.length ? "Coba ubah pencarian atau filter. Ini tidak berarti seluruh pekerjaan preventif sudah dikerjakan." : "Tugas preventif akan muncul setelah PIC ditugaskan ke equipment atau ruangan."}
             </p>
-            {tasks.length > 0 && <button type="button" onClick={resetFilters} className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50">Tampilkan semua tugas</button>}
+            {tasks.length > 0 && <Button variant="ghost" type="button" onClick={resetFilters} className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50">Tampilkan semua tugas</Button>}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

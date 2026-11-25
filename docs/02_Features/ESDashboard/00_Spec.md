@@ -31,6 +31,12 @@
 - Tren Preventif memberi fokus dan detail target/aktual/belum/terlewat pada hover atau fokus keyboard. Klik bulan memperbarui periode ringkasan, kalender, objek dan evaluasi tanpa memindahkan jendela grafik; dropdown bulan menggeser jendela enam bulan. Periode tanpa target tampil —. Data aktual dan definisi metrik tetap existing.
 - Seluruh perubahan menggunakan light workspace ES dan komponen existing. Tidak ada migration, dependency tambahan, perubahan role lain, atau mutasi data laporan.
 
+## V14.3 — Standardisasi shadcn UI (tahap 1)
+
+- Checklist Rutin memakai Button/Input shared; Terlewat menggunakan warna merah konsisten dengan Dashboard dan Preventif. Kontrol tren Preventif memakai Button shared dengan handler filter dan klik existing.
+- Konfirmasi keputusan reviewer menggunakan AlertDialog shadcn Base UI shared dan feedback sukses/gagal memakai Alert. Server action, payload, validasi catatan, guard approval dan callback tetap; pengiriman ganda diblokir saat proses berjalan atau sudah berhasil.
+- Tidak ada perubahan database, role, routing atau status approval. Build, unit test dan UAT browser wajib diverifikasi di workspace lokal sebelum rilis.
+
 ## User Story
 
 - Sebagai **Engineering Support (ES)**, saya ingin saat masuk SPARTA langsung diarahkan ke pilihan kerja utama, agar saya bisa mulai dari Form Ijin Kerja, Checklist, atau Perbaikan by AHO / Temuan ES tanpa mencari menu.

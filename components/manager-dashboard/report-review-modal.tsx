@@ -23,6 +23,11 @@ import {
 import type { RealReportItem } from "@/lib/manager-dashboard-types"
 import { reviewReportDecision } from "@/app/dashboard/reports/actions"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
+import { SpartaAlertDialog } from "@/components/shared/sparta-alert-dialog"
 import { needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
 
 interface ReportReviewModalProps {
@@ -47,6 +52,8 @@ export function ReportReviewModal({
   const [decisionNotes, setDecisionNotes] = React.useState("")
   const [notesError, setNotesError] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [decisionFinished, setDecisionFinished] = React.useState(false)
+  const decisionLock = React.useRef(false)
   const [feedbackToast, setFeedbackToast] = React.useState<{ text: string; error?: boolean } | null>(null)
 
   React.useEffect(() => {
@@ -56,6 +63,9 @@ export function ReportReviewModal({
       setDecisionNotes("")
       setNotesError(null)
       setIsSubmitting(false)
+      setDecisionFinished(false)
+      decisionLock.current = false
+      setFeedbackToast(null)
     }
   }, [isOpen, report?.id])
 
@@ -85,6 +95,7 @@ export function ReportReviewModal({
   )
 
   const handleConfirmDecision = async () => {
+    if (!canApprove || activeDialog === "NONE" || decisionLock.current) return
     if (activeDialog === "REVISION" && !decisionNotes.trim()) {
       setNotesError("Catatan revisi wajib diisi agar teknisi tahu apa yang perlu diperbaiki.")
       return
@@ -95,18 +106,29 @@ export function ReportReviewModal({
       return
     }
 
+    decisionLock.current = true
     setIsSubmitting(true)
+    setFeedbackToast(null)
     let decision: "approve" | "reject_revision" | "reject" = "approve"
     if (activeDialog === "REVISION") decision = "reject_revision"
     if (activeDialog === "REJECT") decision = "reject"
 
-    const res = await reviewReportDecision(report.id, decision, decisionNotes.trim(), new Date(report.updatedAt).toISOString())
+    let res
+    try {
+      res = await reviewReportDecision(report.id, decision, decisionNotes.trim(), new Date(report.updatedAt).toISOString())
+    } catch {
+      decisionLock.current = false
+      setIsSubmitting(false)
+      setFeedbackToast({ text: "Keputusan belum dapat dikonfirmasi. Muat ulang laporan sebelum mencoba kembali.", error: true })
+      return
+    }
     setIsSubmitting(false)
 
     if (res.error) {
+      decisionLock.current = false
       setFeedbackToast({ text: res.error, error: true })
-      setTimeout(() => setFeedbackToast(null), 4000)
     } else {
+      setDecisionFinished(true)
       setFeedbackToast({ text: res.message || "Berhasil memproses keputusan." })
       setActiveDialog("NONE")
       if (onSuccess) onSuccess()
@@ -122,14 +144,14 @@ export function ReportReviewModal({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
+        onClick={() => { if (!isSubmitting && activeDialog === "NONE") onClose() }}
       />
 
       {/* Main Review Workbench Container (BMC/BNM Pattern) */}
       <div className="relative w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden flex flex-col max-h-[92vh] z-10 animate-in fade-in zoom-in-95 duration-200">
-        {/* Toast Alert */}
-        {feedbackToast && (
-          <div
+        {/* Feedback */}
+        {feedbackToast && activeDialog === "NONE" && (
+          <Alert role={feedbackToast.error ? "alert" : "status"}
             className={cn(
               "px-5 py-3 text-xs font-bold border-b flex items-center justify-between",
               feedbackToast.error
@@ -137,15 +159,16 @@ export function ReportReviewModal({
                 : "bg-emerald-50 border-emerald-200 text-emerald-800"
             )}
           >
-            <span>{feedbackToast.text}</span>
-            <button
+            <AlertDescription className="text-current">{feedbackToast.text}</AlertDescription>
+            <Button variant="ghost"
               type="button"
               onClick={() => setFeedbackToast(null)}
+              aria-label="Tutup notifikasi"
               className="text-slate-500 hover:text-slate-800"
             >
               ✕
-            </button>
-          </div>
+            </Button>
+          </Alert>
         )}
 
         {/* Top Header Bar */}
@@ -184,20 +207,21 @@ export function ReportReviewModal({
               </h2>
             </div>
 
-            <button
+            <Button variant="ghost"
               type="button"
+              disabled={isSubmitting || activeDialog !== "NONE"}
               onClick={onClose}
               className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
               aria-label="Tutup jendela review"
             >
               <X className="size-5" />
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Workbench Tab Navigation */}
         <div className="flex border-b border-slate-200 bg-slate-50 px-5 overflow-x-auto scrollbar-none">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setActiveTab("checklist")}
             className={cn(
@@ -209,9 +233,9 @@ export function ReportReviewModal({
           >
             <FileCheck2 className="size-4 text-emerald-600" />
             <span>1. Hasil Checklist ({itemsList.length})</span>
-          </button>
+          </Button>
 
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setActiveTab("defect")}
             className={cn(
@@ -223,9 +247,9 @@ export function ReportReviewModal({
           >
             <Wrench className="size-4 text-rose-600" />
             <span>2. Temuan Rusak & Estimasi ({defectiveItems.length})</span>
-          </button>
+          </Button>
 
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setActiveTab("history")}
             className={cn(
@@ -237,7 +261,7 @@ export function ReportReviewModal({
           >
             <History className="size-4 text-purple-600" />
             <span>3. Audit Log Approval</span>
-          </button>
+          </Button>
         </div>
 
         {/* Tab Content Body */}
@@ -448,64 +472,71 @@ export function ReportReviewModal({
           {canApprove && (
             <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
               {/* Reject */}
-              <button
+              <Button variant="ghost"
                 type="button"
-                onClick={() => setActiveDialog("REJECT")}
+                disabled={isSubmitting || decisionFinished}
+                onClick={() => { setFeedbackToast(null); setActiveDialog("REJECT") }}
                 className="flex items-center gap-1.5 rounded-xl border border-rose-300 bg-white px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors shadow-2xs"
               >
                 <XCircle className="size-3.5" />
                 <span>Tolak</span>
-              </button>
+              </Button>
 
               {/* Revision */}
-              <button
+              <Button variant="ghost"
                 type="button"
-                onClick={() => setActiveDialog("REVISION")}
+                disabled={isSubmitting || decisionFinished}
+                onClick={() => { setFeedbackToast(null); setActiveDialog("REVISION") }}
                 className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs font-bold text-amber-800 hover:bg-amber-50 transition-colors shadow-2xs"
               >
                 <RotateCcw className="size-3.5" />
                 <span>Minta Revisi</span>
-              </button>
+              </Button>
 
               {/* Approve */}
-              <button
+              <Button variant="ghost"
                 type="button"
-                onClick={() => setActiveDialog("APPROVE")}
+                disabled={isSubmitting || decisionFinished}
+                onClick={() => { setFeedbackToast(null); setActiveDialog("APPROVE") }}
                 className="flex items-center gap-1.5 rounded-xl bg-[#ff8a2a] px-4 py-2 text-xs font-black text-slate-950 hover:bg-[#e0751d] transition-colors shadow-xs"
               >
                 <CheckCircle2 className="size-4" />
                 <span>
                   {viewerRole === "COORD" ? "Validasi & Teruskan ke Manager" : "Setujui Final"}
                 </span>
-              </button>
+              </Button>
             </div>
           )}
         </div>
       </div>
 
       {/* Decision Dialogs */}
-      {activeDialog !== "NONE" && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs"
-            onClick={() => setActiveDialog("NONE")}
-          />
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-150">
+      <SpartaAlertDialog
+        open={activeDialog !== "NONE"}
+        onOpenChange={(open) => { if (!open && !isSubmitting) setActiveDialog("NONE") }}
+        busy={isSubmitting}
+        tone={activeDialog === "REJECT" ? "error" : activeDialog === "REVISION" ? "warning" : "confirm"}
+      >
+        {feedbackToast?.error && (
+          <Alert variant="destructive">
+            <AlertDescription>{feedbackToast.text}</AlertDescription>
+          </Alert>
+        )}
+        <div>
             {activeDialog === "APPROVE" && (
               <>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <CheckCircle2 className="size-4 text-emerald-600" />
+                <AlertDialogTitle className="text-center text-base font-bold text-slate-900">
                   {viewerRole === "COORD" ? "Validasi Laporan Ini?" : "Setujui Final Laporan Ini?"}
-                </h3>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                </AlertDialogTitle>
+                <AlertDialogDescription className="mt-1 text-center text-xs leading-relaxed text-slate-600">
                   {viewerRole === "COORD"
                     ? "Laporan checklist teknisi akan divalidasi dan diteruskan ke antrean review Manager."
                     : "Laporan akan berstatus selesai dan diarsipkan ke riwayat pemeliharaan engineering."}
-                </p>
+                </AlertDialogDescription>
 
                 <label className="mt-3 block text-xs font-bold text-slate-700">
                   Catatan persetujuan (opsional)
-                  <textarea
+                  <Textarea
                     rows={3}
                     value={decisionNotes}
                     disabled={isSubmitting}
@@ -519,43 +550,45 @@ export function ReportReviewModal({
                 </label>
 
                 <div className="mt-4 flex items-center justify-end gap-2">
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => setActiveDialog("NONE")}
                     className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                   >
                     Batal
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleConfirmDecision}
                     className="rounded-xl bg-[#ff8a2a] px-4 py-1.5 text-xs font-black text-slate-950 hover:bg-[#e0751d] disabled:opacity-50"
                   >
                     {isSubmitting ? "Memproses..." : "Ya, Setujui"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
 
             {activeDialog === "REVISION" && (
               <>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <RotateCcw className="size-4 text-amber-600" />
+                <AlertDialogTitle className="text-center text-base font-bold text-slate-900">
                   Kembalikan Laporan untuk Revisi
-                </h3>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                </AlertDialogTitle>
+                <AlertDialogDescription className="mt-1 text-center text-xs leading-relaxed text-slate-600">
                   Teknisi ES harus memperbaiki data checklist atau foto sebelum laporan dapat diproses kembali.
-                </p>
+                </AlertDialogDescription>
 
                 <div className="mt-3">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <label htmlFor="review-revision-notes" className="block text-[11px] font-bold text-slate-700 mb-1">
                     Catatan Revisi <span className="text-rose-500">* Wajib</span>
                   </label>
-                  <textarea
+                  <Textarea
+                    id="review-revision-notes"
+                    aria-invalid={!!notesError}
                     rows={3}
                     value={decisionNotes}
+                    disabled={isSubmitting}
                     onChange={(e) => {
                       setDecisionNotes(e.target.value)
                       if (notesError) setNotesError(null)
@@ -564,48 +597,50 @@ export function ReportReviewModal({
                     className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
                   />
                   {notesError && (
-                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{notesError}</p>
+                    <p role="alert" className="mt-1 text-[11px] text-rose-600 font-medium">{notesError}</p>
                   )}
                 </div>
 
                 <div className="mt-4 flex items-center justify-end gap-2">
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => setActiveDialog("NONE")}
                     className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                   >
                     Batal
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleConfirmDecision}
                     className="rounded-xl bg-amber-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"
                   >
                     {isSubmitting ? "Mengirim..." : "Kirim Catatan Revisi"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
 
             {activeDialog === "REJECT" && (
               <>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <XCircle className="size-4 text-rose-600" />
+                <AlertDialogTitle className="text-center text-base font-bold text-slate-900">
                   Tolak Laporan
-                </h3>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                </AlertDialogTitle>
+                <AlertDialogDescription className="mt-1 text-center text-xs leading-relaxed text-slate-600">
                   Laporan akan ditolak dan tidak dilanjutkan. Berikan alasan penolakan.
-                </p>
+                </AlertDialogDescription>
 
                 <div className="mt-3">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <label htmlFor="review-rejection-notes" className="block text-[11px] font-bold text-slate-700 mb-1">
                     Alasan Penolakan <span className="text-rose-500">* Wajib</span>
                   </label>
-                  <textarea
+                  <Textarea
+                    id="review-rejection-notes"
+                    aria-invalid={!!notesError}
                     rows={3}
                     value={decisionNotes}
+                    disabled={isSubmitting}
                     onChange={(e) => {
                       setDecisionNotes(e.target.value)
                       if (notesError) setNotesError(null)
@@ -614,33 +649,32 @@ export function ReportReviewModal({
                     className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none"
                   />
                   {notesError && (
-                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{notesError}</p>
+                    <p role="alert" className="mt-1 text-[11px] text-rose-600 font-medium">{notesError}</p>
                   )}
                 </div>
 
                 <div className="mt-4 flex items-center justify-end gap-2">
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => setActiveDialog("NONE")}
                     className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                   >
                     Batal
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleConfirmDecision}
                     className="rounded-xl bg-rose-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50"
                   >
                     {isSubmitting ? "Menolak..." : "Tolak Laporan"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
-          </div>
         </div>
-      )}
+      </SpartaAlertDialog>
     </div>
   )
 }
