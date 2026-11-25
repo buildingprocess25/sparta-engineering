@@ -4,11 +4,10 @@ import { ProfileMenu } from "@/components/auth/profile-menu"
 import { BottomNavigation } from "@/components/es-dashboard/bottom-navigation"
 import { DashboardHeader } from "@/components/es-dashboard/dashboard-header"
 import { DashboardShell } from "@/components/es-dashboard/dashboard-shell"
-import { ProgressSummary } from "@/components/es-dashboard/progress-summary"
 import { ReportFlow } from "@/components/es-dashboard/report-flow"
 import { StatsGrid } from "@/components/es-dashboard/stats-grid"
 import { WelcomePanel } from "@/components/es-dashboard/welcome-panel"
-import { TodoListPanel } from "@/components/es-dashboard/todo-list-panel"
+import { TodoSummaryPanel } from "@/components/es-dashboard/todo-summary-panel"
 import { WorkPermitCard } from "@/components/es-dashboard/work-permit-card"
 import {
   getEsDashboardStats,
@@ -61,28 +60,13 @@ export default async function DashboardPage(props: DashboardPageProps) {
 
     return (
       <>
-        <DashboardShell contentClassName="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl sm:px-6 md:px-8">
+        <DashboardShell className="es-report-surface es-light-workspace" contentClassName="max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl sm:px-6 md:px-8">
           <DashboardHeader email={session?.email as string} role={role} workPermitSnapshotAt={workPermitSnapshotAt} />
           <WelcomePanel user={userContext} />
           <WorkPermitCard initialStatus={workPermitStatus} />
-          <TodoListPanel
-            todoData={todoData}
-            userNik={session?.userId as string}
-            workPermitStatus={workPermitStatus}
-          />
-          <ReportFlow />
-          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-6 md:items-start">
-            <ProgressSummary
-              total={todoData.total}
-              completed={todoData.completed}
-              percentage={
-                todoData.total > 0
-                  ? Math.round((todoData.completed / todoData.total) * 100)
-                  : 0
-              }
-            />
-            <StatsGrid stats={stats} />
-          </div>
+          <ReportFlow hasActivePermit={workPermitStatus?.status === "APPROVED"} />
+          <TodoSummaryPanel todoData={todoData} hasActivePermit={workPermitStatus?.status === "APPROVED"} />
+          <StatsGrid stats={stats} />
         </DashboardShell>
         <BottomNavigation />
       </>

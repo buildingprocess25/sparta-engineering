@@ -1,29 +1,32 @@
+import { EsNavigationUnavailable } from "@/components/es-dashboard/es-navigation-unavailable"
 import { redirect } from "next/navigation"
 
 import { getSession } from "@/lib/session"
 import { getDashboardReportScope, getRealAdminReports } from "@/lib/manager-dashboard"
 import { AdminReportsTable } from "@/components/manager-dashboard/admin-reports-table"
 import { ManagerSidebar } from "@/components/manager-dashboard/manager-sidebar"
-import { PlaceholderScreen } from "@/components/es-dashboard/placeholder-screen"
+import { EsReportsView } from "@/components/es-dashboard/es-reports-view"
+import { getEsReportRows } from "@/lib/reports/es-navigation-data"
 
 export const dynamic = "force-dynamic"
 
-export default async function ReportsPage() {
+export default async function ReportsPage({ searchParams }: { searchParams?: Promise<{ status?: string }> }) {
   const session = await getSession()
 
   if (!session) {
     redirect("/login")
   }
 
-  // Jika yang login adalah teknisi ES, tampilkan layar mobile ES under construction (sama seperti Aktivitas & Preventif)
   if (session.role === "ES") {
-    return (
-      <PlaceholderScreen
-        title="Laporan"
-        email={session.email as string}
-        role={session.role as string}
-      />
-    )
+    if (typeof session.userId !== "string") redirect("/login")
+    try {
+      const reports = await getEsReportRows(session.userId)
+      const status = (await searchParams)?.status
+      return <EsReportsView key={status ?? "ALL"} reports={reports} email={session.email as string} initialStatus={status} />
+    } catch (error) {
+      console.error("ES reports unavailable", error)
+      return <EsNavigationUnavailable email={session.email as string} title="Laporan" href="/dashboard/reports" />
+    }
   }
 
   const reports = await getRealAdminReports(await getDashboardReportScope(session.userId), {})

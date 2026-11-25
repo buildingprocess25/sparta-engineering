@@ -139,15 +139,15 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
     <section className="mt-8">
       {/* Panel Container */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all">
-        {/* Header Section - SPARTA Pure Deep Black */}
-        <div className="border-b border-white/10 bg-[#0a0a0a] p-5 text-white">
+        {/* Header Section - light working surface */}
+        <div className="border-b border-slate-200 bg-white p-5 text-slate-900">
           {/* Top Title */}
           <div>
             <div className="flex items-center gap-2.5">
               <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ff8a2a] text-black shadow-xs">
                 <Clock className="size-4 stroke-[2.5]" />
               </span>
-              <h3 className="text-base font-bold tracking-tight text-white">
+              <h3 className="text-base font-bold tracking-tight text-slate-900">
                 Tugas Rutin PIC (To-Do List)
               </h3>
             </div>
@@ -156,78 +156,79 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
           {/* Quick Metrics Cards */}
           <div className="mt-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {/* Total */}
-            <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-left">
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/5 text-slate-400">
+            <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-600">
                 <Layers className="size-3.5" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold text-slate-400 leading-tight">Total</p>
-                <p className="text-sm font-bold text-white font-mono leading-tight mt-0.5">{total}</p>
+                <p className="text-[10px] font-semibold text-slate-600 leading-tight">Total</p>
+                <p className="text-sm font-bold text-slate-900 font-mono leading-tight mt-0.5">{total}</p>
               </div>
             </div>
 
             {/* Pending (Hero Focus Metric) */}
             <div className="flex items-center gap-2.5 rounded-xl border border-[#ff8a2a]/60 bg-[#ff8a2a]/10 px-3 py-2 text-left shadow-xs ring-1 ring-[#ff8a2a]/30">
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ff8a2a]/20 text-[#ff8a2a]">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ff8a2a]/20 text-orange-800">
                 <Clock className="size-3.5" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-bold text-[#ff8a2a] leading-tight">Pending</p>
-                <p className="text-sm font-black text-[#ff8a2a] font-mono leading-tight mt-0.5">{pending}</p>
+                <p className="text-[10px] font-bold text-orange-800 leading-tight">Belum Preventif</p>
+                <p className="text-sm font-black text-orange-800 font-mono leading-tight mt-0.5">{pending}</p>
               </div>
             </div>
 
-            {/* Terlewat (Link to Activity) */}
+            {/* Terlewat (Link to Checklist Rutin) */}
             <Link
-              href="/dashboard/activity?tab=overdue"
-              className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-left transition-all hover:border-white/20 hover:bg-white/[0.08]"
+              href="/dashboard/checklists?status=OVERDUE"
+              className="group flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition-all hover:border-orange-300 hover:bg-orange-50"
             >
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 text-rose-400 group-hover:bg-rose-500/25 transition-colors">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 text-rose-700 group-hover:bg-rose-500/25 transition-colors">
                 <AlertCircle className="size-3.5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-semibold text-slate-400 leading-tight">Terlewat</p>
-                  <ChevronRight className="size-3 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
+                  <p className="text-[10px] font-semibold text-slate-600 leading-tight">Terlewat</p>
+                  <ChevronRight className="size-3 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-900" />
                 </div>
-                <p className="text-sm font-bold text-rose-400 font-mono leading-tight mt-0.5">{overdue}</p>
+                <p className="text-sm font-bold text-rose-700 font-mono leading-tight mt-0.5">{overdue}</p>
               </div>
             </Link>
 
-            {/* Selesai (Link to Activity) */}
+            {/* Selesai (Link to Checklist Rutin) */}
             <Link
-              href="/dashboard/activity?tab=completed"
-              className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-left transition-all hover:border-white/20 hover:bg-white/[0.08]"
+              href="/dashboard/checklists?status=COMPLETED"
+              className="group flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition-all hover:border-orange-300 hover:bg-orange-50"
             >
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 group-hover:bg-emerald-500/25 transition-colors">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-700 group-hover:bg-emerald-500/25 transition-colors">
                 <CheckCircle2 className="size-3.5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-semibold text-slate-400 leading-tight">Sudah Preventif</p>
-                  <ChevronRight className="size-3 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
+                  <p className="text-[10px] font-semibold text-slate-600 leading-tight">Sudah Preventif</p>
+                  <ChevronRight className="size-3 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-900" />
                 </div>
-                <p className="text-sm font-bold text-emerald-400 font-mono leading-tight mt-0.5">{completed}</p>
+                <p className="text-sm font-bold text-emerald-700 font-mono leading-tight mt-0.5">{completed}</p>
               </div>
             </Link>
           </div>
 
           {/* Progress Bar */}
-          <div className="mt-3.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+          <div className="mt-3.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-slate-300">Progres Bulan Ini</span>
+              <span className="font-medium text-slate-600">Progres Bulan Ini</span>
               <div className="flex items-center gap-1.5 font-mono">
-                <span className="font-bold text-[#ff8a2a]">{completionPercentage}%</span>
-                <span className="text-[11px] text-slate-400">({completed}/{total} selesai)</span>
+                <span className="font-bold text-orange-800">{total ? `${completionPercentage}%` : "—"}</span>
+                <span className="text-[11px] text-slate-600">({completed}/{total} selesai)</span>
               </div>
             </div>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
               <div
                 className="h-full rounded-full bg-[#ff8a2a] transition-all duration-500"
                 style={{ width: `${completionPercentage}%` }}
               />
             </div>
           </div>
+          <Link href="/dashboard/preventive" className="mt-3 inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-orange-800 hover:underline focus-visible:outline-2 focus-visible:outline-orange-500">Lihat analisis preventif <ChevronRight className="size-4" aria-hidden="true" /></Link>
         </div>
 
         {/* Filter Tabs & Search Bar */}

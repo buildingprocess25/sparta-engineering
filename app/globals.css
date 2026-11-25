@@ -257,6 +257,29 @@
     color: var(--primary-foreground);
 }
 
+/* Light working surfaces for ES home and V14 navigation. Never change :root or .dark. */
+.es-light-workspace {
+    color-scheme: light;
+    --background: #ffffff;
+    --foreground: #171717;
+    --card: #ffffff;
+    --card-foreground: #171717;
+    --popover: #ffffff;
+    --popover-foreground: #171717;
+    --primary: #ff8a2a;
+    --primary-foreground: #171717;
+    --secondary: #f0efed;
+    --secondary-foreground: #262626;
+    --muted: #f3f3f2;
+    --muted-foreground: #525252;
+    --accent: #fff3e7;
+    --accent-foreground: #171717;
+    --border: #dedbd6;
+    --input: #d3cfc9;
+    --ring: #b8540c;
+    --destructive: #a91932;
+}
+
 .notification-workspace {
     --background: #fff;
     --foreground: #171717;

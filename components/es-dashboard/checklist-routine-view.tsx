@@ -34,6 +34,7 @@ type ObjectFilter = "ALL" | "EQUIPMENT" | "ROOM"
 type Props = {
   todoData: UserTodoSummary
   hasActivePermit: boolean
+  initialStatus?: StatusFilter
 }
 
 function dateLabel(date: Date | string | null) {
@@ -62,8 +63,8 @@ function getStatus(task: UserTodoTaskItem) {
 }
 
 
-export function ChecklistRoutineView({ todoData, hasActivePermit }: Props) {
-  const [status, setStatus] = React.useState<StatusFilter>("ALL")
+export function ChecklistRoutineView({ todoData, hasActivePermit, initialStatus = "ALL" }: Props) {
+  const [status, setStatus] = React.useState<StatusFilter>(initialStatus)
   const [objectType, setObjectType] = React.useState<ObjectFilter>("ALL")
   const [period, setPeriod] = React.useState("ALL")
   const [area, setArea] = React.useState("ALL")

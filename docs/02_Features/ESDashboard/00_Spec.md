@@ -1,7 +1,35 @@
 # ES Dashboard Launcher
 
 > **Status**: `Active`
-> **Terakhir diperbarui**: 2026-11-24
+> **Terakhir diperbarui**: 2026-11-25
+
+## V14 — ES Dashboard & Navigation Enhancement
+
+- Dashboard, tiga pilihan aktivitas, izin kerja, dan empat menu navigasi tetap. Checklist Rutin tetap pusat pengerjaan PIC; General Checklist dan Perbaikan/Temuan tidak berubah.
+- `/dashboard/reports` untuk ES adalah daftar laporan sendiri (termasuk draft berkode), pencarian, filter status, jenis PIC/rutin, general dan non-rutin, serta bulan pembuatan. Aksi menggunakan detail laporan existing V13. Role reviewer tetap memakai halaman sebelumnya.
+- `/dashboard/activity` menjadi timeline lintas laporan milik ES dengan timestamp pengiriman siap review, approval, revisi, dan pelaksanaan yang valid. Tidak menggunakan `updatedAt` sebagai timestamp historis. Link lama `?tab=completed|overdue` menuju Checklist Rutin dengan filter status; `revision|submitted` menuju Laporan.
+- `/dashboard/preventive` menggunakan task PIC yang benar-benar tersimpan, berdasarkan **bulan tanggal target dalam WIB**, bukan laporan incidental atau general tanpa task. Tugas CANCELLED dikecualikan; PENDING melewati target menjadi Terlewat. Tidak membangkitkan tugas historis, mingguan yang belum terbentuk, atau mengubah aturan penugasan. Kuartal/semester dihitung sekali di bulan batas target. Tidak ada target berarti persentase tidak tersedia.
+- Sudah Preventif tetap mengikuti `ChecklistTask.COMPLETED` (saat checklist dikirim); menunggu ACC dan belum final ditampilkan terpisah sebagai subset, bukan tambahan denominator. Ketepatan waktu hanya berdasarkan `completedAt` yang tercatat.
+- Kalender menampilkan tanggal target, multi-status pada satu tanggal, rincian tugas, dan link laporan milik user. Tren enam bulan berdasarkan task tercatat, bukan snapshot historis: status aktual dapat berubah jika tugas lama diselesaikan belakangan. Statistik bukan seluruh rencana PIC yang belum dibangkitkan.
+- Evaluasi membuka `/dashboard/checklists?month=YYYY-MM&status=PENDING|OVERDUE` dengan data target tercatat dan filter awal. Bulan historis/future hanya lihat; bulan berjalan tetap membutuhkan izin kerja aktif dan penugasan aktif. Akses Checklist Rutin biasa tanpa month tetap memakai service existing.
+- Backend approval, otorisasi detail/foto/PDF, schema dan validasi existing tidak berubah. Tidak ada data dummy pada UI produksi.
+- Verifikasi: unit test metrik, typecheck, docs guard, regression existing, UAT mobile/desktop dan isolasi akun. V14 belum dianggap lulus UAT hanya karena patch diterapkan.
+
+## V14.1 — Light workspace dan Dashboard operasional
+
+- Halaman ES Dashboard, Laporan, Aktivitas, dan Preventif memakai token light workspace yang terisolasi: kartu putih, teks gelap, aksen oranye, warna status semantik. Tema root, halaman reviewer, serta flow bisnis tidak diubah.
+- Dashboard menempatkan tiga pilihan aktivitas tepat setelah izin kerja; Checklist Rutin dapat dibuka untuk melihat penugasan, Perbaikan/Temuan dan General Checklist memerlukan izin APPROVED. Jalur laporan baru existing tetap dapat diakses.
+- Ringkasan To Do List memakai permukaan terang dan menautkan status tugas ke Checklist Rutin; analitik lengkap tetap di Preventif.
+- Tidak ada migration, perubahan API, atau definisi perhitungan preventif.
+
+## V14.2 — Penyempurnaan UX ES
+
+- Dashboard mempertahankan Form Izin Kerja dan tiga pilihan aktivitas. To Do List PIC menjadi ringkasan status dan maksimal tiga tugas prioritas (terlewat dahulu, lalu batas waktu terdekat), dengan akses langsung sesuai izin MED/003. Seluruh daftar, pencarian dan filter tetap berada pada Checklist Rutin. Rekap progres yang duplikat di Dashboard digabungkan ke ringkasan To Do List.
+- Laporan tetap berorientasi dokumen, status terkini, tindak lanjut, dokumentasi dan PDF; tidak ada perubahan flow atau approval.
+- Aktivitas default tujuh hari kalender terakhir WIB, dengan pilihan hari ini, kemarin, bulan ini, bulan tertentu, atau rentang tanggal (maksimal 366 hari). Server hanya mengirim kejadian dalam rentang yang dipilih, tetap dari laporan milik ES. Filter jenis dan pencarian nomor laporan, objek, kejadian, pelaksana dan catatan; kelompok tanggal lalu laporan, urutan kronologis terlama ke terbaru per kelompok. Kelompok dapat dibuka/tutup, tampil 20 kelompok per halaman muat-lanjut; tautan detail satu kali per kelompok. Timestamp yang hilang tidak diisi. Query histori JSON existing masih membaca laporan milik ES; optimasi indeks/penyimpanan event terpisah bukan scope perubahan ini.
+- Kalender Preventif memakai highlight soft hijau (semua selesai checklist), oranye (ada target belum selesai), merah (ada terlewat), tanpa highlight untuk tanggal kosong; prioritas merah > oranye > hijau. Klik tanggal tetap membuka rincian tugas dengan status masing-masing.
+- Tren Preventif memberi fokus dan detail target/aktual/belum/terlewat pada hover atau fokus keyboard. Klik bulan memperbarui periode ringkasan, kalender, objek dan evaluasi tanpa memindahkan jendela grafik; dropdown bulan menggeser jendela enam bulan. Periode tanpa target tampil —. Data aktual dan definisi metrik tetap existing.
+- Seluruh perubahan menggunakan light workspace ES dan komponen existing. Tidak ada migration, dependency tambahan, perubahan role lain, atau mutasi data laporan.
 
 ## User Story
 

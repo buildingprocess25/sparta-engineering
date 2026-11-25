@@ -7,18 +7,24 @@ import { DashboardShell } from "@/components/es-dashboard/dashboard-shell"
 import { getTodayWorkPermitStatus } from "@/lib/actions/work-permit"
 import { getSession } from "@/lib/session"
 import { getUserTodoTasks } from "@/lib/tasks/todo-service"
+import { getRecordedTodoTasks, recordedTodoSummary } from "@/lib/tasks/recorded-todo-service"
+import { validMonth, wibDate, monthLabel } from "@/lib/tasks/preventive-metrics"
 
 export const dynamic = "force-dynamic"
 
-export default async function ChecklistRoutinePage() {
+export default async function ChecklistRoutinePage({ searchParams }: { searchParams?: Promise<{ status?: string; month?: string }> }) {
   const session = await getSession()
   if (!session) redirect("/login")
   if (session.role !== "ES" || typeof session.userId !== "string") {
     redirect("/dashboard")
   }
 
+  const filters = await searchParams
+  const month = validMonth(filters?.month) ? filters.month : null
+  const historical = month !== null && month !== wibDate(new Date()).slice(0, 7)
+  const initialStatus = filters?.status === "PENDING" || filters?.status === "COMPLETED" || filters?.status === "OVERDUE" ? filters.status : "ALL"
   const [todoData, permitStatus] = await Promise.all([
-    getUserTodoTasks(session.userId),
+    month ? getRecordedTodoTasks(session.userId).then(tasks => recordedTodoSummary(tasks, month)) : getUserTodoTasks(session.userId),
     getTodayWorkPermitStatus(session.userId),
   ])
 
@@ -31,7 +37,8 @@ export default async function ChecklistRoutinePage() {
           email={session.email as string}
           role="ES"
         />
-        <ChecklistRoutineView todoData={todoData} hasActivePermit={permitStatus?.status === "APPROVED"} />
+        {month && <p className="mt-4 text-sm text-muted-foreground">Target tercatat: {monthLabel(month)}{historical ? " · Riwayat (hanya lihat)" : ""}</p>}
+        <ChecklistRoutineView key={`${month ?? "active"}-${initialStatus}`} todoData={todoData} initialStatus={initialStatus} hasActivePermit={!historical && permitStatus?.status === "APPROVED"} />
       </DashboardShell>
       <BottomNavigation />
     </>
