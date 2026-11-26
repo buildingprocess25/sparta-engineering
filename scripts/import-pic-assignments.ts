@@ -143,7 +143,7 @@ async function main() {
   // 3. Import Equipment & PIC Assignment dari DATA PIC UNIT NASIONAL.xlsx
   const picFile = path.resolve(process.cwd(), "docs/DATA PIC UNIT NASIONAL.xlsx")
   const wbPic = XLSX.readFile(picFile)
-  const rowsPic = XLSX.utils.sheet_to_json<any[]>(wbPic.Sheets["DATA PIC UNIT"], { header: 1 })
+  const rowsPic = XLSX.utils.sheet_to_json<unknown[]>(wbPic.Sheets["DATA PIC UNIT"], { header: 1 })
 
   let equipmentUpserted = 0
   let equipmentAssignments = 0
@@ -157,10 +157,10 @@ async function main() {
     const r = rowsPic[i]
     if (!r || !r[0] || !r[1] || !r[2]) continue
 
-    const branchName = normalizeName(r[0].toString())
-    const rawPic = r[1].toString().trim()
-    const rawEquip = r[2].toString().trim()
-    const rawUnit = r[3] !== undefined && r[3] !== null ? parseInt(r[3], 10) : 1
+    const branchName = normalizeName(String(r[0]))
+    const rawPic = String(r[1]).trim()
+    const rawEquip = String(r[2]).trim()
+    const rawUnit = r[3] !== undefined && r[3] !== null ? parseInt(String(r[3]), 10) : 1
     const unitNo = isNaN(rawUnit) ? 1 : rawUnit
 
     const norm = normalizeEquipment(rawEquip)
@@ -216,14 +216,14 @@ async function main() {
   for (const sheetName of wbInv.SheetNames) {
     const areaCode = getExplicitAreaCode(sheetName)
     const sheet = wbInv.Sheets[sheetName]
-    const data = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 })
+    const data = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 })
 
     let currentFormCode: string | undefined
     const currentPeriod = ChecklistPeriod.MONTHLY
 
     for (const r of data) {
       if (!r) continue
-      const c0 = (r[0] || "").toString().trim()
+      const c0 = String(r[0] || "").trim()
       if (c0.includes("FORM CHECKLIST RUANGAN")) {
         currentFormCode = "SAT/FRM/TSM/003 REV 000 211022"
         continue
@@ -235,7 +235,7 @@ async function main() {
         continue
       }
 
-      const rawNik = (r[2] || "").toString().trim()
+      const rawNik = String(r[2] || "").trim()
       if (!currentFormCode || !/^\d+$/.test(rawNik)) continue
 
       const canonicalNik = resolvePic(rawNik, sheetName)

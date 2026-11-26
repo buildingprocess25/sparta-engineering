@@ -22,15 +22,17 @@ export default async function ActivityPage(props: ActivityPageProps) {
     if (searchParams?.tab === "overdue") redirect("/dashboard/checklists?status=OVERDUE")
     if (searchParams?.tab === "revision") redirect("/dashboard/reports?status=NEEDS_REVISION")
     if (searchParams?.tab === "submitted") redirect("/dashboard/reports")
+    let data: { now: string; range: ReturnType<typeof activityRange>; events: Awaited<ReturnType<typeof getEsActivityEvents>> }
     try {
       const now = new Date().toISOString()
       const range = activityRange(searchParams?.from, searchParams?.to, now)
       const events = (await getEsActivityEvents(session.userId)).filter(e => withinActivityRange(e.at, range))
-      return <EsActivityTimeline key={`${range.from}-${range.to}`} events={events} email={session.email as string} range={range} now={now} />
+      data = { now, range, events }
     } catch (error) {
       console.error("ES activity unavailable", error)
       return <EsNavigationUnavailable email={session.email as string} title="Aktivitas" href="/dashboard/activity" />
     }
+    return <EsActivityTimeline key={`${data.range.from}-${data.range.to}`} events={data.events} email={session.email as string} range={data.range} now={data.now} />
   }
   return <PlaceholderScreen title="Aktivitas" email={session.email as string} role={session.role as string} />
 }

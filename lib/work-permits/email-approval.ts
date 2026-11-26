@@ -1,7 +1,7 @@
 import crypto from "crypto"
 import { getPrisma } from "@/lib/prisma"
 import { getSpartaAppMode } from "@/lib/sparta-app-mode"
-import type { Prisma, WorkPermitApprovalRole, WorkPermitStatus } from "@/generated/prisma"
+import type { Prisma, WorkPermit, WorkPermitApprovalRole, WorkPermitStatus } from "@/generated/prisma"
 
 const DEFAULT_BASE_URL = "http://localhost:3000"
 
@@ -22,7 +22,13 @@ export type SimulatedEmailItem = {
   bodyHtml: string
   bodyText: string | null
   actionUrl: string | null
-  metadata: any
+  metadata: {
+    permitId?: string
+    permitCode?: string
+    stage?: WorkPermitStatus
+    role?: WorkPermitApprovalRole
+    approverNik?: string
+  } | null
   sentAt: Date
   readAt: Date | null
   createdAt: Date
@@ -151,8 +157,8 @@ export async function sendApprovalEmail(
   const stageLabel = targetStage === "PENDING_P2K3" ? "P2K3 / Delegate" : "Sekretaris P2K3"
   const stageNumber = targetStage === "PENDING_P2K3" ? "Tahap 2 dari 3" : "Tahap 3 dari 3 (Akhir)"
 
-  const safetyPayload = (permit.safetyPayload || {}) as Record<string, any>
-  const targetPeriod = safetyPayload.targetPeriod || "-"
+  const safetyPayload = (permit.safetyPayload || {}) as Record<string, unknown>
+  const targetPeriod = String(safetyPayload.targetPeriod || "-")
   const formattedWorkDate = permit.workDate
     ? new Date(permit.workDate).toLocaleDateString("id-ID", {
         day: "numeric",
@@ -333,7 +339,7 @@ export async function getApprovalTokenDetails(token: string) {
 export type SubmitTokenDecisionResult =
   | {
       ok: true
-      permit: any
+      permit: WorkPermit
       stage: WorkPermitStatus
       decision: "APPROVED" | "REJECTED"
       approverName: string
@@ -505,8 +511,9 @@ export async function submitTokenDecision(input: {
     }
 
     return result
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error executing submitTokenDecision:", err)
-    return { ok: false as const, error: "Gagal memproses keputusan token: " + (err.message || String(err)) }
+    const message = err instanceof Error ? err.message || String(err) : String(err)
+    return { ok: false as const, error: "Gagal memproses keputusan token: " + message }
   }
 }

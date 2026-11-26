@@ -20,6 +20,7 @@ import {
 import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service"
 import { cn } from "@/lib/utils"
 import type { WorkPermitStatusData } from "@/components/es-dashboard/work-permit-card"
+import { useClientWorkPermit } from "@/lib/work-permits/use-client-work-permit"
 
 type PeriodFilter = "WEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMESTER"
 type ObjectTypeFilter = "EQUIPMENT" | "ROOM"
@@ -34,43 +35,7 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
   const [selectedPeriod, setSelectedPeriod] = React.useState<PeriodFilter | null>(null)
   const [selectedObjectType, setSelectedObjectType] = React.useState<ObjectTypeFilter>("EQUIPMENT")
   const [searchQuery, setSearchQuery] = React.useState("")
-  const [hasWorkPermit, setHasWorkPermit] = React.useState(
-    workPermitStatus?.status === "APPROVED"
-  )
-
-  React.useEffect(() => {
-    if (workPermitStatus) {
-      setHasWorkPermit(workPermitStatus.status === "APPROVED")
-      return
-    }
-
-    try {
-      if (typeof window !== "undefined") {
-        const permitRaw = userNik
-          ? window.sessionStorage.getItem(`sparta_work_permit_${userNik}`)
-          : window.sessionStorage.getItem("sparta_work_permit")
-
-        if (permitRaw) {
-          try {
-            const parsed = JSON.parse(permitRaw)
-            if (!userNik || !parsed.userNik || parsed.userNik === userNik) {
-              if (parsed.status) {
-                setHasWorkPermit(parsed.status === "APPROVED")
-              } else {
-                setHasWorkPermit(true)
-              }
-              return
-            }
-          } catch {
-            // ignore
-          }
-        }
-        setHasWorkPermit(false)
-      }
-    } catch {
-      // ignore
-    }
-  }, [userNik, workPermitStatus])
+  const hasWorkPermit = useClientWorkPermit(userNik, workPermitStatus)
 
   const { total, pending, completed, overdue, tasks } = todoData
 

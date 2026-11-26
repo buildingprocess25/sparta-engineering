@@ -29,6 +29,8 @@ import {
   getNextWorkPermitPeriod,
   getWorkPermitCalendarDate,
 } from "@/lib/work-permits/calendar"
+import type { Prisma } from "@/generated/prisma"
+import type { WorkPermitSafetyPayload } from "@/lib/work-permits/ui-payload"
 
 export type WorkPermitFullData = {
   id: string
@@ -40,8 +42,8 @@ export type WorkPermitFullData = {
   kontraktor: string | null
   workDate: string
   duration: string
-  workers: any
-  safetyPayload: any
+  workers: Prisma.JsonValue
+  safetyPayload: Prisma.JsonValue
   catatanPasca: string | null
   status: "PENDING_MANAGER" | "PENDING_P2K3" | "PENDING_SECRETARY" | "APPROVED" | "REJECTED" | "COMPLETED"
   applicantNik: string
@@ -49,7 +51,7 @@ export type WorkPermitFullData = {
   managerNik: string | null
   managerSignedAt: string | null
   managerNotes: string | null
-  approvalHistory?: any
+  approvalHistory?: Prisma.JsonValue
   applicant?: {
     name: string
     NIK: string
@@ -76,7 +78,7 @@ type FrmMed003FormProps = {
   historyHref?: string
 }
 
-function parseBooleanMap(raw: any, defaults: Record<string, boolean> = {}): Record<string, boolean> {
+function parseBooleanMap(raw: unknown, defaults: Record<string, boolean> = {}): Record<string, boolean> {
   if (!raw) return { ...defaults }
   if (Array.isArray(raw)) {
     const res: Record<string, boolean> = { ...defaults }
@@ -86,7 +88,7 @@ function parseBooleanMap(raw: any, defaults: Record<string, boolean> = {}): Reco
     return res
   }
   if (typeof raw === "object") {
-    return { ...defaults, ...raw }
+    return { ...defaults, ...(raw as Record<string, boolean>) }
   }
   return { ...defaults }
 }
@@ -134,7 +136,7 @@ export function FrmMed003Form({
     initialLokasi = parts.join(" - ") || defaultUserBranch || ""
   }
 
-  const safety = initialData?.safetyPayload || {}
+  const safety = (initialData?.safetyPayload || {}) as WorkPermitSafetyPayload
 
   let parsedJamMulai = defaultJamMulai
   let parsedJamSelesai = defaultJamSelesai
@@ -164,7 +166,7 @@ export function FrmMed003Form({
 
     const fromUrl = searchParams.get("period")
     if (fromUrl) return fromUrl
-    const payload = initialData?.safetyPayload as any
+    const payload = safety
     if (payload?.targetPeriod) return payload.targetPeriod
     if (initialData?.workDate) {
       try {
@@ -196,35 +198,38 @@ export function FrmMed003Form({
   // 2. Daftar Pekerja (1 s.d. 5, default diisi teknisi pemohon)
   const [workers, setWorkers] = React.useState<string[]>(() => {
     if (initialData?.workers && Array.isArray(initialData.workers) && initialData.workers.length > 0) {
-      return initialData.workers
+      return initialData.workers as string[]
     }
     return [defaultUserName || ""]
   })
 
-  // Sinkronisasi saat server props masuk setelah client hydration
-  React.useEffect(() => {
-    if (initialData) return
-    if (defaultUserName && !picSat) {
-      setPicSat(defaultUserName)
+  // Apply late-arriving defaults only to untouched fields, as before.
+  const [previousDefaults, setPreviousDefaults] = React.useState({
+    defaultUserName, defaultKegiatan, defaultLokasi, initialData,
+  })
+  if (
+    previousDefaults.defaultUserName !== defaultUserName ||
+    previousDefaults.defaultKegiatan !== defaultKegiatan ||
+    previousDefaults.defaultLokasi !== defaultLokasi ||
+    previousDefaults.initialData !== initialData
+  ) {
+    const dataChanged = previousDefaults.initialData !== initialData
+    setPreviousDefaults({ defaultUserName, defaultKegiatan, defaultLokasi, initialData })
+    if (!initialData) {
+      if (dataChanged || previousDefaults.defaultUserName !== defaultUserName) {
+        if (defaultUserName && !picSat) setPicSat(defaultUserName)
+        if (defaultUserName && workers.length === 1 && workers[0] === "") {
+          setWorkers([defaultUserName])
+        }
+      }
+      if ((dataChanged || previousDefaults.defaultKegiatan !== defaultKegiatan) && defaultKegiatan && !kegiatan) {
+        setKegiatan(defaultKegiatan)
+      }
+      if ((dataChanged || previousDefaults.defaultLokasi !== defaultLokasi) && defaultLokasi && !lokasi) {
+        setLokasi(defaultLokasi)
+      }
     }
-    if (defaultUserName && workers.length === 1 && workers[0] === "") {
-      setWorkers([defaultUserName])
-    }
-  }, [defaultUserName, initialData])
-
-  React.useEffect(() => {
-    if (initialData) return
-    if (defaultKegiatan && !kegiatan) {
-      setKegiatan(defaultKegiatan)
-    }
-  }, [defaultKegiatan, initialData])
-
-  React.useEffect(() => {
-    if (initialData) return
-    if (defaultLokasi && !lokasi) {
-      setLokasi(defaultLokasi)
-    }
-  }, [defaultLokasi, initialData])
+  }
 
   const addWorker = () => {
     if (isReadOnly) return

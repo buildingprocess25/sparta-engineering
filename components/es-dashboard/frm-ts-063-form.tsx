@@ -136,12 +136,10 @@ export function FrmTs063Form({
   const [unitBrand, setUnitBrand] = React.useState(initialPayload?.unitBrand ?? "")
   const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
-  // Auto-populate location from areaName if empty
-  React.useEffect(() => {
-    if (!location && areaName) {
-      setLocation(areaName)
-    }
-  }, [areaName, location])
+  // Preserve the existing area fallback when the field is empty.
+  if (!location && areaName) {
+    setLocation(areaName)
+  }
 
   // Items State (14 items)
   const [items, setItems] = React.useState<Record<string, ItemState>>(() => {

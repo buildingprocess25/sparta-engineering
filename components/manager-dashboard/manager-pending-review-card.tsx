@@ -13,9 +13,8 @@ interface ManagerPendingReviewCardProps {
   viewerRole?: string
 }
 
-function calculateAgeInDays(date: Date | string): number {
+function calculateAgeInDays(date: Date | string, now: number): number {
   const created = new Date(date).getTime()
-  const now = Date.now()
   const diffDays = Math.max(1, Math.floor((now - created) / (1000 * 60 * 60 * 24)))
   return diffDays
 }
@@ -39,17 +38,18 @@ export function ManagerPendingReviewCard({
 }: ManagerPendingReviewCardProps) {
   const [selectedReport, setSelectedReport] = React.useState<RealReportItem | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const [now, setNow] = React.useState(() => Date.now())
+
+  React.useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   // Prioritize pending reports, otherwise take recent reports
-  const pendingReports = React.useMemo(() => {
-    const pending = reports.filter(
-      (r) => r.status === "PENDING_COORD" || r.status === "PENDING_MANAGER"
-    )
-    if (pending.length > 0) {
-      return pending.slice(0, 5)
-    }
-    return reports.slice(0, 5)
-  }, [reports])
+  const pending = reports.filter(
+    (r) => r.status === "PENDING_COORD" || r.status === "PENDING_MANAGER"
+  )
+  const pendingReports = (pending.length > 0 ? pending : reports).slice(0, 5)
 
   const handleOpenReview = (report: RealReportItem) => {
     setSelectedReport(report)
@@ -111,7 +111,7 @@ export function ManagerPendingReviewCard({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {pendingReports.map((report) => {
-                    const ageDays = calculateAgeInDays(report.createdAt)
+                    const ageDays = calculateAgeInDays(report.createdAt, now)
                     const isCoord = report.status === "PENDING_COORD"
                     const isManager = report.status === "PENDING_MANAGER"
                     const isCompleted = report.status === "COMPLETED"

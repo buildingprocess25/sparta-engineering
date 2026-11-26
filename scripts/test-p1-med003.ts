@@ -277,7 +277,7 @@ async function runP1Med003Tests() {
   })
 
   // Submit checklist dengan menghubungkan permit.id
-  const submitResult = await saveChecklistSubmission(prisma as any, {
+  const submitResult = await saveChecklistSubmission(prisma, {
     reportCode: testReportCode,
     authorId: BES_NIK,
     permitId: permit.id,

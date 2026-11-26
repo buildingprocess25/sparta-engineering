@@ -154,16 +154,13 @@ export async function getRealDashboardStats(areaFilter: AreaFilter, reportScope:
     statusCounts,
     categoryCounts,
     recentReports: recentReports.map((r) => {
-      let itemsList: any[] = []
-      if (
-        r.checklistPayload &&
-        typeof r.checklistPayload === "object" &&
-        Array.isArray((r.checklistPayload as any).items)
-      ) {
-        itemsList = (r.checklistPayload as any).items
-      }
+      const payload = r.checklistPayload
+      const itemsList = payload && typeof payload === "object" && !Array.isArray(payload) && Array.isArray(payload.items)
+        ? payload.items
+        : []
       const defectCount = itemsList.filter(
-        (i) => i.condition === "RUSAK" || i.condition === "REPAIR"
+        (i) => i !== null && typeof i === "object" && !Array.isArray(i) &&
+          (i.condition === "RUSAK" || i.condition === "REPAIR")
       ).length
 
       return {
@@ -252,16 +249,13 @@ export async function getRealAdminReports(reportScope: Prisma.ChecklistReportWhe
   })
 
   return reports.map((r) => {
-    let itemsList: any[] = []
-    if (
-      r.checklistPayload &&
-      typeof r.checklistPayload === "object" &&
-      Array.isArray((r.checklistPayload as any).items)
-    ) {
-      itemsList = (r.checklistPayload as any).items
-    }
+    const payload = r.checklistPayload
+    const itemsList = payload && typeof payload === "object" && !Array.isArray(payload) && Array.isArray(payload.items)
+      ? payload.items
+      : []
     const defectCount = itemsList.filter(
-      (i) => i.condition === "RUSAK" || i.condition === "REPAIR"
+      (i) => i !== null && typeof i === "object" && !Array.isArray(i) &&
+        (i.condition === "RUSAK" || i.condition === "REPAIR")
     ).length
 
     return {

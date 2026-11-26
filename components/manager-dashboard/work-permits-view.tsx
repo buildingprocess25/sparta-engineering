@@ -25,6 +25,8 @@ import * as XLSX from "xlsx"
 
 import { approveWorkPermitAction, rejectWorkPermitAction } from "@/lib/actions/work-permit"
 import { cn } from "@/lib/utils"
+import type { Prisma } from "@/generated/prisma"
+import type { WorkPermitSafetyPayload, WorkPermitApprovalHistoryEntry } from "@/lib/work-permits/ui-payload"
 
 export type WorkPermitItem = {
   id: string
@@ -36,8 +38,8 @@ export type WorkPermitItem = {
   kontraktor: string | null
   workDate: string | Date
   duration: string
-  workers: any
-  safetyPayload: any
+  workers: Prisma.JsonValue
+  safetyPayload: Prisma.JsonValue
   catatanPasca: string | null
   status: "PENDING_MANAGER" | "PENDING_P2K3" | "PENDING_SECRETARY" | "APPROVED" | "REJECTED" | "COMPLETED"
   applicantNik: string
@@ -45,7 +47,7 @@ export type WorkPermitItem = {
   managerNik: string | null
   managerSignedAt: string | Date | null
   managerNotes: string | null
-  approvalHistory?: any
+  approvalHistory?: Prisma.JsonValue
   applicant?: {
     name: string
     NIK: string
@@ -95,12 +97,15 @@ export function WorkPermitsView({
   const [filter, setFilter] = React.useState<QuickFilter>("ALL")
   const [search, setSearch] = React.useState("")
   const [selectedPermit, setSelectedPermit] = React.useState<WorkPermitItem | null>(() => initialPermits.find((permit) => permit.permitCode === initialPermitCode) ?? null)
+  const selectedSafety = (selectedPermit?.safetyPayload || {}) as WorkPermitSafetyPayload
   const [actionLoading, setActionLoading] = React.useState(false)
   const [managerNoteInput, setManagerNoteInput] = React.useState("")
 
-  React.useEffect(() => {
+  const [previousPermits, setPreviousPermits] = React.useState(initialPermits)
+  if (previousPermits !== initialPermits) {
+    setPreviousPermits(initialPermits)
     setPermits(initialPermits)
-  }, [initialPermits])
+  }
 
   const pendingCount = React.useMemo(
     () => permits.filter((p) => p.status.startsWith("PENDING_")).length,
@@ -166,7 +171,7 @@ export function WorkPermitsView({
     try {
       const res = await approveWorkPermitAction(selectedPermit.id, managerNoteInput)
       if (res.ok) {
-        const updatedStatus = (res as any).permit?.status || "APPROVED"
+        const updatedStatus = ("permit" in res ? res.permit?.status : undefined) || "APPROVED"
         setPermits((prev) =>
           prev.map((item) =>
             item.id === selectedPermit.id
@@ -418,7 +423,7 @@ export function WorkPermitsView({
                 </tr>
               ) : (
                 filteredPermits.map((p) => {
-                  const safety = p.safetyPayload || {}
+                  const safety = (p.safetyPayload || {}) as WorkPermitSafetyPayload
                   const hasHotWork = safety.hotWork?.active
                   const hasHeight = safety.workHeight?.active
                   const hasElectrical = safety.electrical?.active
@@ -644,7 +649,7 @@ export function WorkPermitsView({
                 <h4 className="font-bold text-slate-900 mb-2">Daftar Pekerja Lapangan</h4>
                 <div className="flex items-center gap-2 flex-wrap">
                   {Array.isArray(selectedPermit.workers) && selectedPermit.workers.length > 0 ? (
-                    selectedPermit.workers.map((w: string, idx: number) => (
+                    selectedPermit.workers.filter((w): w is string => typeof w === "string").map((w, idx) => (
                       <span
                         key={idx}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800"
@@ -671,17 +676,17 @@ export function WorkPermitsView({
                       <span
                         className={cn(
                           "ml-auto text-[10px] px-1.5 py-0.5 rounded font-bold",
-                          selectedPermit.safetyPayload?.hotWork?.active
+                          selectedSafety.hotWork?.active
                             ? "bg-orange-100 text-orange-900"
                             : "bg-slate-100 text-slate-500"
                         )}
                       >
-                        {selectedPermit.safetyPayload?.hotWork?.active ? "AKTIF" : "TIDAK"}
+                        {selectedSafety.hotWork?.active ? "AKTIF" : "TIDAK"}
                       </span>
                     </div>
-                    {selectedPermit.safetyPayload?.hotWork?.active && (
+                    {selectedSafety.hotWork?.active && (
                       <div className="text-[11px] text-slate-600">
-                        Item: {formatItemsList(selectedPermit.safetyPayload?.hotWork?.items)}
+                        Item: {formatItemsList(selectedSafety.hotWork?.items)}
                       </div>
                     )}
                   </div>
@@ -694,17 +699,17 @@ export function WorkPermitsView({
                       <span
                         className={cn(
                           "ml-auto text-[10px] px-1.5 py-0.5 rounded font-bold",
-                          selectedPermit.safetyPayload?.workHeight?.active
+                          selectedSafety.workHeight?.active
                             ? "bg-blue-100 text-blue-900"
                             : "bg-slate-100 text-slate-500"
                         )}
                       >
-                        {selectedPermit.safetyPayload?.workHeight?.active ? "AKTIF" : "TIDAK"}
+                        {selectedSafety.workHeight?.active ? "AKTIF" : "TIDAK"}
                       </span>
                     </div>
-                    {selectedPermit.safetyPayload?.workHeight?.active && (
+                    {selectedSafety.workHeight?.active && (
                       <div className="text-[11px] text-slate-600">
-                        Item: {formatItemsList(selectedPermit.safetyPayload?.workHeight?.items)}
+                        Item: {formatItemsList(selectedSafety.workHeight?.items)}
                       </div>
                     )}
                   </div>
@@ -717,17 +722,17 @@ export function WorkPermitsView({
                       <span
                         className={cn(
                           "ml-auto text-[10px] px-1.5 py-0.5 rounded font-bold",
-                          selectedPermit.safetyPayload?.electrical?.active
+                          selectedSafety.electrical?.active
                             ? "bg-amber-100 text-amber-900"
                             : "bg-slate-100 text-slate-500"
                         )}
                       >
-                        {selectedPermit.safetyPayload?.electrical?.active ? "AKTIF" : "TIDAK"}
+                        {selectedSafety.electrical?.active ? "AKTIF" : "TIDAK"}
                       </span>
                     </div>
-                    {selectedPermit.safetyPayload?.electrical?.active && (
+                    {selectedSafety.electrical?.active && (
                       <div className="text-[11px] text-slate-600">
-                        Item: {formatItemsList(selectedPermit.safetyPayload?.electrical?.items)}
+                        Item: {formatItemsList(selectedSafety.electrical?.items)}
                       </div>
                     )}
                   </div>
@@ -739,8 +744,8 @@ export function WorkPermitsView({
                       <span>APD yang Disiapkan:</span>
                     </div>
                     <div className="text-[11px] text-slate-600">
-                      {formatItemsList(selectedPermit.safetyPayload?.apd?.items) !== "-"
-                        ? formatItemsList(selectedPermit.safetyPayload?.apd?.items)
+                      {formatItemsList(selectedSafety.apd?.items) !== "-"
+                        ? formatItemsList(selectedSafety.apd?.items)
                         : "Standar Helm & Sepatu Safety"}
                     </div>
                   </div>
@@ -748,11 +753,11 @@ export function WorkPermitsView({
               </div>
 
               {/* Section 4: Riwayat Persetujuan Multilevel */}
-              {Array.isArray(selectedPermit.approvalHistory) && (selectedPermit.approvalHistory as any[]).length > 0 && (
+              {Array.isArray(selectedPermit.approvalHistory) && selectedPermit.approvalHistory.length > 0 && (
                 <div>
                   <h4 className="font-bold text-slate-900 mb-2">Riwayat Persetujuan Multilevel</h4>
                   <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                    {(selectedPermit.approvalHistory as any[]).map((entry, idx) => (
+                    {(selectedPermit.approvalHistory as WorkPermitApprovalHistoryEntry[]).map((entry, idx) => (
                       <div key={idx} className="flex items-start justify-between gap-2 text-xs border-b border-slate-200/60 pb-2 last:border-0 last:pb-0">
                         <div>
                           <p className="font-bold text-slate-900">

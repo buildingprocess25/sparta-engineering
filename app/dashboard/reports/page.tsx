@@ -19,14 +19,16 @@ export default async function ReportsPage({ searchParams }: { searchParams?: Pro
 
   if (session.role === "ES") {
     if (typeof session.userId !== "string") redirect("/login")
+    let reports: Awaited<ReturnType<typeof getEsReportRows>>
+    let status: string | undefined
     try {
-      const reports = await getEsReportRows(session.userId)
-      const status = (await searchParams)?.status
-      return <EsReportsView key={status ?? "ALL"} reports={reports} email={session.email as string} initialStatus={status} />
+      reports = await getEsReportRows(session.userId)
+      status = (await searchParams)?.status
     } catch (error) {
       console.error("ES reports unavailable", error)
       return <EsNavigationUnavailable email={session.email as string} title="Laporan" href="/dashboard/reports" />
     }
+    return <EsReportsView key={status ?? "ALL"} reports={reports} email={session.email as string} initialStatus={status} />
   }
 
   const reports = await getRealAdminReports(await getDashboardReportScope(session.userId), {})

@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils"
 interface ManagerDashboardViewProps {
   userEmail?: string
   userRole?: string
-  initialRealStats?: any
+  initialRealStats?: Omit<Parameters<typeof mapRealStatsToDashboardData>[0], "areaFilter">
   initialReports?: RealReportItem[]
 }
 

@@ -40,13 +40,28 @@ interface ReportReviewModalProps {
 
 type DialogMode = "NONE" | "APPROVE" | "REVISION" | "REJECT"
 
-export function ReportReviewModal({
+type ReviewChecklistItem = {
+  id?: string
+  label?: string
+  condition?: string
+  notes?: string
+  photos?: unknown[]
+  handler?: string
+  repairFormName?: string
+  repairForm?: string
+}
+
+export function ReportReviewModal(props: ReportReviewModalProps) {
+  if (!props.isOpen || !props.report) return null
+  return <ReportReviewSession key={props.report.id} {...props} report={props.report} />
+}
+
+function ReportReviewSession({
   report,
-  isOpen,
   onClose,
   onSuccess,
   viewerRole = "MANAGER",
-}: ReportReviewModalProps) {
+}: Omit<ReportReviewModalProps, "isOpen" | "report"> & { report: RealReportItem }) {
   const [activeTab, setActiveTab] = React.useState<"checklist" | "defect" | "history">("checklist")
   const [activeDialog, setActiveDialog] = React.useState<DialogMode>("NONE")
   const [decisionNotes, setDecisionNotes] = React.useState("")
@@ -56,28 +71,15 @@ export function ReportReviewModal({
   const decisionLock = React.useRef(false)
   const [feedbackToast, setFeedbackToast] = React.useState<{ text: string; error?: boolean } | null>(null)
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setActiveTab("checklist")
-      setActiveDialog("NONE")
-      setDecisionNotes("")
-      setNotesError(null)
-      setIsSubmitting(false)
-      setDecisionFinished(false)
-      decisionLock.current = false
-      setFeedbackToast(null)
-    }
-  }, [isOpen, report?.id])
+  const closeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  React.useEffect(() => () => {
+    if (closeTimer.current !== null) clearTimeout(closeTimer.current)
+  }, [])
 
-  if (!isOpen || !report) return null
-
-  let itemsList: any[] = []
-  if (
-    report.checklistPayload &&
-    typeof report.checklistPayload === "object" &&
-    Array.isArray((report.checklistPayload as any).items)
-  ) {
-    itemsList = (report.checklistPayload as any).items
+  const payload: unknown = report.checklistPayload
+  let itemsList: ReviewChecklistItem[] = []
+  if (payload && typeof payload === "object" && "items" in payload && Array.isArray(payload.items)) {
+    itemsList = payload.items as ReviewChecklistItem[]
   }
 
   const defectiveItems = itemsList.filter(
@@ -132,7 +134,7 @@ export function ReportReviewModal({
       setFeedbackToast({ text: res.message || "Berhasil memproses keputusan." })
       setActiveDialog("NONE")
       if (onSuccess) onSuccess()
-      setTimeout(() => {
+      closeTimer.current = setTimeout(() => {
         setFeedbackToast(null)
         onClose()
       }, 1500)
@@ -202,7 +204,8 @@ export function ReportReviewModal({
               </div>
 
               <h2 className="mt-2 text-base sm:text-lg font-bold text-white leading-tight">
-                {report.checklistPayload?.formName ||
+                {(payload !== null && typeof payload === "object" && "formName" in payload &&
+                  typeof payload.formName === "string" && payload.formName) ||
                   `Laporan Pemeliharaan Area ${report.area.name}`}
               </h2>
             </div>

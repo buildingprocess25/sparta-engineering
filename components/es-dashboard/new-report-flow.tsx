@@ -6,6 +6,7 @@ import { CheckCircle2, ClipboardCheck, ShieldAlert, Wrench } from "lucide-react"
 
 import { ReportChoiceCard } from "@/components/es-dashboard/report-choice-card"
 import type { WorkPermitStatusData } from "@/components/es-dashboard/work-permit-card"
+import { useClientWorkPermit } from "@/lib/work-permits/use-client-work-permit"
 
 type NewReportFlowProps = {
   userNik?: string
@@ -13,68 +14,7 @@ type NewReportFlowProps = {
 }
 
 export function NewReportFlow({ userNik, initialWorkPermitStatus }: NewReportFlowProps = {}) {
-  const isInitiallyApproved = initialWorkPermitStatus?.status === "APPROVED"
-  const [hasWorkPermit, setHasWorkPermit] = React.useState(isInitiallyApproved)
-
-  React.useEffect(() => {
-    if (initialWorkPermitStatus) {
-      setHasWorkPermit(initialWorkPermitStatus.status === "APPROVED")
-      return
-    }
-
-    try {
-      if (typeof window !== "undefined") {
-        const permitRaw = userNik
-          ? window.sessionStorage.getItem(`sparta_work_permit_${userNik}`)
-          : window.sessionStorage.getItem("sparta_work_permit")
-
-        if (permitRaw) {
-          try {
-            const parsed = JSON.parse(permitRaw)
-            if (!userNik || !parsed.userNik || parsed.userNik === userNik) {
-              if (parsed.status) {
-                setHasWorkPermit(parsed.status === "APPROVED")
-              } else {
-                setHasWorkPermit(true)
-              }
-              return
-            }
-          } catch {
-            // ignore
-          }
-        }
-
-        if (userNik) {
-          const fallback = window.sessionStorage.getItem("sparta_work_permit")
-          if (fallback) {
-            try {
-              const parsed = JSON.parse(fallback)
-              if (parsed.userNik === userNik) {
-                if (parsed.status) {
-                  setHasWorkPermit(parsed.status === "APPROVED")
-                } else {
-                  setHasWorkPermit(true)
-                }
-                return
-              }
-            } catch {
-              // ignore
-            }
-          }
-        }
-
-        const params = new URLSearchParams(window.location.search)
-        if (params.get("permit") === "done") {
-          setHasWorkPermit(true)
-          return
-        }
-
-        setHasWorkPermit(false)
-      }
-    } catch {
-      // ignore
-    }
-  }, [userNik, initialWorkPermitStatus])
+  const hasWorkPermit = useClientWorkPermit(userNik, initialWorkPermitStatus, true)
 
   return (
     <div className="flex flex-col gap-6 sm:gap-7 rounded-2xl md:rounded-3xl border border-[#dedede] bg-white p-4 sm:p-6 md:p-8 shadow-sm">

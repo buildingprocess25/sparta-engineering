@@ -182,7 +182,7 @@ export function SharedChecklistForm({
   const totalCount = config.items.length
   const progressPercentage = Math.round((evaluatedCount / totalCount) * 100)
   
-  const validationIssues = React.useMemo(() => {
+  const validationIssues = (() => {
     const issues: string[] = []
     if (config.allowPartial ? evaluatedCount === 0 : evaluatedCount < totalCount) {
       issues.push(
@@ -215,7 +215,7 @@ export function SharedChecklistForm({
       })
     }
     return issues
-  }, [config, items, evaluatedCount, totalCount])
+  })()
 
   const isUploading = Object.values(items).some((list) =>
     list.some((state) => state.uploading)

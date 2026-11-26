@@ -151,11 +151,10 @@ export function FrmTs041Form({
   const [inspectionEndDate, setInspectionEndDate] = React.useState(initialPayload?.inspectionEndDate ?? initialPayload?.inspectionDate ?? todayStr)
   const [generalNotes, setGeneralNotes] = React.useState(initialPayload?.generalNotes ?? "")
 
-  React.useEffect(() => {
-    if (!warehouse && areaName) {
-      setWarehouse(areaName)
-    }
-  }, [areaName, warehouse])
+  // Preserve the existing area fallback when the field is empty.
+  if (!warehouse && areaName) {
+    setWarehouse(areaName)
+  }
 
   // Items State (66 items)
   const [items, setItems] = React.useState<Record<string, ItemState>>(() => {

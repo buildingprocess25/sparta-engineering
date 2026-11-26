@@ -125,7 +125,11 @@ export function isSparePartProposal(payload: unknown): boolean {
   return false
 }
 
-export function isReportFinal(data: PdfReportData): boolean {
+export function isReportFinal(data: {
+  status?: string | null
+  approvalHistory?: unknown
+  checklistPayload?: unknown
+}): boolean {
   if (data.status !== "COMPLETED") return false
   const history = normalizeApprovalHistory(data.approvalHistory)
   if (history.length === 0) return false

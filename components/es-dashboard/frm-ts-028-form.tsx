@@ -450,8 +450,8 @@ export function FrmTs028Form({
       if (!res.ok) {
         setIsSubmitting(false)
         setSubmitError(
-          Array.isArray((res as any).errors)
-            ? (res as any).errors.join(", ")
+          Array.isArray(res.errors)
+            ? res.errors.join(", ")
             : "Terjadi kesalahan saat menyimpan checklist."
         )
         return
@@ -462,9 +462,9 @@ export function FrmTs028Form({
       } else {
         window.location.assign(`/dashboard/reports/${reportCode}/follow-up`)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsSubmitting(false)
-      setSubmitError(err.message || "Terjadi kesalahan saat menyimpan checklist.")
+      setSubmitError(err instanceof Error && err.message ? err.message : "Terjadi kesalahan saat menyimpan checklist.")
     }
   }
 

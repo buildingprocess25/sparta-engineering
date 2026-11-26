@@ -28,7 +28,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select"
 import { ReportCompletionSuccess } from "@/components/es-dashboard/report-completion-success"
-import { buildInitialForm065State } from "@/lib/reports/follow-up-prefill"
+import { buildInitialForm065State, type Form065PrefillInput } from "@/lib/reports/follow-up-prefill"
 
 interface MaterialItem {
   id: string
@@ -75,11 +75,32 @@ interface FollowUpUnit {
   totalUnitsOfThisItem: number
 }
 
+type LegacyFollowUpData = NonNullable<Form065PrefillInput["existing"]> &
+  Partial<ItemFollowUp014> & { hargaUnit?: string | number }
+
+type FollowUpPayload = {
+  items?: Array<{
+    id: string
+    label: string
+    condition?: string
+    notes?: string
+    repairForm?: string
+    unitNo?: string
+    followUp014?: LegacyFollowUpData
+    followUp065?: LegacyFollowUpData
+    followUpData?: LegacyFollowUpData
+    [key: string]: unknown
+  }>
+  unitModel?: string
+  unitBrand?: string
+  unitNo?: string
+}
+
 interface FollowUpFormsEditorProps {
   reportCode: string
   version: string
   isRevision: boolean
-  payload: any
+  payload: unknown
   context: {
     branchName: string
     authorName: string
@@ -100,11 +121,13 @@ export function FollowUpFormsEditor({
   reportCode,
   version,
   isRevision,
-  payload,
+  payload: rawPayload,
   context,
 }: FollowUpFormsEditorProps) {
   const router = useRouter()
-  const rawItems: any[] = payload?.items || []
+  // Existing persisted JSON payload; preserve all fields when merging updates.
+  const payload = rawPayload as FollowUpPayload | null | undefined
+  const rawItems = useMemo(() => payload?.items || [], [payload])
 
   // Extract all units that require Form 014 or Form 065 in exact order
   const followUpUnits: FollowUpUnit[] = useMemo(() => {
@@ -261,7 +284,7 @@ export function FollowUpFormsEditor({
     unitKey: string,
     matId: string,
     field: keyof MaterialItem,
-    val: any
+    val: string | number
   ) => {
     setData014((prev) => {
       const current = prev[unitKey]
@@ -286,7 +309,7 @@ export function FollowUpFormsEditor({
   }
 
   // Spare part helpers for 065
-  const updateField065 = (unitKey: string, field: keyof ItemFollowUp065, val: any) => {
+  const updateField065 = <K extends keyof ItemFollowUp065>(unitKey: string, field: K, val: ItemFollowUp065[K]) => {
     setData065((prev) => ({
       ...prev,
       [unitKey]: {
@@ -342,11 +365,11 @@ export function FollowUpFormsEditor({
     })
   }
 
-  const updateSparePartField = (
+  const updateSparePartField = <K extends keyof SparePartItem>(
     unitKey: string,
     partId: string,
-    field: keyof SparePartItem,
-    val: any
+    field: K,
+    val: SparePartItem[K]
   ) => {
     setData065((prev) => {
       const current = prev[unitKey]
@@ -378,7 +401,8 @@ export function FollowUpFormsEditor({
     }, 0)
   }, [data014])
 
-  const formattedDate = new Date(context.createdAt || Date.now()).toLocaleDateString(
+  const [fallbackCreatedAt] = useState(() => Date.now())
+  const formattedDate = new Date(context.createdAt || fallbackCreatedAt).toLocaleDateString(
     "id-ID",
     {
       day: "2-digit",
@@ -407,7 +431,7 @@ export function FollowUpFormsEditor({
       setErrorMessage(null)
 
       // Merge follow up data into items
-      const updatedItems = rawItems.map((item: any, idx: number) => {
+      const updatedItems = rawItems.map((item, idx) => {
         const unit = followUpUnits.find((u) => u.rawIndex === idx)
         if (!unit) return item
 
@@ -471,8 +495,8 @@ export function FollowUpFormsEditor({
       if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, behavior: "smooth" })
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || "Terjadi kesalahan saat menyimpan data.")
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error && err.message ? err.message : "Terjadi kesalahan saat menyimpan data.")
     } finally {
       setIsSubmitting(false)
     }

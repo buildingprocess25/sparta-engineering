@@ -130,7 +130,7 @@ async function runTests() {
     data: {
       status: "PENDING_SECRETARY",
       approvalHistory: [
-        ...(permitAfterMgr.approvalHistory as any[]),
+        ...(permitAfterMgr.approvalHistory as import("../generated/prisma").Prisma.InputJsonArray),
         {
           actorNik: "WHP-P2K3-001",
           actorName: "Demo P2K3 WH Parung",
@@ -154,7 +154,7 @@ async function runTests() {
     data: {
       status: "APPROVED",
       approvalHistory: [
-        ...(permitAfterP2k3.approvalHistory as any[]),
+        ...(permitAfterP2k3.approvalHistory as import("../generated/prisma").Prisma.InputJsonArray),
         {
           actorNik: "WHP-SEC-001",
           actorName: "Demo Sekretaris P2K3 WH Parung",
@@ -237,8 +237,8 @@ async function runTests() {
       areaCode: whArea.code,
       period: "",
       periodKey: "",
-      items: nonRoutineItems,
-    } as any,
+      ...{ items: nonRoutineItems },
+    },
     isSafe: false,
     photoFileIds: [],
   })
@@ -289,7 +289,7 @@ async function runTests() {
   const pdfResBefore = await fetch(`http://localhost:3000/api/reports/${nonRoutineCode}/pdf`)
   if (!pdfResBefore.ok) throw new Error(`Gagal download PDF: HTTP ${pdfResBefore.status}`)
   const pdfBufferBefore = Buffer.from(await pdfResBefore.arrayBuffer())
-  const isFinalBefore = isReportFinal(reportNRAfterSubmit as any)
+  const isFinalBefore = isReportFinal(reportNRAfterSubmit)
   console.log(`✔ [Lulus] PDF sebelum selesai: Ukuran = ${pdfBufferBefore.length} bytes, isReportFinal = ${isFinalBefore} (Tepat, belum final)`)
 
   // Review 1: BEC (Koordinator)
@@ -356,7 +356,7 @@ async function runTests() {
   const pdfResAfter = await fetch(`http://localhost:3000/api/reports/${nonRoutineCode}/pdf`)
   if (!pdfResAfter.ok) throw new Error(`Gagal download PDF sesudah selesai: HTTP ${pdfResAfter.status}`)
   const pdfBufferAfter = Buffer.from(await pdfResAfter.arrayBuffer())
-  const isFinalAfter = isReportFinal(reportNRFinal as any)
+  const isFinalAfter = isReportFinal(reportNRFinal)
   console.log(`✔ [Lulus] PDF sesudah selesai: Ukuran = ${pdfBufferAfter.length} bytes, isReportFinal = ${isFinalAfter}, Status = ${reportNRFinal.status}`)
 
 
@@ -413,8 +413,8 @@ async function runTests() {
       areaCode: whArea.code,
       period: "MONTHLY",
       periodKey: routinePeriodKey,
-      items: routineItems,
-    } as any,
+      ...{ items: routineItems },
+    },
     isSafe: false,
     photoFileIds: [],
   })
@@ -538,7 +538,7 @@ async function runTests() {
   const reportRTFinal = await prisma.checklistReport.findUniqueOrThrow({ where: { reportCode: routineCode } })
   const pdfResRTAfter = await fetch(`http://localhost:3000/api/reports/${routineCode}/pdf`)
   if (!pdfResRTAfter.ok) throw new Error("Gagal download PDF rutin selesai")
-  console.log(`✔ [Lulus] PDF Rutin sesudah selesai: Ukuran = ${(await pdfResRTAfter.arrayBuffer()).byteLength} bytes, isReportFinal = ${isReportFinal(reportRTFinal as any)}, Status = ${reportRTFinal.status}`)
+  console.log(`✔ [Lulus] PDF Rutin sesudah selesai: Ukuran = ${(await pdfResRTAfter.arrayBuffer()).byteLength} bytes, isReportFinal = ${isReportFinal(reportRTFinal)}, Status = ${reportRTFinal.status}`)
 
   // --- 5. VERIFIKASI HALAMAN & MENU HTTP PER PERAN ---
   console.log("\n--- 5. Verifikasi Akses Menu & Halaman HTTP (Next.js Server) ---")

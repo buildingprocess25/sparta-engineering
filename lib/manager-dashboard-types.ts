@@ -35,8 +35,8 @@ export interface RealReportItem {
     branchName: string
     role: string
   }
-  checklistPayload: any
-  drivePhotoFileIds: any
+  checklistPayload: unknown
+  drivePhotoFileIds: unknown
   itemsCount: number
   defectCount: number
 }

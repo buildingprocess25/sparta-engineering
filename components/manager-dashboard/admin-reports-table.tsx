@@ -81,7 +81,8 @@ export function AdminReportsTable({
   onToggleSidebar,
 }: AdminReportsTableProps) {
   const router = useRouter()
-  const [reports, setReports] = React.useState<RealReportItem[]>(initialReports)
+  const reports = initialReports
+  const [nowMs, setNowMs] = React.useState(() => Date.now())
   const [quickFilter, setQuickFilter] = React.useState<QuickFilterKey>("all")
   const [searchQuery, setSearchQuery] = React.useState("")
   const [selectedArea, setSelectedArea] = React.useState<"ALL" | "OFFICE" | "WAREHOUSE">("ALL")
@@ -91,8 +92,9 @@ export function AdminReportsTable({
     React.useState<RealReportItem | null>(null)
 
   React.useEffect(() => {
-    setReports(initialReports)
-  }, [initialReports])
+    const timer = window.setInterval(() => setNowMs(Date.now()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   // Filter calculation
   const filteredReports = React.useMemo(() => {
@@ -124,7 +126,6 @@ export function AdminReportsTable({
       } else if (quickFilter === "over_sla") {
         // SLA calculation: over 2 days from createdAt
         const createdMs = new Date(r.createdAt).getTime()
-        const nowMs = Date.now()
         const diffDays = (nowMs - createdMs) / (1000 * 60 * 60 * 24)
         const isPending = r.status === "PENDING_COORD" || r.status === "PENDING_MANAGER"
         if (!isPending || diffDays <= 2) return false
@@ -148,7 +149,7 @@ export function AdminReportsTable({
 
       return true
     })
-  }, [reports, quickFilter, selectedArea, selectedCategory, searchQuery])
+  }, [reports, quickFilter, selectedArea, selectedCategory, searchQuery, nowMs])
 
   // XLSX Export Function
   const handleExportXLSX = () => {
