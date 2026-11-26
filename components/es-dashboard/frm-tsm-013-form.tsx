@@ -59,6 +59,8 @@ import type {
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export type FrmTsm013FormProps = {
   reportCode: string
@@ -453,10 +455,10 @@ export function FrmTsm013Form({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Baris 1: Lokasi & Tanggal Pengecekan */}
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
               <Building2 className="size-3.5 text-[#ff8a2a]" />
               Lokasi (Branch / Depo / Bulky) <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Input
               value={areaName}
               readOnly
@@ -465,10 +467,10 @@ export function FrmTsm013Form({
           </div>
 
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
               <Calendar className="size-3.5 text-[#ff8a2a]" />
               Tanggal Pengecekan <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Input
               type="date"
               value={inspectionDate}
@@ -479,10 +481,10 @@ export function FrmTsm013Form({
 
           {/* Baris 2: Kode Lokasi & Periode */}
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
               <MapPin className="size-3.5 text-[#ff8a2a]" />
               Kode Lokasi (Misal: JZ01)
-            </label>
+            </Label>
             <Input
               placeholder="Contoh: JZ01 / WH01"
               value={locationCode}
@@ -492,10 +494,10 @@ export function FrmTsm013Form({
           </div>
 
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
               <Activity className="size-3.5 text-[#ff8a2a]" />
               Periode Inspeksi
-            </label>
+            </Label>
             <Input
               value={`Bulanan (${periodKey})`}
               readOnly
@@ -506,10 +508,10 @@ export function FrmTsm013Form({
 
         {/* Baris 3: Catatan Umum Kondisi Water Recycle - 1 Baris Full */}
         <div className="space-y-1.5 pt-1">
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+          <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
             <FileText className="size-3.5 text-[#ff8a2a]" />
             Catatan Umum Kondisi Water Recycle
-          </label>
+          </Label>
           <Input
             placeholder="Kondisi umum kejernihan air, pompa, ketersediaan tawas/kaporit..."
             value={generalNotes}
@@ -655,7 +657,7 @@ export function FrmTsm013Form({
                           {/* Evaluation Action Buttons - 1 solid clean row without wrapping */}
                           <div className="flex items-center gap-1.5 sm:shrink-0 w-full sm:w-auto">
                             {/* OK (V) */}
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => {
                                 updateItem(item.id, {
@@ -667,19 +669,19 @@ export function FrmTsm013Form({
                                   repairForm: undefined,
                                 })
                               }}
-                              className={cn(
+                              className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                 "flex-1 sm:flex-initial rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap text-center",
                                 itemState.condition === "BAIK" && itemState.actionTaken !== "Tes"
                                   ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs"
                                   : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
+                              )].filter(Boolean).join(" ")}
                             >
                               OK (V)
-                            </button>
+                            </Button>
 
                             {/* Item-specific shortcut: Kuras (for Cek/Kuras) */}
                             {item.activity === "Cek/Kuras" && (
-                              <button
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={() => {
                                   updateItem(item.id, {
@@ -691,20 +693,20 @@ export function FrmTsm013Form({
                                     repairForm: undefined,
                                   })
                                 }}
-                                className={cn(
+                                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                   "flex-1 sm:flex-initial rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap text-center",
                                   itemState.condition === "CLEAN"
                                     ? "border-blue-500 bg-blue-50 text-blue-700 shadow-xs"
                                     : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                                )}
+                                )].filter(Boolean).join(" ")}
                               >
                                 Kuras
-                              </button>
+                              </Button>
                             )}
 
                             {/* Item-specific shortcut: Ganti (for Cek/Ganti) */}
                             {item.activity === "Cek/Ganti" && (
-                              <button
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={() => {
                                   updateItem(item.id, {
@@ -718,20 +720,20 @@ export function FrmTsm013Form({
                                     repairForm: undefined,
                                   })
                                 }}
-                                className={cn(
+                                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                   "flex-1 sm:flex-initial rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap text-center",
                                   itemState.condition === "ADJUST_OR_ADD"
                                     ? "border-amber-500 bg-amber-50 text-amber-700 shadow-xs"
                                     : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                                )}
+                                )].filter(Boolean).join(" ")}
                               >
                                 {item.isChemical ? "Tambah" : "Ganti"}
-                              </button>
+                              </Button>
                             )}
 
                             {/* Item-specific shortcut: Tes (for Tes) */}
                             {item.activity === "Tes" && (
-                              <button
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={() => {
                                   updateItem(item.id, {
@@ -743,19 +745,19 @@ export function FrmTsm013Form({
                                     repairForm: undefined,
                                   })
                                 }}
-                                className={cn(
+                                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                   "flex-1 sm:flex-initial rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap text-center",
                                   itemState.condition === "BAIK" && itemState.actionTaken === "Tes"
                                     ? "border-purple-500 bg-purple-50 text-purple-700 shadow-xs"
                                     : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                                )}
+                                )].filter(Boolean).join(" ")}
                               >
                                 Tes OK
-                              </button>
+                              </Button>
                             )}
 
                             {/* Nok (X) */}
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => {
                                 updateItem(item.id, {
@@ -766,25 +768,25 @@ export function FrmTsm013Form({
                                   notes: itemState.notes || "Form Penggantian Spare Part (065)",
                                 })
                               }}
-                              className={cn(
+                              className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                 "flex-1 sm:flex-initial rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap text-center",
                                 isDamaged
                                   ? "border-red-500 bg-red-50 text-red-600 shadow-xs"
                                   : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
+                              )].filter(Boolean).join(" ")}
                             >
                               Nok (X)
-                            </button>
+                            </Button>
                           </div>
                         </div>
 
                         {/* Special Field for Meteran Air: Input Angka Meter (m³) */}
                         {item.isMeterInput && (
                           <div className="mt-2 rounded-xl border border-[#e8e8e6] bg-[#fafaf9] p-3">
-                            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-[#111111]">
+                            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 flex items-center gap-1.5 text-xs font-bold text-[#111111]">
                               <Gauge className="size-3.5 text-[#ff8a2a]" />
                               Angka Meteran Air Terbaca (m³) <span className="text-red-500">*</span>
-                            </label>
+                            </Label>
                             <Input
                               type="number"
                               placeholder="Contoh: 120 / 250 (angka m³)"
@@ -811,30 +813,30 @@ export function FrmTsm013Form({
                                 AKAN DIHANDLE <span className="text-red-500">*</span>
                               </p>
                               <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                                <button
+                                <Button variant="ghost"
                                   type="button"
                                   onClick={() => updateItem(item.id, { handler: "BES" })}
-                                  className={cn(
+                                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                     "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
                                     itemState.handler === "BES"
                                       ? "bg-[#ff8a2a] text-white shadow"
                                       : "text-[#707784] hover:text-[#111111]"
-                                  )}
+                                  )].filter(Boolean).join(" ")}
                                 >
                                   BES
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="ghost"
                                   type="button"
                                   onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
-                                  className={cn(
+                                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                     "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
                                     itemState.handler === "EKSTERNAL"
                                       ? "bg-[#ff8a2a] text-white shadow"
                                       : "text-[#707784] hover:text-[#111111]"
-                                  )}
+                                  )].filter(Boolean).join(" ")}
                                 >
                                   Eksternal
-                                </button>
+                                </Button>
                               </div>
                             </div>
 
@@ -860,7 +862,7 @@ export function FrmTsm013Form({
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   {itemState.photos.map((photo) => (
                                     <div key={photo.fileId} className="relative group">
-                                      <button
+                                      <Button variant="ghost"
                                         type="button"
                                         onClick={() =>
                                           setPreviewPhoto({
@@ -868,7 +870,7 @@ export function FrmTsm013Form({
                                             url: photo.url,
                                           })
                                         }
-                                        className="group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)]"
+                                        className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)]"
                                       >
                                         <Image
                                           src={photo.url}
@@ -878,15 +880,15 @@ export function FrmTsm013Form({
                                           className="size-20 object-cover"
                                           unoptimized
                                         />
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button variant="ghost"
                                         type="button"
                                         onClick={() => removePhoto(item.id, photo.fileId)}
-                                        className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow transition-transform hover:scale-110 active:scale-95"
+                                        className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow transition-transform hover:scale-110 active:scale-95"
                                         title="Hapus foto"
                                       >
                                         <Trash2 className="size-3" />
-                                      </button>
+                                      </Button>
                                     </div>
                                   ))}
                                   <CameraCaptureButton
@@ -949,11 +951,11 @@ export function FrmTsm013Form({
                               <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
                                 KETERANGAN <span className="text-red-500">*</span>
                               </p>
-                              <textarea
+                              <Textarea
                                 value={itemState.notes}
                                 onChange={(e) => updateItem(item.id, { notes: e.target.value })}
                                 placeholder="Jelaskan kondisi kerusakan atau temuan water recycle secara detail..."
-                                className="w-full min-h-[80px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
+                                className="field-sizing-fixed min-h-0 w-full min-h-[80px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
                               />
                             </div>
                           </div>
@@ -1014,13 +1016,13 @@ export function FrmTsm013Form({
           >
             <div className="flex items-center justify-between p-4 border-b border-[#f0f0f0]">
               <div className="text-sm font-bold text-[#0b1728]">{previewPhoto.itemLabel}</div>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setPreviewPhoto(undefined)}
-                className="p-1 rounded-lg hover:bg-neutral-100 text-[#7a7a7a]"
+                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit p-1 rounded-lg hover:bg-neutral-100 text-[#7a7a7a]"
               >
                 <X className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
             <div className="p-4 flex items-center justify-center bg-neutral-900 max-h-[75vh]">
               <Image

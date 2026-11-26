@@ -4,6 +4,24 @@ import { DashboardNotifications } from "@/components/dashboard-notifications"
 
 import * as React from "react"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { SpartaAlertDialog } from "@/components/shared/sparta-alert-dialog"
 import {
   AlertDialogAction,
@@ -253,6 +271,12 @@ export function WorkPermitsView({
     }
   }
 
+  const closePermitDetails = () => {
+    if (actionLoading || decisionLock.current || pendingDecision) return
+    setPendingDecision(null)
+    setSelectedPermit(null)
+  }
+
   const requestDecision = (decision: "approve" | "reject") => {
     if (!selectedPermit || actionLoading || decisionLock.current) return
 
@@ -295,14 +319,14 @@ export function WorkPermitsView({
         {/* Left: Sidebar toggle + Page Title */}
         <div className="flex items-center gap-3">
           {onToggleSidebar && (
-            <button
+            <Button variant="ghost" size="icon"
               type="button"
               onClick={onToggleSidebar}
               className="flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
               title="Toggle sidebar"
             >
               <PanelLeft className="size-4.5" />
-            </button>
+            </Button>
           )}
           <h1 className="text-base font-bold text-slate-900 tracking-tight">
             Izin Kerja K3
@@ -311,14 +335,14 @@ export function WorkPermitsView({
 
         {/* Right: Ekspor XLSX + Bell + User Avatar */}
         <div className="flex items-center gap-3">
-          <button
+          <Button variant="default" size="sm"
             type="button"
             onClick={handleExportXLSX}
             className="inline-flex items-center gap-1.5 rounded-lg bg-[#0b1728] hover:bg-[#1e293b] px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-all active:scale-[0.98] border border-slate-800 cursor-pointer"
           >
             <Download className="size-3.5 text-[#ff8a2a]" />
             <span>Ekspor XLSX</span>
-          </button>
+          </Button>
 
           <DashboardNotifications />
 
@@ -416,7 +440,7 @@ export function WorkPermitsView({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-          <input
+          <Input aria-label="Cari izin kerja"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -424,12 +448,12 @@ export function WorkPermitsView({
             className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-8 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#ff8a2a] focus:outline-hidden focus:ring-1 focus:ring-[#ff8a2a]"
           />
           {search && (
-            <button
+            <Button variant="ghost" size="icon-xs" aria-label="Hapus pencarian" type="button"
               onClick={() => setSearch("")}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               <X className="size-3.5" />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -442,7 +466,7 @@ export function WorkPermitsView({
               { key: "REJECTED", label: `Ditolak (${rejectedCount})` },
             ] as const
           ).map((item) => (
-            <button
+            <Button variant="ghost" size="sm" type="button"
               key={item.key}
               onClick={() => setFilter(item.key)}
               className={cn(
@@ -453,34 +477,33 @@ export function WorkPermitsView({
               )}
             >
               {item.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
       {/* Permits Table */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-              <tr>
-                <th className="px-4 py-3.5">Kode Izin Kerja</th>
-                <th className="px-4 py-3.5">Tanggal / Durasi</th>
-                <th className="px-4 py-3.5">Pemohon (BES)</th>
-                <th className="px-4 py-3.5">Kegiatan & Lokasi</th>
-                <th className="px-4 py-3.5">Risiko Terdeteksi</th>
-                <th className="px-4 py-3.5">Status</th>
-                <th className="px-4 py-3.5 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="w-full text-left text-xs">
+            <TableHeader className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+              <TableRow>
+                <TableHead className="whitespace-normal px-4 py-3.5">Kode Izin Kerja</TableHead>
+                <TableHead className="whitespace-normal px-4 py-3.5">Tanggal / Durasi</TableHead>
+                <TableHead className="whitespace-normal px-4 py-3.5">Pemohon (BES)</TableHead>
+                <TableHead className="whitespace-normal px-4 py-3.5">Kegiatan & Lokasi</TableHead>
+                <TableHead className="whitespace-normal px-4 py-3.5">Risiko Terdeteksi</TableHead>
+                <TableHead className="whitespace-normal px-4 py-3.5">Status</TableHead>
+                <TableHead className="whitespace-normal px-4 py-3.5 text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {filteredPermits.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-500">
+                <TableRow>
+                  <TableCell colSpan={7} className="whitespace-normal px-4 py-12 text-center text-slate-500">
                     <ShieldCheck className="mx-auto size-8 text-slate-300 mb-2" />
                     Tidak ada pengajuan izin kerja yang sesuai dengan filter.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredPermits.map((p) => {
                   const safety = (p.safetyPayload || {}) as WorkPermitSafetyPayload
@@ -490,11 +513,11 @@ export function WorkPermitsView({
                   const hasConfined = safety.confinedSpace?.active
 
                   return (
-                    <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3.5 font-mono font-bold text-slate-900">
+                    <TableRow key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                      <TableCell className="whitespace-normal px-4 py-3.5 font-mono font-bold text-slate-900">
                         {p.permitCode}
-                      </td>
-                      <td className="px-4 py-3.5 text-slate-600">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-4 py-3.5 text-slate-600">
                         <div>
                           {new Date(p.workDate).toLocaleDateString("id-ID", {
                             day: "2-digit",
@@ -503,24 +526,24 @@ export function WorkPermitsView({
                           })}
                         </div>
                         <div className="text-[10px] text-slate-400">{p.duration}</div>
-                      </td>
-                      <td className="px-4 py-3.5">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-4 py-3.5">
                         <div className="font-semibold text-slate-900">
                           {p.applicant?.name || p.applicantNik}
                         </div>
                         <div className="text-[10px] text-slate-500">
                           NIK: {p.applicantNik} • {p.applicant?.branchName || "Cabang"}
                         </div>
-                      </td>
-                      <td className="px-4 py-3.5 max-w-xs">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-4 py-3.5 max-w-xs">
                         <div className="font-semibold text-slate-900 truncate">
                           {p.kegiatan}
                         </div>
                         <div className="text-[10px] text-slate-500 truncate">
                           {p.lokasi} • {p.kontraktor || "INTERNAL"}
                         </div>
-                      </td>
-                      <td className="px-4 py-3.5">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-4 py-3.5">
                         <div className="flex items-center gap-1 flex-wrap">
                           {hasHotWork && (
                             <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold bg-orange-100 text-orange-800 border border-orange-200">
@@ -546,8 +569,8 @@ export function WorkPermitsView({
                             <span className="text-[10px] text-slate-400">Standar K3</span>
                           )}
                         </div>
-                      </td>
-                      <td className="px-4 py-3.5">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-4 py-3.5">
                         <span
                           className={cn(
                             "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold",
@@ -576,9 +599,9 @@ export function WorkPermitsView({
                             ? "Ditolak"
                             : "Selesai"}
                         </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <button
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-4 py-3.5 text-right">
+                        <Button variant="ghost" size="sm" type="button"
                           onClick={() => {
                             setSelectedPermit(p)
                             setManagerNoteInput(p.managerNotes || "")
@@ -591,57 +614,29 @@ export function WorkPermitsView({
                           )}
                         >
                           <span>{p.status.startsWith("PENDING_") ? "Review & Sahkan" : "Lihat Detail"}</span>
-                        </button>
-                      </td>
-                    </tr>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   )
                 })
               )}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+        </Table>
       </div>
 
-            <SpartaAlertDialog
-        open={pendingDecision !== null && selectedPermit !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingDecision(null)
-        }}
-        tone={pendingDecision === "reject" ? "error" : "confirm"}
-      >
-        <AlertDialogTitle className="text-center font-bold">
-          {pendingDecision === "reject"
-            ? "Tolak izin kerja?"
-            : "Setujui izin kerja?"}
-        </AlertDialogTitle>
-
-        <AlertDialogDescription className="text-center">
-          {pendingDecision === "reject"
-            ? "Keputusan penolakan akan direkam bersama catatan yang telah diisi."
-            : "Pastikan data pekerjaan dan persyaratan keselamatan telah diperiksa. Keputusan akan mengikuti tahapan persetujuan yang berlaku."}
-        </AlertDialogDescription>
-
-        <AlertDialogFooter>
-          <AlertDialogCancel>Batal</AlertDialogCancel>
-
-          <AlertDialogAction
-            type="button"
-            disabled={actionLoading}
-            variant={pendingDecision === "reject" ? "destructive" : "default"}
-            onClick={confirmDecision}
-            className={pendingDecision === "approve"
-              ? "bg-[#ff8a2a] text-slate-950 hover:bg-[#e0751d]"
-              : undefined}
-          >
-            {pendingDecision === "reject" ? "Tolak" : "Setujui"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </SpartaAlertDialog>
-
       {/* Review & Approval Modal */}
-      {selectedPermit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs">
-          <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
+      <Dialog
+        open={selectedPermit !== null}
+        disablePointerDismissal
+        onOpenChange={(open) => {
+          if (!open) closePermitDetails()
+        }}
+      >
+        {selectedPermit && (
+          <DialogContent
+            showCloseButton={false}
+            className="flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden rounded-2xl bg-white p-0 shadow-2xl sm:max-w-3xl"
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
               <div>
@@ -678,16 +673,20 @@ export function WorkPermitsView({
                       : "Selesai"}
                   </span>
                 </div>
-                <h3 className="mt-1 text-lg font-bold text-slate-900">
+                <DialogTitle className="mt-1 text-lg font-bold text-slate-900">
                   Form Izin Kerja (SAT/FRM/MED/003)
-                </h3>
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  Detail izin kerja dan pemeriksaan persyaratan keselamatan.
+                </DialogDescription>
               </div>
-              <button
-                onClick={() => setSelectedPermit(null)}
+              <Button variant="ghost" size="icon" aria-label="Tutup detail izin kerja" type="button"
+                disabled={actionLoading}
+                onClick={closePermitDetails}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
               >
                 <X className="size-5" />
-              </button>
+              </Button>
             </div>
 
             {/* Modal Body */}
@@ -878,12 +877,13 @@ export function WorkPermitsView({
 
               {/* Catatan / Alasan Penyetuju */}
               <div>
-                <label className="block font-bold text-slate-900 mb-1.5">
+                <Label htmlFor="work-permit-manager-note" className="block font-bold text-slate-900 mb-1.5">
                   Catatan Pengesahan / Arahan (Opsional jika setuju, Wajib jika ditolak)
-                </label>
-                <textarea
+                </Label>
+                <Textarea id="work-permit-manager-note"
                   rows={2}
                   value={managerNoteInput}
+                  disabled={actionLoading}
                   onChange={(e) => setManagerNoteInput(e.target.value)}
                   placeholder="Contoh: Pastikan safety harness selalu terpasang pada scaffolding..."
                   className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#ff8a2a] focus:outline-hidden focus:ring-1 focus:ring-[#ff8a2a]"
@@ -893,18 +893,19 @@ export function WorkPermitsView({
 
             {/* Modal Footer */}
             <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
-              <button
+              <Button variant="outline"
                 type="button"
-                onClick={() => setSelectedPermit(null)}
+                disabled={actionLoading}
+                onClick={closePermitDetails}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
               >
                 Tutup
-              </button>
+              </Button>
 
               <div className="flex items-center gap-3">
                 {selectedPermit.status === "PENDING_MANAGER" && (
                   <>
-                    <button
+                    <Button variant="destructive"
                       type="button"
                       disabled={actionLoading}
                       onClick={() => requestDecision("reject")}
@@ -912,9 +913,9 @@ export function WorkPermitsView({
                     >
                       <XCircle className="size-4" />
                       <span>Tolak / Minta Revisi</span>
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button variant="default"
                       type="button"
                       disabled={actionLoading}
                       onClick={() => requestDecision("approve")}
@@ -922,14 +923,49 @@ export function WorkPermitsView({
                     >
                       <CheckCircle2 className="size-4" />
                       <span>Setujui & Sahkan Izin Kerja</span>
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      )}
+            <SpartaAlertDialog
+        open={pendingDecision !== null && selectedPermit !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDecision(null)
+        }}
+        tone={pendingDecision === "reject" ? "error" : "confirm"}
+      >
+        <AlertDialogTitle className="text-center font-bold">
+          {pendingDecision === "reject"
+            ? "Tolak izin kerja?"
+            : "Setujui izin kerja?"}
+        </AlertDialogTitle>
+
+        <AlertDialogDescription className="text-center">
+          {pendingDecision === "reject"
+            ? "Keputusan penolakan akan direkam bersama catatan yang telah diisi."
+            : "Pastikan data pekerjaan dan persyaratan keselamatan telah diperiksa. Keputusan akan mengikuti tahapan persetujuan yang berlaku."}
+        </AlertDialogDescription>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Batal</AlertDialogCancel>
+
+          <AlertDialogAction
+            type="button"
+            disabled={actionLoading}
+            variant={pendingDecision === "reject" ? "destructive" : "default"}
+            onClick={confirmDecision}
+            className={pendingDecision === "approve"
+              ? "bg-[#ff8a2a] text-slate-950 hover:bg-[#e0751d]"
+              : undefined}
+          >
+            {pendingDecision === "reject" ? "Tolak" : "Setujui"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </SpartaAlertDialog>
+          </DialogContent>
+        )}
+      </Dialog>
       </div>
     </div>
   )

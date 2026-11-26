@@ -245,3 +245,77 @@ type safety without changing the existing business workflow.
 - Cancel confirmation without submitting a decision.
 - Retain Sonner loading, success, warning and error feedback.
 - Browser regression testing remains pending.
+
+## V14.5A: Work Permit Shadcn Controls
+
+- Replace native buttons with the shared shadcn Button.
+- Replace search input with shadcn Input.
+- Replace approval notes textarea and label with shared components.
+- Associate approval notes label with its input.
+- Preserve existing event handlers, controlled values and validation.
+- Retain existing SPARTA visual styling where possible.
+- No changes to database, server actions or approval stages.
+- Table and detail dialog migration remain separate tasks.
+- Browser regression testing remains pending.
+
+## V14.5B: Work Permit Table and Detail Dialog
+
+- Replace the native work permit table with shared shadcn Table components.
+- Preserve table columns, filters, risk indicators and XLSX export.
+- Replace the custom detail modal with a controlled shadcn Dialog.
+- Add accessible dialog title and description.
+- Nest SpartaAlertDialog within the detail dialog.
+- Prevent detail dismissal and notes editing while processing decisions.
+- Retain existing approval actions and authorization.
+- No changes to database schema, API contracts or business stages.
+- Browser regression testing remains pending.
+
+## V14.5C: ES Dashboard and Checklist Controls
+
+- Standardize shared checklist controls using shadcn Button,
+  Input and Textarea.
+- Preserve equipment quantity controls and unit identification.
+- Preserve BES and external handler selection.
+- Preserve photo preview, photo removal and findings descriptions.
+- Standardize Todo List period, object and search controls.
+- Retain existing routine task status and work permit gating.
+- Preserve required photo and description validation.
+- No changes to checklist payloads, server actions or database.
+- Browser regression testing remains pending.
+
+## V14.5D: Report Detail and Follow-up Shadcn Controls
+
+- Standardize report detail buttons, inputs, labels and tables.
+- Standardize Form 014 and Form 065 editor controls.
+- Preserve existing material and spare part calculations.
+- Preserve existing equipment identity prefill.
+- Preserve PJU, PB, stock pickup and work execution handlers.
+- Standardize report review labels and checklist tables.
+- Preserve approval, rejection, revision and resubmission rules.
+- Preserve PDF synchronization and completion evidence.
+- Retain existing report review decision presentation.
+- No changes to database schema, API or business workflow.
+- Browser regression testing remains pending.
+
+## V14.5E.1: Report Review Confirmation Standardization
+
+- Replace inline report review confirmation with SpartaAlertDialog.
+- Preserve existing approval, rejection and revision handlers.
+- Preserve mandatory decision note validation.
+- Keep validation and server errors visible inside the dialog.
+- Prevent dialog dismissal while a decision is processing.
+- Preserve existing report refresh and success feedback.
+- No changes to database, API or approval stages.
+- Browser regression testing remains pending.
+
+## V14.5E.3: Dedicated Checklist and Work Permit Controls
+
+- Standardize controls across 17 dedicated form components.
+- Convert 295 native controls to shared shadcn components.
+- Preserve existing JSX handlers, values and validation.
+- Retain native safety checkboxes and date/time inputs.
+- Retain specialized input semantics.
+- Preserve photo upload and preview behavior.
+- Preserve existing report routing and approval stages.
+- Table and custom modal migration remain separate tasks.
+- Browser regression testing remains pending.

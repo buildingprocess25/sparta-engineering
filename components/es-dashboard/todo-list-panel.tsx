@@ -19,6 +19,8 @@ import {
 
 import type { UserTodoSummary, UserTodoTaskItem } from "@/lib/tasks/todo-service"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import type { WorkPermitStatusData } from "@/components/es-dashboard/work-permit-card"
 import { useClientWorkPermit } from "@/lib/work-permits/use-client-work-permit"
 
@@ -202,7 +204,7 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
           {(weeklyCount > 0 || monthlyCount > 0 || quarterlyCount > 0 || semesterCount > 0) && (
             <div className="flex flex-wrap items-center gap-2">
               {weeklyCount > 0 && (
-                <button
+                <Button variant="ghost" size="sm"
                   type="button"
                   onClick={() =>
                     setSelectedPeriod((prev) =>
@@ -217,11 +219,11 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                   )}
                 >
                   Mingguan ({weeklyCount})
-                </button>
+                </Button>
               )}
 
               {monthlyCount > 0 && (
-                <button
+                <Button variant="ghost" size="sm"
                   type="button"
                   onClick={() =>
                     setSelectedPeriod((prev) =>
@@ -236,11 +238,11 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                   )}
                 >
                   Bulanan ({monthlyCount})
-                </button>
+                </Button>
               )}
 
               {quarterlyCount > 0 && (
-                <button
+                <Button variant="ghost" size="sm"
                   type="button"
                   onClick={() =>
                     setSelectedPeriod((prev) =>
@@ -255,11 +257,11 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                   )}
                 >
                   3 Bulanan ({quarterlyCount})
-                </button>
+                </Button>
               )}
 
               {semesterCount > 0 && (
-                <button
+                <Button variant="ghost" size="sm"
                   type="button"
                   onClick={() =>
                     setSelectedPeriod((prev) =>
@@ -274,14 +276,14 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
                   )}
                 >
                   6 Bulanan ({semesterCount})
-                </button>
+                </Button>
               )}
             </div>
           )}
 
           {/* Row 2: Segmented Control (Equipment vs Ruangan) */}
           <div className="flex rounded-xl bg-slate-200/70 p-1 border border-slate-200">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setSelectedObjectType("EQUIPMENT")}
               className={cn(
@@ -293,8 +295,8 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
             >
               <Wrench className="size-3.5" />
               Equipment ({equipmentPendingCount})
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               type="button"
               onClick={() => setSelectedObjectType("ROOM")}
               className={cn(
@@ -306,13 +308,13 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
             >
               <Building2 className="size-3.5" />
               Ruangan ({roomPendingCount})
-            </button>
+            </Button>
           </div>
 
           {/* Row 3: Search Input (Placed directly above task cards) */}
           <div className="relative w-full">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <input
+            <Input aria-label="Cari alat atau ruangan"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -320,14 +322,14 @@ export function TodoListPanel({ todoData, userNik, workPermitStatus }: TodoListP
               className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-xs text-slate-800 placeholder-slate-400 shadow-xs transition-colors focus:border-[#ff8a2a] focus:outline-none focus:ring-1 focus:ring-[#ff8a2a]"
             />
             {searchQuery && (
-              <button
+              <Button variant="ghost" size="icon-xs"
                 type="button"
                 onClick={() => setSearchQuery("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-600"
                 aria-label="Bersihkan pencarian"
               >
                 <X className="size-3.5" />
-              </button>
+              </Button>
             )}
           </div>
         </div>

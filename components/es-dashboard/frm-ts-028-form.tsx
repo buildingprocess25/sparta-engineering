@@ -65,6 +65,8 @@ import type {
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export type FrmTs028FormProps = {
   reportCode: string
@@ -501,9 +503,9 @@ export function FrmTs028Form({
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* WH / Lokasi */}
           <div>
-            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-xs font-semibold text-[#111111]">
               WH / Lokasi <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Input
               type="text"
               readOnly={Boolean(areaName)}
@@ -521,9 +523,9 @@ export function FrmTs028Form({
 
           {/* Tipe Unit */}
           <div>
-            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-xs font-semibold text-[#111111]">
               Tipe Unit <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Select
               value={unitType}
               onValueChange={(val) => {
@@ -555,9 +557,9 @@ export function FrmTs028Form({
 
           {/* Nomor Unit */}
           <div>
-            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-xs font-semibold text-[#111111]">
               Nomor Unit <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Input
               type="text"
               value={unitNo}
@@ -570,9 +572,9 @@ export function FrmTs028Form({
           {/* Tegangan */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-[#111111]">
+              <Label className="inline-block leading-normal gap-0 select-text block text-xs font-semibold text-[#111111]">
                 Tegangan (Volt) <span className="text-red-500">*</span>
-              </label>
+              </Label>
               <span className="text-[11px] font-medium text-[#ff8a2a]">
                 {unitType === "Pallet Mover" ? "24V (12 Sel)" : "48V (24 Sel)"}
               </span>
@@ -588,9 +590,9 @@ export function FrmTs028Form({
 
           {/* Merk Baterai */}
           <div>
-            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-xs font-semibold text-[#111111]">
               Merk <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Select
               value={brand}
               onValueChange={(val) => {
@@ -622,9 +624,9 @@ export function FrmTs028Form({
 
           {/* Kondisi */}
           <div>
-            <label className="mb-1 block text-xs font-semibold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-xs font-semibold text-[#111111]">
               Kondisi <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Input
               type="text"
               value={generalCondition}
@@ -743,12 +745,12 @@ export function FrmTs028Form({
                       const isSelected = current === btn.key
 
                       return (
-                        <button
+                        <Button variant="ghost"
                           key={btn.key}
                           type="button"
                           title={btn.title}
                           onClick={() => setCondition(item.id, btn.key)}
-                          className={cn(
+                          className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                             "h-9 rounded-xl border text-xs font-bold transition-all flex items-center justify-center active:scale-[0.98]",
                             isSelected
                               ? btn.activeClass
@@ -756,10 +758,10 @@ export function FrmTs028Form({
                                 "border-[#dedede] bg-white text-[#525252]",
                                 btn.hoverClass
                               )
-                          )}
+                          )].filter(Boolean).join(" ")}
                         >
                           {btn.label}
-                        </button>
+                        </Button>
                       )
                     })}
                   </div>
@@ -774,30 +776,30 @@ export function FrmTs028Form({
                         AKAN DIHANDLE <span className="text-red-500">*</span>
                       </p>
                       <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                        <button
+                        <Button variant="ghost"
                           type="button"
                           onClick={() => updateItem(item.id, { handler: "BES" })}
-                          className={cn(
+                          className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                             "flex-1 rounded-lg py-2 text-[13px] font-semibold transition-all",
                             (items[item.id]?.handler || "BES") === "BES"
                               ? "bg-[#ff8a2a] text-white shadow-xs"
                               : "text-[#707784] hover:text-[#111111]"
-                          )}
+                          )].filter(Boolean).join(" ")}
                         >
                           BES
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="ghost"
                           type="button"
                           onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
-                          className={cn(
+                          className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                             "flex-1 rounded-lg py-2 text-[13px] font-semibold transition-all",
                             items[item.id]?.handler === "EKSTERNAL"
                               ? "bg-[#ff8a2a] text-white shadow-xs"
                               : "text-[#707784] hover:text-[#111111]"
-                          )}
+                          )].filter(Boolean).join(" ")}
                         >
                           Eksternal
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
@@ -822,7 +824,7 @@ export function FrmTs028Form({
                         <div className="flex flex-wrap gap-2">
                           {items[item.id]?.photos.map((photo) => (
                             <div key={photo.fileId} className="relative group">
-                              <button
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={() =>
                                   setPreviewPhoto({
@@ -830,7 +832,7 @@ export function FrmTs028Form({
                                     url: photo.url,
                                   })
                                 }
-                                className="block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-xs"
+                                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-xs"
                               >
                                 <Image
                                   src={photo.url}
@@ -839,15 +841,15 @@ export function FrmTs028Form({
                                   height={80}
                                   className="size-20 object-cover cursor-pointer"
                                 />
-                              </button>
-                              <button
+                              </Button>
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={() => deletePhoto(item.id, photo.fileId)}
-                                className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow-xs transition-transform hover:scale-110 active:scale-95"
+                                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow-xs transition-transform hover:scale-110 active:scale-95"
                                 title="Hapus foto"
                               >
                                 <Trash2 className="size-3" />
-                              </button>
+                              </Button>
                             </div>
                           ))}
                           <CameraCaptureButton
@@ -869,11 +871,11 @@ export function FrmTs028Form({
                       <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
                         KETERANGAN <span className="text-red-500">*</span>
                       </p>
-                      <textarea
+                      <Textarea
                         value={items[item.id]?.notes || ""}
                         onChange={(e) => updateItem(item.id, { notes: e.target.value })}
                         placeholder="Tambahkan keterangan temuan kerusakan..."
-                        className="w-full min-h-[72px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
+                        className="field-sizing-fixed min-h-0 w-full min-h-[72px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
                       />
                     </div>
 
@@ -996,14 +998,14 @@ export function FrmTs028Form({
             </div>
           </div>
 
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={prefillNormalCells}
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors"
+            className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors"
           >
             <Zap className="size-3 text-amber-500" />
             <span>Isi Standar</span>
-          </button>
+          </Button>
         </div>
 
         {/* Tabel Sel 1 - 12 */}
@@ -1177,11 +1179,11 @@ export function FrmTs028Form({
           </span>
         </div>
 
-        <button
+        <Button variant="ghost"
           type="button"
           disabled={isSubmitting}
           onClick={handleSubmit}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#ff8a2a] py-3 text-xs font-bold text-slate-950 shadow-md transition-all hover:bg-[#e0751d] active:scale-[0.98] disabled:opacity-50"
+          className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex w-full items-center justify-center gap-2 rounded-xl bg-[#ff8a2a] py-3 text-xs font-bold text-slate-950 shadow-md transition-all hover:bg-[#e0751d] active:scale-[0.98] disabled:opacity-50"
         >
           {isSubmitting ? (
             <>
@@ -1194,7 +1196,7 @@ export function FrmTs028Form({
               <span>Simpan & Kirim Laporan</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Lightbox Photo Preview */}
@@ -1209,13 +1211,13 @@ export function FrmTs028Form({
           >
             <div className="flex items-center justify-between border-b border-[#eeeeec] p-4">
               <p className="text-sm font-bold text-[#111111]">{previewPhoto.itemLabel}</p>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setPreviewPhoto(null)}
-                className="grid size-8 place-items-center rounded-lg text-[#707784] hover:bg-[#f5f5f3]"
+                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit grid size-8 place-items-center rounded-lg text-[#707784] hover:bg-[#f5f5f3]"
               >
                 <X className="size-5" />
-              </button>
+              </Button>
             </div>
             <div className="p-2">
               <Image

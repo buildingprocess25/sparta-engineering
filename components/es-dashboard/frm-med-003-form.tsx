@@ -31,6 +31,9 @@ import {
 } from "@/lib/work-permits/calendar"
 import type { Prisma } from "@/generated/prisma"
 import type { WorkPermitSafetyPayload } from "@/lib/work-permits/ui-payload"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
 export type WorkPermitFullData = {
   id: string
@@ -504,9 +507,9 @@ export function FrmMed003Form({
         <div className="mt-4 rounded-xl border border-amber-200/90 bg-amber-50/70 p-3.5 sm:p-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <label className="block text-xs sm:text-sm font-bold text-slate-900">
+              <Label className="inline-block leading-normal gap-0 select-text block text-xs sm:text-sm font-bold text-slate-900">
                 Periode Masa Berlaku Izin Kerja <span className="text-red-500">*</span>
-              </label>
+              </Label>
               <p className="mt-0.5 text-[11px] sm:text-xs text-slate-600">
                 Izin kerja berlaku selama 1 bulan kalender penuh untuk seluruh checklist rutin.
               </p>
@@ -527,18 +530,18 @@ export function FrmMed003Form({
           {!isReadOnly && (
             <div className="mt-3 flex items-center gap-2 pt-2.5 border-t border-amber-200/60 flex-wrap">
               <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Pilihan Periode:</span>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => {
                   setTargetPeriod(currentPeriod)
                   setTanggal(today)
                 }}
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                   "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
                   targetPeriod === currentPeriod
                     ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
                     : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 Bulan Berjalan ({(() => {
                   try {
@@ -548,19 +551,19 @@ export function FrmMed003Form({
                     return currentPeriod
                   }
                 })()})
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 type="button"
                 onClick={() => {
                   setTargetPeriod(nextPeriod)
                   setTanggal(`${nextPeriod}-01`)
                 }}
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                   "rounded-lg px-2.5 py-1 text-xs font-bold transition-all border cursor-pointer",
                   targetPeriod === nextPeriod
                     ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
                     : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 Bulan Depan (H- {(() => {
                   try {
@@ -570,17 +573,17 @@ export function FrmMed003Form({
                     return nextPeriod
                   }
                 })()})
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-semibold text-[#475569]">
               Kegiatan / Pekerjaan <span className="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               required
               readOnly
               disabled={isReadOnly}
@@ -591,10 +594,10 @@ export function FrmMed003Form({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-semibold text-[#475569]">
               PIC / Pengawas SAT <span className="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               required
               readOnly
               disabled={isReadOnly}
@@ -605,10 +608,10 @@ export function FrmMed003Form({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-semibold text-[#475569]">
               Lokasi Pekerjaan <span className="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               required
               readOnly={isReadOnly}
               disabled={isReadOnly}
@@ -620,9 +623,9 @@ export function FrmMed003Form({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-semibold text-[#475569]">
               Internal / Rekanan / Kontraktor <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Select
               disabled={isReadOnly}
               value={kontraktor}
@@ -661,9 +664,9 @@ export function FrmMed003Form({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-semibold text-[#475569]">
               Tanggal Pekerjaan <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <input
               type="date"
               required
@@ -676,9 +679,9 @@ export function FrmMed003Form({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-semibold text-[#475569]">
               Lama Pekerjaan / Jam <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <div className="grid grid-cols-2 gap-2">
               <div className="relative">
                 <input
@@ -754,17 +757,17 @@ export function FrmMed003Form({
         {/* Daftar Pekerja */}
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-[#475569]">
+            <Label className="inline-block leading-normal gap-0 select-text text-xs font-semibold text-[#475569]">
               Nama Pekerja Pelaksana (Maks. 5 orang)
-            </label>
+            </Label>
             {!isReadOnly && workers.length < 5 && (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={addWorker}
-                className="h-7 px-2.5 rounded-lg border border-[#e2e8f0] bg-white text-xs font-semibold text-[#111111] hover:bg-[#f8fafc] hover:border-[#cbd5e1] flex items-center gap-1 transition-colors shadow-xs"
+                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit h-7 px-2.5 rounded-lg border border-[#e2e8f0] bg-white text-xs font-semibold text-[#111111] hover:bg-[#f8fafc] hover:border-[#cbd5e1] flex items-center gap-1 transition-colors shadow-xs"
               >
                 <Plus className="size-3 text-[#ff8a2a]" /> Tambah Pekerja
-              </button>
+              </Button>
             )}
           </div>
 
@@ -774,7 +777,7 @@ export function FrmMed003Form({
                 <span className="w-5 text-center text-xs font-semibold text-[#94a3b8]">
                   {idx + 1}.
                 </span>
-                <input
+                <Input
                   required
                   readOnly={isReadOnly}
                   disabled={isReadOnly}
@@ -784,14 +787,14 @@ export function FrmMed003Form({
                   className={inputClass}
                 />
                 {!isReadOnly && workers.length > 1 && (
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => removeWorker(idx)}
-                    className="h-10 w-10 shrink-0 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"
+                    className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit h-10 w-10 shrink-0 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"
                     title="Hapus pekerja"
                   >
                     <Trash2 className="size-4" />
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
@@ -800,9 +803,9 @@ export function FrmMed003Form({
 
         {/* Persyaratan Administrasi */}
         <div className="mt-5 border-t border-[#f0f0f0] pt-4">
-          <label className="mb-2 block text-xs font-semibold text-[#475569]">
+          <Label className="inline-block leading-normal gap-0 select-text mb-2 block text-xs font-semibold text-[#475569]">
             Persyaratan Kompetensi & Administrasi:
-          </label>
+          </Label>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {[
               { id: "sertifikat", label: "Sertifikat Kompetensi" },
@@ -813,15 +816,15 @@ export function FrmMed003Form({
                 label: "Konfirmasi Kondisi Mental Pekerja (Phobia)",
               },
             ].map((item) => (
-              <label
+              <Label
                 key={item.id}
-                className={cn(
+                className={["inline-block leading-normal gap-0 select-text", cn(
                   "flex items-center gap-2.5 rounded-xl border p-2.5 text-xs font-medium transition-colors",
                   isReadOnly ? "cursor-not-allowed opacity-90" : "cursor-pointer",
                   adminReqs[item.id]
                     ? "border-[#ff8a2a] bg-[#fff5ec] text-[#111111]"
                     : "border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 <input
                   type="checkbox"
@@ -831,12 +834,12 @@ export function FrmMed003Form({
                   className="size-4 rounded accent-[#ff8a2a] disabled:cursor-not-allowed"
                 />
                 <span>{item.label}</span>
-              </label>
+              </Label>
             ))}
           </div>
 
           <div className="mt-3 flex items-center gap-2">
-            <label className="flex items-center gap-2 text-xs font-medium text-[#475569] shrink-0">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-2 text-xs font-medium text-[#475569] shrink-0">
               <input
                 type="checkbox"
                 disabled={isReadOnly}
@@ -845,8 +848,8 @@ export function FrmMed003Form({
                 className="size-4 rounded accent-[#ff8a2a] disabled:cursor-not-allowed"
               />
               <span>Lainnya:</span>
-            </label>
-            <input
+            </Label>
+            <Input
               disabled={isReadOnly || !adminReqs.lainnya}
               readOnly={isReadOnly}
               value={adminLainnyaText}
@@ -888,20 +891,20 @@ export function FrmMed003Form({
                   Hot Work (Kerja Api)
                 </span>
               </div>
-              <button
+              <Button variant="ghost"
                 type="button"
                 disabled={isReadOnly}
                 onClick={() => !isReadOnly && setHotWorkActive(!hotWorkActive)}
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                   "h-7 px-3 rounded-lg text-xs font-semibold transition-colors shadow-xs",
                   isReadOnly && "cursor-not-allowed opacity-90",
                   hotWorkActive
                     ? "bg-[#ff8a2a] text-white hover:bg-[#e0751d]"
                     : "border border-[#e2e8f0] bg-white text-[#475569] hover:bg-[#f8fafc] hover:text-[#111111]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 {hotWorkActive ? "Aktif" : "Tidak Ada"}
-              </button>
+              </Button>
             </div>
 
             {hotWorkActive && (
@@ -921,12 +924,12 @@ export function FrmMed003Form({
                     "Fire Blanket",
                     "Oxygen",
                   ].map((it) => (
-                    <label
+                    <Label
                       key={it}
-                      className={cn(
+                      className={["inline-block leading-normal gap-0 select-text", cn(
                         "flex items-center gap-2 text-xs text-[#334155]",
                         isReadOnly ? "cursor-not-allowed" : "cursor-pointer"
-                      )}
+                      )].filter(Boolean).join(" ")}
                     >
                       <input
                         type="checkbox"
@@ -942,10 +945,10 @@ export function FrmMed003Form({
                         className="size-3.5 rounded accent-[#ff8a2a] disabled:cursor-not-allowed"
                       />
                       <span>{it}</span>
-                    </label>
+                    </Label>
                   ))}
                 </div>
-                <input
+                <Input
                   readOnly={isReadOnly}
                   disabled={isReadOnly}
                   value={hotWorkLainnya}
@@ -966,20 +969,20 @@ export function FrmMed003Form({
                   Work Height & Excavation (Kerja Ketinggian & Galian)
                 </span>
               </div>
-              <button
+              <Button variant="ghost"
                 type="button"
                 disabled={isReadOnly}
                 onClick={() => !isReadOnly && setHeightActive(!heightActive)}
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                   "h-7 px-3 rounded-lg text-xs font-semibold transition-colors shadow-xs",
                   isReadOnly && "cursor-not-allowed opacity-90",
                   heightActive
                     ? "bg-[#ff8a2a] text-white hover:bg-[#e0751d]"
                     : "border border-[#e2e8f0] bg-white text-[#475569] hover:bg-[#f8fafc] hover:text-[#111111]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 {heightActive ? "Aktif" : "Tidak Ada"}
-              </button>
+              </Button>
             </div>
 
             {heightActive && (
@@ -999,12 +1002,12 @@ export function FrmMed003Form({
                     "Safety Sign",
                     "Safety Net",
                   ].map((it) => (
-                    <label
+                    <Label
                       key={it}
-                      className={cn(
+                      className={["inline-block leading-normal gap-0 select-text", cn(
                         "flex items-center gap-2 text-xs text-[#334155]",
                         isReadOnly ? "cursor-not-allowed" : "cursor-pointer"
-                      )}
+                      )].filter(Boolean).join(" ")}
                     >
                       <input
                         type="checkbox"
@@ -1020,10 +1023,10 @@ export function FrmMed003Form({
                         className="size-3.5 rounded accent-[#ff8a2a] disabled:cursor-not-allowed"
                       />
                       <span>{it}</span>
-                    </label>
+                    </Label>
                   ))}
                 </div>
-                <input
+                <Input
                   readOnly={isReadOnly}
                   disabled={isReadOnly}
                   value={heightLainnya}
@@ -1044,20 +1047,20 @@ export function FrmMed003Form({
                   Confine Space Area (Area Terbatas)
                 </span>
               </div>
-              <button
+              <Button variant="ghost"
                 type="button"
                 disabled={isReadOnly}
                 onClick={() => !isReadOnly && setConfineActive(!confineActive)}
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                   "h-7 px-3 rounded-lg text-xs font-semibold transition-colors shadow-xs",
                   isReadOnly && "cursor-not-allowed opacity-90",
                   confineActive
                     ? "bg-[#ff8a2a] text-white hover:bg-[#e0751d]"
                     : "border border-[#e2e8f0] bg-white text-[#475569] hover:bg-[#f8fafc] hover:text-[#111111]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 {confineActive ? "Aktif" : "Tidak Ada"}
-              </button>
+              </Button>
             </div>
 
             {confineActive && (
@@ -1073,12 +1076,12 @@ export function FrmMed003Form({
                     "Breathing Apparatus",
                     "Log Out",
                   ].map((it) => (
-                    <label
+                    <Label
                       key={it}
-                      className={cn(
+                      className={["inline-block leading-normal gap-0 select-text", cn(
                         "flex items-center gap-2 text-xs text-[#334155]",
                         isReadOnly ? "cursor-not-allowed" : "cursor-pointer"
-                      )}
+                      )].filter(Boolean).join(" ")}
                     >
                       <input
                         type="checkbox"
@@ -1094,10 +1097,10 @@ export function FrmMed003Form({
                         className="size-3.5 rounded accent-[#ff8a2a] disabled:cursor-not-allowed"
                       />
                       <span>{it}</span>
-                    </label>
+                    </Label>
                   ))}
                 </div>
-                <input
+                <Input
                   readOnly={isReadOnly}
                   disabled={isReadOnly}
                   value={confineLainnya}
@@ -1118,20 +1121,20 @@ export function FrmMed003Form({
                   High Voltage Electrical (Listrik Tegangan Tinggi)
                 </span>
               </div>
-              <button
+              <Button variant="ghost"
                 type="button"
                 disabled={isReadOnly}
                 onClick={() => !isReadOnly && setElectricalActive(!electricalActive)}
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                   "h-7 px-3 rounded-lg text-xs font-semibold transition-colors shadow-xs",
                   isReadOnly && "cursor-not-allowed opacity-90",
                   electricalActive
                     ? "bg-[#ff8a2a] text-white hover:bg-[#e0751d]"
                     : "border border-[#e2e8f0] bg-white text-[#475569] hover:bg-[#f8fafc] hover:text-[#111111]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 {electricalActive ? "Aktif" : "Tidak Ada"}
-              </button>
+              </Button>
             </div>
 
             {electricalActive && (
@@ -1151,12 +1154,12 @@ export function FrmMed003Form({
                     "Proteksi Area",
                     "Proteksi Panel",
                   ].map((it) => (
-                    <label
+                    <Label
                       key={it}
-                      className={cn(
+                      className={["inline-block leading-normal gap-0 select-text", cn(
                         "flex items-center gap-2 text-xs text-[#334155]",
                         isReadOnly ? "cursor-not-allowed" : "cursor-pointer"
-                      )}
+                      )].filter(Boolean).join(" ")}
                     >
                       <input
                         type="checkbox"
@@ -1172,10 +1175,10 @@ export function FrmMed003Form({
                         className="size-3.5 rounded accent-[#ff8a2a] disabled:cursor-not-allowed"
                       />
                       <span>{it}</span>
-                    </label>
+                    </Label>
                   ))}
                 </div>
-                <input
+                <Input
                   readOnly={isReadOnly}
                   disabled={isReadOnly}
                   value={electricalLainnya}
@@ -1202,9 +1205,9 @@ export function FrmMed003Form({
 
         {/* APD Grid */}
         <div className="mt-4">
-          <label className="mb-2 block text-xs font-semibold text-[#475569]">
+          <Label className="inline-block leading-normal gap-0 select-text mb-2 block text-xs font-semibold text-[#475569]">
             Alat Pelindung Diri (APD) Wajib:
-          </label>
+          </Label>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {[
               { id: "topiHelm", label: "Topi / Helm" },
@@ -1223,15 +1226,15 @@ export function FrmMed003Form({
               { id: "dustMask", label: "Dust Mask" },
               { id: "bodyHarness", label: "Body Harness" },
             ].map((apd) => (
-              <label
+              <Label
                 key={apd.id}
-                className={cn(
+                className={["inline-block leading-normal gap-0 select-text", cn(
                   "flex items-center gap-2 rounded-xl border p-2 text-xs font-medium transition-colors",
                   isReadOnly ? "cursor-not-allowed opacity-90" : "cursor-pointer",
                   apdItems[apd.id]
                     ? "border-[#ff8a2a] bg-[#fff5ec] text-[#111111]"
                     : "border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 <input
                   type="checkbox"
@@ -1244,10 +1247,10 @@ export function FrmMed003Form({
                   className="size-3.5 rounded accent-[#ff8a2a] disabled:cursor-not-allowed"
                 />
                 <span className="truncate">{apd.label}</span>
-              </label>
+              </Label>
             ))}
           </div>
-          <input
+          <Input
             readOnly={isReadOnly}
             disabled={isReadOnly}
             value={apdLainnya}
@@ -1259,9 +1262,9 @@ export function FrmMed003Form({
 
         {/* Fire Protection Grid */}
         <div className="mt-5 border-t border-[#f0f0f0] pt-4">
-          <label className="mb-2 block text-xs font-semibold text-[#475569]">
+          <Label className="inline-block leading-normal gap-0 select-text mb-2 block text-xs font-semibold text-[#475569]">
             Peralatan Fire Protection yang Standby:
-          </label>
+          </Label>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {[
               { id: "aparPowder", label: "APAR Dry Chemical Powder" },
@@ -1270,15 +1273,15 @@ export function FrmMed003Form({
               { id: "air", label: "Air" },
               { id: "pasir", label: "Pasir" },
             ].map((fp) => (
-              <label
+              <Label
                 key={fp.id}
-                className={cn(
+                className={["inline-block leading-normal gap-0 select-text", cn(
                   "flex items-center gap-2 rounded-xl border p-2 text-xs font-medium transition-colors",
                   isReadOnly ? "cursor-not-allowed opacity-90" : "cursor-pointer",
                   fireProtectionItems[fp.id]
                     ? "border-[#ff8a2a] bg-[#fff5ec] text-[#111111]"
                     : "border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 <input
                   type="checkbox"
@@ -1294,10 +1297,10 @@ export function FrmMed003Form({
                   className="size-3.5 rounded accent-[#ff8a2a] disabled:cursor-not-allowed"
                 />
                 <span>{fp.label}</span>
-              </label>
+              </Label>
             ))}
           </div>
-          <input
+          <Input
             readOnly={isReadOnly}
             disabled={isReadOnly}
             value={fireLainnya}
@@ -1327,22 +1330,22 @@ export function FrmMed003Form({
         )}
 
         <div className="mt-4">
-          <label className="mb-1.5 block text-xs font-semibold text-[#475569]">
+          <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-semibold text-[#475569]">
             Catatan Hasil Pemeriksaan Pasca Pekerjaan:
-          </label>
-          <textarea
+          </Label>
+          <Textarea
             rows={3}
             readOnly={isReadOnly}
             disabled={isReadOnly}
             value={catatanPasca}
             onChange={(e) => setCatatanPasca(e.target.value)}
             placeholder="Catatan kondisi area setelah pekerjaan selesai, kebersihan, isolasi, dan keselamatan..."
-            className={cn(
+            className={["field-sizing-fixed min-h-0", cn(
               "w-full rounded-xl border border-[#e2e8f0] p-3 text-sm resize-y outline-none transition-all",
               isReadOnly
                 ? "bg-[#f8fafc] text-[#1e293b] cursor-not-allowed select-none font-medium"
                 : "bg-white text-[#111111] placeholder:text-[#94a3b8] focus:border-[#ff8a2a] focus:ring-2 focus:ring-[#ff8a2a]/20"
-            )}
+            )].filter(Boolean).join(" ")}
           />
         </div>
 

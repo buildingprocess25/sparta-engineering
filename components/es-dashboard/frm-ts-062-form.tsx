@@ -42,6 +42,8 @@ import type {
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export type FrmTs062FormProps = {
   reportCode: string
@@ -413,9 +415,9 @@ export function FrmTs062Form({
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* No. Unit / Serial */}
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               No. Unit / Serial <span className="text-[#ff8a2a]">*</span>
-            </label>
+            </Label>
             <Input
               placeholder="Contoh: HP-01 atau SN-8821"
               value={unitNo}
@@ -426,9 +428,9 @@ export function FrmTs062Form({
 
           {/* Merk Unit */}
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               Merk Unit
-            </label>
+            </Label>
             <Input
               placeholder="Contoh: Krisbow / OPK / Bishamon"
               value={unitBrand}
@@ -491,20 +493,20 @@ export function FrmTs062Form({
             />
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setAllCategories(true)}
-              className="rounded-lg border border-[#e6e2de] px-2.5 py-1.5 text-xs font-medium text-[#707784] hover:bg-[#f5f5f3]"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit rounded-lg border border-[#e6e2de] px-2.5 py-1.5 text-xs font-medium text-[#707784] hover:bg-[#f5f5f3]"
             >
               Buka Semua
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               type="button"
               onClick={() => setAllCategories(false)}
-              className="rounded-lg border border-[#e6e2de] px-2.5 py-1.5 text-xs font-medium text-[#707784] hover:bg-[#f5f5f3]"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit rounded-lg border border-[#e6e2de] px-2.5 py-1.5 text-xs font-medium text-[#707784] hover:bg-[#f5f5f3]"
             >
               Tutup Semua
-            </button>
+            </Button>
           </div>
         </div>
       </section>
@@ -554,10 +556,10 @@ export function FrmTs062Form({
             >
               {/* Category Header */}
               <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4">
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => toggleCategory(category.id)}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex min-w-0 flex-1 items-center gap-3 text-left"
                 >
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#fff0e3] text-[#ff8a2a]">
                     <Icon className="size-4.5" />
@@ -579,30 +581,30 @@ export function FrmTs062Form({
                       ) : null}
                     </p>
                   </div>
-                </button>
+                </Button>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
                       markCategoryAllGood(category.id)
                     }}
-                    className="hidden rounded-lg border border-[#ff8a2a]/30 bg-[#fff0e3] px-2.5 py-1 text-xs font-semibold text-[#c75f00] transition-colors hover:bg-[#ffe3cc] sm:inline-flex"
+                    className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit hidden rounded-lg border border-[#ff8a2a]/30 bg-[#fff0e3] px-2.5 py-1 text-xs font-semibold text-[#c75f00] transition-colors hover:bg-[#ffe3cc] sm:inline-flex"
                   >
                     Tandai Semua Baik
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => toggleCategory(category.id)}
-                    className="grid size-8 place-items-center rounded-lg text-[#707784] hover:bg-[#f5f5f3]"
+                    className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit grid size-8 place-items-center rounded-lg text-[#707784] hover:bg-[#f5f5f3]"
                   >
                     {isOpen ? (
                       <ChevronUp className="size-4" />
                     ) : (
                       <ChevronDown className="size-4" />
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -611,13 +613,13 @@ export function FrmTs062Form({
                 <div className="border-t border-[#f0eee9] bg-[#fafaf9] p-3 space-y-3 sm:p-4">
                   {/* Mobile Quick Action button */}
                   <div className="flex justify-end sm:hidden">
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => markCategoryAllGood(category.id)}
-                      className="rounded-lg border border-[#ff8a2a]/30 bg-[#fff0e3] px-3 py-1 text-xs font-semibold text-[#c75f00] hover:bg-[#ffe3cc]"
+                      className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit rounded-lg border border-[#ff8a2a]/30 bg-[#fff0e3] px-3 py-1 text-xs font-semibold text-[#c75f00] hover:bg-[#ffe3cc]"
                     >
                       ✓ Tandai Semua di Kategori Ini Baik
-                    </button>
+                    </Button>
                   </div>
 
                   {category.items.map((item: HandPalletItem) => {
@@ -657,7 +659,7 @@ export function FrmTs062Form({
 
                           {/* Condition Selectors (Mobile Segmented) */}
                           <div className="flex items-center gap-1.5">
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => {
                                 updateItem(item.id, {
@@ -668,16 +670,16 @@ export function FrmTs062Form({
                                   repairForm: undefined,
                                 })
                               }}
-                              className={cn(
+                              className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                 "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
                                 state.condition === "BAIK"
                                   ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs"
                                   : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
+                              )].filter(Boolean).join(" ")}
                             >
                               Baik (V)
-                            </button>
-                            <button
+                            </Button>
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => {
                                 updateItem(item.id, {
@@ -688,16 +690,16 @@ export function FrmTs062Form({
                                   notes: state.notes || "",
                                 })
                               }}
-                              className={cn(
+                              className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                 "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
                                 isDamaged
                                   ? "border-red-500 bg-red-50 text-red-600 shadow-xs"
                                   : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
+                              )].filter(Boolean).join(" ")}
                             >
                               Rusak (X)
-                            </button>
-                            <button
+                            </Button>
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => {
                                 updateItem(item.id, {
@@ -708,15 +710,15 @@ export function FrmTs062Form({
                                   repairForm: undefined,
                                 })
                               }}
-                              className={cn(
+                              className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                 "rounded-xl border px-2.5 py-2 text-xs font-medium transition-all",
                                 state.condition === "TIDAK_ADA"
                                   ? "border-[#111111] bg-[#111111] text-white font-bold shadow-xs"
                                   : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
+                              )].filter(Boolean).join(" ")}
                             >
                               Tidak Ada
-                            </button>
+                            </Button>
                           </div>
                         </div>
 
@@ -729,30 +731,30 @@ export function FrmTs062Form({
                                 AKAN DIHANDLE <span className="text-red-500">*</span>
                               </p>
                               <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                                <button
+                                <Button variant="ghost"
                                   type="button"
                                   onClick={() => updateItem(item.id, { handler: "BES" })}
-                                  className={cn(
+                                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                     "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
                                     state.handler === "BES"
                                       ? "bg-[#ff8a2a] text-white shadow"
                                       : "text-[#707784] hover:text-[#111111]"
-                                  )}
+                                  )].filter(Boolean).join(" ")}
                                 >
                                   BES (Internal)
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="ghost"
                                   type="button"
                                   onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
-                                  className={cn(
+                                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                     "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
                                     state.handler === "EKSTERNAL"
                                       ? "bg-[#ff8a2a] text-white shadow"
                                       : "text-[#707784] hover:text-[#111111]"
-                                  )}
+                                  )].filter(Boolean).join(" ")}
                                 >
                                   Eksternal / Vendor
-                                </button>
+                                </Button>
                               </div>
                             </div>
 
@@ -778,7 +780,7 @@ export function FrmTs062Form({
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   {state.photos.map((photo) => (
                                     <div key={photo.fileId} className="relative group">
-                                      <button
+                                      <Button variant="ghost"
                                         type="button"
                                         onClick={() =>
                                           setPreviewPhoto({
@@ -786,7 +788,7 @@ export function FrmTs062Form({
                                             url: photo.url,
                                           })
                                         }
-                                        className="group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)]"
+                                        className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)]"
                                       >
                                         <Image
                                           src={photo.url}
@@ -795,15 +797,15 @@ export function FrmTs062Form({
                                           height={80}
                                           className="size-20 object-cover"
                                         />
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button variant="ghost"
                                         type="button"
                                         onClick={() => deletePhoto(item.id, photo.fileId)}
-                                        className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow"
+                                        className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow"
                                         title="Hapus foto"
                                       >
                                         <Trash2 className="size-3" />
-                                      </button>
+                                      </Button>
                                     </div>
                                   ))}
                                   <CameraCaptureButton
@@ -865,15 +867,15 @@ export function FrmTs062Form({
 
                             {/* 4. Catatan Temuan */}
                             <div className="border-t border-[#eeeeec] pt-4">
-                              <label className="mb-1.5 block text-xs font-bold text-[#707784]">
+                              <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#707784]">
                                 Catatan Temuan / Kerusakan (Opsional)
-                              </label>
-                              <textarea
+                              </Label>
+                              <Textarea
                                 rows={3}
                                 placeholder="Tuliskan catatan kerusakan jika ada (contoh: Roda aus, hidrolik bocor halus)..."
                                 value={state.notes}
                                 onChange={(e) => updateItem(item.id, { notes: e.target.value })}
-                                className="w-full rounded-xl border border-[#e8e8e6] bg-white p-3 text-xs text-[#111111] focus:border-[#ff8a2a] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#ff8a2a]/20"
+                                className="field-sizing-fixed min-h-0 w-full rounded-xl border border-[#e8e8e6] bg-white p-3 text-xs text-[#111111] focus:border-[#ff8a2a] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#ff8a2a]/20"
                               />
                             </div>
                           </div>
@@ -890,15 +892,15 @@ export function FrmTs062Form({
 
       {/* GENERAL NOTES */}
       <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)]">
-        <label className="mb-2 block text-xs font-bold text-[#111111]">
+        <Label className="inline-block leading-normal gap-0 select-text mb-2 block text-xs font-bold text-[#111111]">
           Catatan Umum / Keterangan Tambahan
-        </label>
-        <textarea
+        </Label>
+        <Textarea
           rows={3}
           value={generalNotes}
           onChange={(e) => setGeneralNotes(e.target.value)}
           placeholder="Catatan tambahan mengenai kondisi hand pallet secara menyeluruh..."
-          className="w-full rounded-xl border border-[#e6e2de] bg-[#fbfbfa] p-3 text-xs text-[#111111] focus:border-[#ff8a2a] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#ff8a2a]/20"
+          className="field-sizing-fixed min-h-0 w-full rounded-xl border border-[#e6e2de] bg-[#fbfbfa] p-3 text-xs text-[#111111] focus:border-[#ff8a2a] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#ff8a2a]/20"
         />
       </section>
 
@@ -972,13 +974,13 @@ export function FrmTs062Form({
       {/* FULLSCREEN PHOTO PREVIEW MODAL */}
       {previewPhoto ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setPreviewPhoto(undefined)}
-            className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
+            className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
           >
             <X className="size-6" />
-          </button>
+          </Button>
           <div className="max-h-[85vh] max-w-[90vw] overflow-hidden rounded-2xl">
             <Image
               src={previewPhoto.url}

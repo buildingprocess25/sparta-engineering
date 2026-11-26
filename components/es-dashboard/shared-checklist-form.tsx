@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation"
 import { CameraCaptureButton } from "@/components/es-dashboard/camera-capture-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -463,10 +464,10 @@ export function SharedChecklistForm({
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-[#e6e2de] bg-white shadow-[0_6px_18px_rgba(17,17,17,0.05)]">
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => setIsCategoryOpen((current) => !current)}
-          className="flex w-full items-center justify-between gap-3 p-4 text-left outline-none transition-colors hover:bg-[#fbfbfa] focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/35"
+          className="h-auto whitespace-normal flex w-full items-center justify-between gap-3 p-4 text-left outline-none transition-colors hover:bg-[#fbfbfa] focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/35"
         >
           <div className="flex min-w-0 items-center gap-3">
             <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#fff0e3] text-sm font-bold text-[#c75f00]">
@@ -488,7 +489,7 @@ export function SharedChecklistForm({
             )}
             aria-hidden="true"
           />
-        </button>
+        </Button>
 
         {isCategoryOpen ? (
           <div className="flex flex-col gap-3 border-t border-[#eeeeec] bg-[#fbfbfa] p-3">
@@ -516,22 +517,22 @@ export function SharedChecklistForm({
                         <div className="flex flex-col items-center gap-1.5">
                           <span className="text-[10px] font-bold text-[#707784] tracking-wider uppercase">TOTAL QTY</span>
                           <div className="flex items-center rounded-lg border border-[#e8e8e6] bg-[#fbfbfa]">
-                            <button
+                            <Button variant="ghost" size="icon" aria-label="Kurangi jumlah equipment"
                               type="button"
                               onClick={() => updateItemQty(item.id, totalQty - 1)}
                               disabled={totalQty <= 1}
                               className="grid size-8 place-items-center text-[#686868] hover:bg-[#efefed] disabled:opacity-30 rounded-l-lg transition-colors"
                             >
                               -
-                            </button>
+                            </Button>
                             <span className="w-8 text-center text-sm font-semibold">{totalQty}</span>
-                            <button
+                            <Button variant="ghost" size="icon" aria-label="Tambah jumlah equipment"
                               type="button"
                               onClick={() => updateItemQty(item.id, totalQty + 1)}
                               className="grid size-8 place-items-center text-[#686868] hover:bg-[#efefed] rounded-r-lg transition-colors"
                             >
                               +
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -552,7 +553,7 @@ export function SharedChecklistForm({
                                 <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
                                   Nomor Unit
                                 </p>
-                                <input
+                                <Input aria-label="Identitas unit equipment"
                                   type="text"
                                   value={state.unitNo || ""}
                                   onChange={(e) => updateItem(item.id, index, { unitNo: e.target.value })}
@@ -608,16 +609,16 @@ export function SharedChecklistForm({
                                     </p>
                                     {["ADJUST_OR_ADD", "CLEAN", "REPAIR"].includes(state.condition || "") ? (
                                       <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                                        <button
+                                        <Button variant="ghost"
                                           type="button"
                                           className="flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all bg-[#ff8a2a] text-white shadow cursor-default"
                                         >
                                           BES
-                                        </button>
+                                        </Button>
                                       </div>
                                     ) : (
                                       <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                                        <button
+                                        <Button variant="ghost"
                                           type="button"
                                           onClick={() => updateItem(item.id, index, { handler: "BES" })}
                                           className={cn(
@@ -628,8 +629,8 @@ export function SharedChecklistForm({
                                           )}
                                         >
                                           BES
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button variant="ghost"
                                           type="button"
                                           onClick={() => updateItem(item.id, index, { handler: "EKSTERNAL" })}
                                           className={cn(
@@ -640,7 +641,7 @@ export function SharedChecklistForm({
                                           )}
                                         >
                                           Eksternal
-                                        </button>
+                                        </Button>
                                       </div>
                                     )}
                                   </div>
@@ -671,7 +672,7 @@ export function SharedChecklistForm({
                                     <div className="mt-3 flex flex-col gap-2">
                                       {state.photos.map((photo) => (
                                         <div key={photo.fileId} className="relative">
-                                          <button
+                                          <Button variant="ghost"
                                             type="button"
                                             onClick={() =>
                                               setPreviewPhoto({
@@ -679,7 +680,7 @@ export function SharedChecklistForm({
                                                 url: photo.url,
                                               })
                                             }
-                                            className="group w-full overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)] outline-none focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/40"
+                                            className="group block h-auto w-full whitespace-normal overflow-hidden p-0 rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)] outline-none focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/40"
                                           >
                                             <Image
                                               src={photo.url}
@@ -688,8 +689,8 @@ export function SharedChecklistForm({
                                               height={360}
                                               className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.01]"
                                             />
-                                          </button>
-                                          <button
+                                          </Button>
+                                          <Button variant="destructive" size="icon"
                                             type="button"
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -699,7 +700,7 @@ export function SharedChecklistForm({
                                             aria-label="Hapus foto"
                                           >
                                             <Trash2 className="size-4" />
-                                          </button>
+                                          </Button>
                                         </div>
                                       ))}
                                     </div>
@@ -712,7 +713,7 @@ export function SharedChecklistForm({
                                   <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider">
                                     KETERANGAN <span className="text-red-500">*</span>
                                   </p>
-                                  <textarea
+                                  <Textarea aria-label="Keterangan temuan"
                                     value={state.notes}
                                     onChange={(e) => updateItem(item.id, index, { notes: e.target.value })}
                                     placeholder="Tambahkan keterangan..."
@@ -791,14 +792,14 @@ export function SharedChecklistForm({
 
       {previewPhoto ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-5">
-          <button
+          <Button variant="ghost" size="icon-lg"
             type="button"
             onClick={() => setPreviewPhoto(undefined)}
             className="absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-white text-[#111111] shadow-lg outline-none transition-transform active:scale-95 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/50"
             aria-label="Tutup preview foto"
           >
             <X aria-hidden="true" />
-          </button>
+          </Button>
           <Image
             src={previewPhoto.url}
             alt={`Preview foto bukti ${previewPhoto.itemLabel}`}

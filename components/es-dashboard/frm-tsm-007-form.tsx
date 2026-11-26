@@ -63,6 +63,8 @@ import {
   type PLTSCategory,
   PLTS_CATEGORIES,
 } from "@/lib/checklists/frm-tsm-007"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export { type PLTSCategory, PLTS_CATEGORIES }
 
@@ -234,20 +236,20 @@ export function FrmTsm007Form({
 
         <div className="mt-4 grid grid-cols-2 gap-3.5">
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">Daya Total PLTS <span className="text-[#ff8a2a]">*</span></label>
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">Daya Total PLTS <span className="text-[#ff8a2a]">*</span></Label>
             <div className="flex items-center gap-2">
               <Input placeholder="mis. 198" value={daya} onChange={(e) => setDaya(e.target.value)} className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] font-semibold text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all" />
               <span className="shrink-0 text-xs font-semibold text-[#707784]">KWp</span>
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">Tahun</label>
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">Tahun</Label>
             <Input placeholder={String(currentYear)} value={tahun} onChange={(e) => setTahun(e.target.value)} className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] font-semibold text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all" />
           </div>
         </div>
 
         <div className="mt-3.5">
-          <label className="mb-1.5 block text-xs font-bold text-[#111111]">Jenis Perawatan <span className="text-[#ff8a2a]">*</span></label>
+          <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">Jenis Perawatan <span className="text-[#ff8a2a]">*</span></Label>
           <Select value={jenisPerawatan} disabled={!!plannedType} onValueChange={(val) => setJenisPerawatan(val as JenisPerawatanPLTSOption)}>
             <SelectTrigger className="w-full !h-11 h-11 rounded-xl border border-[#e8e8e6] bg-white px-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 focus-visible:ring-offset-0 transition-all">
               <span className={cn("flex-1 text-left truncate", !jenisPerawatan && "text-[#707784]")}>
@@ -311,7 +313,7 @@ export function FrmTsm007Form({
             const catIconBg = "bg-[#fff7ed] text-[#ff8a2a]"
             return (
               <section key={cat.id} className="rounded-2xl border border-[#e6e2de] bg-white shadow-[0_4px_16px_rgba(17,17,17,0.04)] overflow-hidden">
-                <button type="button" onClick={() => toggleCategory(cat.id)} className="flex w-full items-center justify-between border-b border-[#f0eee9] p-4 text-left hover:bg-[#fafaf9] transition-colors sm:p-5">
+                <Button variant="ghost" type="button" onClick={() => toggleCategory(cat.id)} className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex w-full items-center justify-between border-b border-[#f0eee9] p-4 text-left hover:bg-[#fafaf9] transition-colors sm:p-5">
                   <div className="flex items-center gap-3">
                     <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", catIconBg)}>
                       {cat.frequencyTone === "sky" ? <Wrench className="size-4" /> : <Zap className="size-4" />}
@@ -326,7 +328,7 @@ export function FrmTsm007Form({
                     {catItemsDamaged > 0 && <span className="grid size-5 place-items-center rounded-full bg-rose-100 text-[10px] font-bold text-rose-600">{catItemsDamaged}</span>}
                     {isCollapsed ? <ChevronDown className="size-5 text-[#707784]" /> : <ChevronUp className="size-5 text-[#707784]" />}
                   </div>
-                </button>
+                </Button>
 
                 {!isCollapsed && (
                   <div className="flex flex-col gap-3 p-3 sm:p-4 bg-[#fafaf9]/60">
@@ -348,14 +350,14 @@ export function FrmTsm007Form({
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <button type="button" onClick={() => updateItem(item.id, { condition: "BAIK", photos: [], notes: "", handler: undefined, repairForm: undefined })} className={cn("flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none", isGood ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs" : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]")}>Baik (V)</button>
-                              <button type="button" onClick={() => updateItem(item.id, { condition: "RUSAK", handler: state?.handler || "BES", repairForm: state?.repairForm || "SAT/FRM/TS/065_REV:00_161020" })} className={cn("flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none", isDamaged ? "border-red-500 bg-red-50 text-red-700 shadow-xs" : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]")}>Rusak (X)</button>
+                              <Button variant="ghost" type="button" onClick={() => updateItem(item.id, { condition: "BAIK", photos: [], notes: "", handler: undefined, repairForm: undefined })} className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn("flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none", isGood ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs" : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]")].filter(Boolean).join(" ")}>Baik (V)</Button>
+                              <Button variant="ghost" type="button" onClick={() => updateItem(item.id, { condition: "RUSAK", handler: state?.handler || "BES", repairForm: state?.repairForm || "SAT/FRM/TS/065_REV:00_161020" })} className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn("flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none", isDamaged ? "border-red-500 bg-red-50 text-red-700 shadow-xs" : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]")].filter(Boolean).join(" ")}>Rusak (X)</Button>
                             </div>
                           </div>
 
                           {item.hasVoltageInput && (
                             <div className="mt-2.5 rounded-lg border border-[#f0eee9] bg-[#fafafa] p-2.5">
-                              <label className="mb-1 block text-[11px] font-bold text-[#111111]">Hasil Ukur Tegangan</label>
+                              <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-bold text-[#111111]">Hasil Ukur Tegangan</Label>
                               <div className="flex items-center gap-2">
                                 <Input placeholder={item.id.startsWith("2") ? "mis. 850" : "mis. 220"} value={state?.voltageValue || ""} onChange={(e) => updateItem(item.id, { voltageValue: e.target.value })} className="h-9 max-w-[140px] border-[#e8e8e6] bg-white text-xs font-bold shadow-xs outline-none focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20" />
                                 <span className="text-xs font-semibold text-[#707784]">{item.id.startsWith("2") ? "V DC" : "V AC"}</span>
@@ -368,8 +370,8 @@ export function FrmTsm007Form({
                               <div>
                                 <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">AKAN DIHANDLE <span className="text-red-500">*</span></p>
                                 <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                                  <button type="button" onClick={() => updateItem(item.id, { handler: "BES" })} className={cn("flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all", state?.handler === "BES" ? "bg-[#ff8a2a] text-white shadow" : "text-[#707784] hover:text-[#111111]")}>BES</button>
-                                  <button type="button" onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })} className={cn("flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all", state?.handler === "EKSTERNAL" ? "bg-[#ff8a2a] text-white shadow" : "text-[#707784] hover:text-[#111111]")}>Eksternal</button>
+                                  <Button variant="ghost" type="button" onClick={() => updateItem(item.id, { handler: "BES" })} className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn("flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all", state?.handler === "BES" ? "bg-[#ff8a2a] text-white shadow" : "text-[#707784] hover:text-[#111111]")].filter(Boolean).join(" ")}>BES</Button>
+                                  <Button variant="ghost" type="button" onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })} className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn("flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all", state?.handler === "EKSTERNAL" ? "bg-[#ff8a2a] text-white shadow" : "text-[#707784] hover:text-[#111111]")].filter(Boolean).join(" ")}>Eksternal</Button>
                                 </div>
                               </div>
                               <div className="border-t border-[#eeeeec] pt-4">
@@ -382,7 +384,7 @@ export function FrmTsm007Form({
                                         <div className="block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111]">
                                           <Image src={photo.url} alt={`Foto ${item.label}`} width={80} height={80} className="size-20 object-cover" />
                                         </div>
-                                        <button type="button" onClick={() => handleRemovePhoto(item.id, pIdx)} className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow" title="Hapus foto"><Trash2 className="size-3" /></button>
+                                        <Button variant="ghost" type="button" onClick={() => handleRemovePhoto(item.id, pIdx)} className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow" title="Hapus foto"><Trash2 className="size-3" /></Button>
                                       </div>
                                     ))}
                                     <CameraCaptureButton disabled={state?.uploading} uploading={state?.uploading} watermarkLines={buildChecklistPhotoWatermarkLines({ areaName: `${areaName} (PLTS - ${item.code})`, userLabel: watermarkUserLabel, userRole: watermarkUserRole })} onCapture={(file) => void uploadPhoto(item.id, file)} />
@@ -419,8 +421,8 @@ export function FrmTsm007Form({
 
       {/* Catatan */}
       <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)] sm:p-5">
-        <label className="mb-2 block text-xs font-bold text-[#111111]">Catatan &amp; Keterangan Pelaksanaan</label>
-        <textarea rows={3} placeholder="Tuliskan catatan teknis atau rangkuman hasil inspeksi sistem PLTS..." value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)} className="w-full rounded-xl border border-[#e8e8e6] bg-white p-3 text-xs leading-relaxed text-[#111111] placeholder:text-[#999] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 transition-all" />
+        <Label className="inline-block leading-normal gap-0 select-text mb-2 block text-xs font-bold text-[#111111]">Catatan &amp; Keterangan Pelaksanaan</Label>
+        <Textarea rows={3} placeholder="Tuliskan catatan teknis atau rangkuman hasil inspeksi sistem PLTS..." value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)} className="field-sizing-fixed min-h-0 w-full rounded-xl border border-[#e8e8e6] bg-white p-3 text-xs leading-relaxed text-[#111111] placeholder:text-[#999] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none focus:border-[#ff8a2a]/50 focus:ring-3 focus:ring-[#ff8a2a]/20 transition-all" />
       </section>
 
       {/* Verifikasi */}

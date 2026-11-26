@@ -25,6 +25,15 @@ import { reviewReportDecision } from "@/app/dashboard/reports/actions"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
 import { SpartaAlertDialog } from "@/components/shared/sparta-alert-dialog"
@@ -301,29 +310,29 @@ function ReportReviewSession({
 
               {/* Checklist Parameters Table */}
               <div className="rounded-xl border border-slate-200 overflow-hidden bg-white">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th className="py-2.5 px-3">Parameter Cek</th>
-                      <th className="py-2.5 px-3">Kondisi</th>
-                      <th className="py-2.5 px-3">Catatan Temuan</th>
-                      <th className="py-2.5 px-3 text-right">Foto Bukti</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+                <Table className="w-full text-left text-xs">
+                  <TableHeader className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <TableRow>
+                      <TableHead className="whitespace-normal py-2.5 px-3">Parameter Cek</TableHead>
+                      <TableHead className="whitespace-normal py-2.5 px-3">Kondisi</TableHead>
+                      <TableHead className="whitespace-normal py-2.5 px-3">Catatan Temuan</TableHead>
+                      <TableHead className="whitespace-normal py-2.5 px-3 text-right">Foto Bukti</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-100">
                     {itemsList.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-6 text-center text-slate-400">
+                      <TableRow>
+                        <TableCell colSpan={4} className="whitespace-normal py-6 text-center text-slate-400">
                           Data checklist belum diisi atau masih draft awal.
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ) : (
                       itemsList.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
-                          <td className="py-2.5 px-3 font-semibold text-slate-900">
+                        <TableRow key={idx} className="hover:bg-slate-50/50">
+                          <TableCell className="whitespace-normal py-2.5 px-3 font-semibold text-slate-900">
                             {item.label || item.id}
-                          </td>
-                          <td className="py-2.5 px-3">
+                          </TableCell>
+                          <TableCell className="whitespace-normal py-2.5 px-3">
                             <span
                               className={cn(
                                 "rounded px-2 py-0.5 text-[10px] font-bold uppercase",
@@ -335,11 +344,11 @@ function ReportReviewSession({
                             >
                               {item.condition || "BAIK"}
                             </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-600">
+                          </TableCell>
+                          <TableCell className="whitespace-normal py-2.5 px-3 text-slate-600">
                             {item.notes || "-"}
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
+                          </TableCell>
+                          <TableCell className="whitespace-normal py-2.5 px-3 text-right">
                             {item.photos && item.photos.length > 0 ? (
                               <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 border border-sky-200">
                                 <ImageIcon className="size-3" />
@@ -348,12 +357,12 @@ function ReportReviewSession({
                             ) : (
                               <span className="text-[11px] text-slate-400">-</span>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}
@@ -537,7 +546,7 @@ function ReportReviewSession({
                     : "Laporan akan berstatus selesai dan diarsipkan ke riwayat pemeliharaan engineering."}
                 </AlertDialogDescription>
 
-                <label className="mt-3 block text-xs font-bold text-slate-700">
+                <Label className="mt-3 block text-xs font-bold text-slate-700">
                   Catatan persetujuan (opsional)
                   <Textarea
                     rows={3}
@@ -550,7 +559,7 @@ function ReportReviewSession({
                     placeholder="Tambahkan catatan persetujuan jika diperlukan..."
                     className="mt-1.5 w-full rounded-xl border border-slate-200 p-2.5 text-xs font-normal text-slate-900 focus:border-[#ff8a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8a2a]/20"
                   />
-                </label>
+                </Label>
 
                 <div className="mt-4 flex items-center justify-end gap-2">
                   <Button variant="ghost"
@@ -583,9 +592,9 @@ function ReportReviewSession({
                 </AlertDialogDescription>
 
                 <div className="mt-3">
-                  <label htmlFor="review-revision-notes" className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <Label htmlFor="review-revision-notes" className="block text-[11px] font-bold text-slate-700 mb-1">
                     Catatan Revisi <span className="text-rose-500">* Wajib</span>
-                  </label>
+                  </Label>
                   <Textarea
                     id="review-revision-notes"
                     aria-invalid={!!notesError}
@@ -635,9 +644,9 @@ function ReportReviewSession({
                 </AlertDialogDescription>
 
                 <div className="mt-3">
-                  <label htmlFor="review-rejection-notes" className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <Label htmlFor="review-rejection-notes" className="block text-[11px] font-bold text-slate-700 mb-1">
                     Alasan Penolakan <span className="text-rose-500">* Wajib</span>
-                  </label>
+                  </Label>
                   <Textarea
                     id="review-rejection-notes"
                     aria-invalid={!!notesError}

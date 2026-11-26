@@ -54,6 +54,8 @@ import type {
 import { validateChecklistPayload } from "@/lib/checklists/payload"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export type FrmTs029FormProps = {
   reportCode: string
@@ -431,20 +433,20 @@ export function FrmTs029Form({
         {/* Baris 1: Lokasi & No. Unit / Serial */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
               <MapPin className="size-3.5 text-[#ff8a2a]" />
               Lokasi <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <div className="flex h-10 w-full items-center rounded-xl border border-[#e5e5e5] bg-[#f8f9fa] px-3 text-xs font-medium text-[#1f2937]">
               {areaName}
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
               <Hash className="size-3.5 text-[#ff8a2a]" />
               No. Unit / Serial <span className="text-red-500">*</span>
-            </label>
+            </Label>
             <Input
               placeholder="Contoh: FL-01 / FD-25-09"
               value={unitNo}
@@ -457,10 +459,10 @@ export function FrmTs029Form({
         {/* Baris 2: Merk Unit & Hour Meter 1 (Travel) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
               <Building2 className="size-3.5 text-[#ff8a2a]" />
               Merk Unit
-            </label>
+            </Label>
             <Input
               placeholder="Contoh: Toyota / Nichiyu / TCM"
               value={unitBrand}
@@ -470,10 +472,10 @@ export function FrmTs029Form({
           </div>
 
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+            <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
               <Gauge className="size-3.5 text-[#ff8a2a]" />
               Hour Meter 1 (Travel)
-            </label>
+            </Label>
             <Input
               placeholder="Misal: 1420.5 jam"
               value={hourMeter}
@@ -490,10 +492,10 @@ export function FrmTs029Form({
 
         {/* Baris 3: Catatan Umum Inspeksi (Full Width) */}
         <div className="space-y-1.5">
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
+          <Label className="inline-block leading-normal gap-0 select-text flex items-center gap-1.5 text-xs font-semibold text-[#374151]">
             <FileText className="size-3.5 text-[#ff8a2a]" />
             Catatan Umum Inspeksi
-          </label>
+          </Label>
           <Input
             placeholder="Catatan menyeluruh kondisi unit forklift..."
             value={generalNotes}
@@ -712,7 +714,7 @@ export function FrmTs029Form({
 
                           {/* Condition Selectors (Clean, structured, no messy wrapping) */}
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => {
                                 updateItem(item.id, {
@@ -723,17 +725,17 @@ export function FrmTs029Form({
                                   repairForm: undefined,
                                 })
                               }}
-                              className={cn(
+                              className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                 "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
                                 itemState.condition === "BAIK"
                                   ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs"
                                   : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
+                              )].filter(Boolean).join(" ")}
                             >
                               Baik (V)
-                            </button>
+                            </Button>
 
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => {
                                 updateItem(item.id, {
@@ -744,17 +746,17 @@ export function FrmTs029Form({
                                   notes: itemState.notes || "Form Penggantian Spare Part (065)",
                                 })
                               }}
-                              className={cn(
+                              className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                 "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
                                 isDamaged
                                   ? "border-red-500 bg-red-50 text-red-600 shadow-xs"
                                   : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
+                              )].filter(Boolean).join(" ")}
                             >
                               Rusak (X)
-                            </button>
+                            </Button>
 
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => {
                                 updateItem(item.id, {
@@ -765,15 +767,15 @@ export function FrmTs029Form({
                                   repairForm: undefined,
                                 })
                               }}
-                              className={cn(
+                              className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                 "rounded-xl border px-2.5 py-2 text-xs font-medium transition-all",
                                 itemState.condition === "TIDAK_ADA"
                                   ? "border-[#111111] bg-[#111111] text-white font-bold shadow-xs"
                                   : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                              )}
+                              )].filter(Boolean).join(" ")}
                             >
                               Tidak Ada (T)
-                            </button>
+                            </Button>
                           </div>
                         </div>
 
@@ -786,30 +788,30 @@ export function FrmTs029Form({
                                 AKAN DIHANDLE <span className="text-red-500">*</span>
                               </p>
                               <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                                <button
+                                <Button variant="ghost"
                                   type="button"
                                   onClick={() => updateItem(item.id, { handler: "BES" })}
-                                  className={cn(
+                                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                     "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
                                     itemState.handler === "BES"
                                       ? "bg-[#ff8a2a] text-white shadow"
                                       : "text-[#707784] hover:text-[#111111]"
-                                  )}
+                                  )].filter(Boolean).join(" ")}
                                 >
                                   BES
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="ghost"
                                   type="button"
                                   onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
-                                  className={cn(
+                                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                     "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
                                     itemState.handler === "EKSTERNAL"
                                       ? "bg-[#ff8a2a] text-white shadow"
                                       : "text-[#707784] hover:text-[#111111]"
-                                  )}
+                                  )].filter(Boolean).join(" ")}
                                 >
                                   Eksternal
-                                </button>
+                                </Button>
                               </div>
                             </div>
 
@@ -835,7 +837,7 @@ export function FrmTs029Form({
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   {itemState.photos.map((photo) => (
                                     <div key={photo.fileId} className="relative group">
-                                      <button
+                                      <Button variant="ghost"
                                         type="button"
                                         onClick={() =>
                                           setPreviewPhoto({
@@ -843,7 +845,7 @@ export function FrmTs029Form({
                                             url: photo.url,
                                           })
                                         }
-                                        className="group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)]"
+                                        className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] text-left shadow-[0_4px_14px_rgba(17,17,17,0.08)]"
                                       >
                                         <Image
                                           src={photo.url}
@@ -852,15 +854,15 @@ export function FrmTs029Form({
                                           height={80}
                                           className="size-20 object-cover"
                                         />
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button variant="ghost"
                                         type="button"
                                         onClick={() => removePhoto(item.id, photo.fileId)}
-                                        className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow transition-transform hover:scale-110 active:scale-95"
+                                        className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow transition-transform hover:scale-110 active:scale-95"
                                         title="Hapus foto"
                                       >
                                         <Trash2 className="size-3" />
-                                      </button>
+                                      </Button>
                                     </div>
                                   ))}
                                   <CameraCaptureButton
@@ -923,11 +925,11 @@ export function FrmTs029Form({
                               <p className="mb-2 text-[11px] font-bold text-[#707784] tracking-wider uppercase">
                                 KETERANGAN <span className="text-red-500">*</span>
                               </p>
-                              <textarea
+                              <Textarea
                                 value={itemState.notes}
                                 onChange={(e) => updateItem(item.id, { notes: e.target.value })}
                                 placeholder="Tambahkan keterangan atau jelaskan kondisi kerusakan secara detail..."
-                                className="w-full min-h-[80px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
+                                className="field-sizing-fixed min-h-0 w-full min-h-[80px] rounded-xl border border-[#e8e8e6] bg-white p-3 text-[13px] text-[#111111] shadow-[0_2px_8px_rgba(17,17,17,0.02)] outline-none placeholder:text-[#a0a5ad] focus-visible:border-[#ff8a2a]/50 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/20 resize-y"
                               />
                             </div>
                           </div>
@@ -985,13 +987,13 @@ export function FrmTs029Form({
           >
             <div className="flex items-center justify-between p-4 border-b border-[#f0f0f0]">
               <div className="text-sm font-bold text-[#0b1728]">{previewPhoto.itemLabel}</div>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setPreviewPhoto(undefined)}
-                className="p-1 rounded-lg hover:bg-neutral-100 text-[#7a7a7a]"
+                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit p-1 rounded-lg hover:bg-neutral-100 text-[#7a7a7a]"
               >
                 <X className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
             <div className="p-4 flex items-center justify-center bg-neutral-900 max-h-[75vh]">
               <img

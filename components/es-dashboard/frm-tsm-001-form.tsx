@@ -33,6 +33,8 @@ import type {
 } from "@/lib/checklists/payload-001"
 import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-watermark"
 import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export type FrmTsm001FormProps = {
   reportCode: string
@@ -290,9 +292,9 @@ export function FrmTsm001Form({
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               Merk Genset <span className="text-[#ff8a2a]">*</span>
-            </label>
+            </Label>
             <Input
               placeholder="Contoh: Perkins / Cummins / Yanmar"
               value={merk}
@@ -302,9 +304,9 @@ export function FrmTsm001Form({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               Kapasitas (KVA) <span className="text-[#ff8a2a]">*</span>
-            </label>
+            </Label>
             <Input
               placeholder="Contoh: 250 KVA"
               value={kva}
@@ -314,9 +316,9 @@ export function FrmTsm001Form({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               Periode Bulan
-            </label>
+            </Label>
             <div className="flex h-10 items-center rounded-lg border border-[#e6e2de] bg-[#fbfbfa] px-3 text-sm font-semibold text-[#111111]">
               {periodKey}
             </div>
@@ -343,26 +345,26 @@ export function FrmTsm001Form({
         <div className="mt-4 space-y-4">
           {/* Tipe Operasional */}
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               Tipe Operasional <span className="text-[#ff8a2a]">*</span>
-            </label>
+            </Label>
             <div className="grid grid-cols-3 gap-2">
               {OPERATIONAL_TYPES.map((t) => (
-                <button
+                <Button variant="ghost"
                   key={t}
                   type="button"
                   onClick={() =>
                     setRunningLog((prev) => ({ ...prev, operationalType: t }))
                   }
-                  className={cn(
+                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                     "rounded-xl border py-2.5 text-xs font-bold transition-all",
                     runningLog.operationalType === t
                       ? "border-[#ff8a2a] bg-[#fff0e3] text-[#c75f00] shadow-sm"
                       : "border-[#e6e2de] bg-[#fbfbfa] text-[#707784] hover:bg-[#f5f5f3]"
-                  )}
+                  )].filter(Boolean).join(" ")}
                 >
                   {t}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -374,7 +376,7 @@ export function FrmTsm001Form({
             </span>
             <div className="mt-2.5 grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#707784]">Jam Start</label>
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-medium text-[#707784]">Jam Start</Label>
                 <Input
                   type="time"
                   value={runningLog.timeStart}
@@ -385,7 +387,7 @@ export function FrmTsm001Form({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#707784]">Jam Off</label>
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-medium text-[#707784]">Jam Off</Label>
                 <Input
                   type="time"
                   value={runningLog.timeOff}
@@ -405,7 +407,7 @@ export function FrmTsm001Form({
             </span>
             <div className="mt-2.5 grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#707784]">HM Start</label>
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-medium text-[#707784]">HM Start</Label>
                 <Input
                   placeholder="Contoh: 1520.4"
                   value={runningLog.hourMeterStart}
@@ -416,7 +418,7 @@ export function FrmTsm001Form({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#707784]">HM Off</label>
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-medium text-[#707784]">HM Off</Label>
                 <Input
                   placeholder="Contoh: 1520.9"
                   value={runningLog.hourMeterOff}
@@ -434,9 +436,9 @@ export function FrmTsm001Form({
             <span className="text-xs font-bold text-[#111111]">Parameter Mesin</span>
             <div className="mt-2.5 grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#707784]">
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-medium text-[#707784]">
                   Charger Alternator (Volt)
-                </label>
+                </Label>
                 <Input
                   placeholder="Contoh: 27.6"
                   value={runningLog.chargerAlternatorVolt}
@@ -450,9 +452,9 @@ export function FrmTsm001Form({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#707784]">
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-medium text-[#707784]">
                   Frequency (Hz)
-                </label>
+                </Label>
                 <Input
                   placeholder="Contoh: 50"
                   value={runningLog.frequencyHz}
@@ -463,9 +465,9 @@ export function FrmTsm001Form({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#707784]">
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-medium text-[#707784]">
                   Oil Pressure (Kpa)
-                </label>
+                </Label>
                 <Input
                   placeholder="Contoh: 350"
                   value={runningLog.oilPressureKpa}
@@ -479,9 +481,9 @@ export function FrmTsm001Form({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#707784]">
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-medium text-[#707784]">
                   Fuel Consumption (Liter)
-                </label>
+                </Label>
                 <Input
                   placeholder="Contoh: 15"
                   value={runningLog.fuelConsumptionLiter}
@@ -630,9 +632,9 @@ export function FrmTsm001Form({
             </span>
             <div className="mt-2.5 grid grid-cols-3 gap-2.5 sm:gap-3">
               <div>
-                <label className="mb-1 block text-center text-[11px] font-bold text-[#707784]">
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-center text-[11px] font-bold text-[#707784]">
                   R
-                </label>
+                </Label>
                 <Input
                   placeholder="Ampere"
                   value={runningLog.loadAmpere.r}
@@ -646,9 +648,9 @@ export function FrmTsm001Form({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-center text-[11px] font-bold text-[#707784]">
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-center text-[11px] font-bold text-[#707784]">
                   S
-                </label>
+                </Label>
                 <Input
                   placeholder="Ampere"
                   value={runningLog.loadAmpere.s}
@@ -662,9 +664,9 @@ export function FrmTsm001Form({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-center text-[11px] font-bold text-[#707784]">
+                <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-center text-[11px] font-bold text-[#707784]">
                   T
-                </label>
+                </Label>
                 <Input
                   placeholder="Ampere"
                   value={runningLog.loadAmpere.t}
@@ -701,11 +703,11 @@ export function FrmTsm001Form({
         <div className="mt-4 space-y-4">
           {/* Status Sistem ATS */}
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               Status Sistem ATS <span className="text-[#ff8a2a]">*</span>
-            </label>
+            </Label>
             <div className="flex gap-2">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() =>
                   setAtsTest((prev) => ({
@@ -716,16 +718,16 @@ export function FrmTsm001Form({
                     repairForm: undefined,
                   }))
                 }
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                   "flex-1 rounded-xl border py-2.5 text-xs font-bold transition-all",
                   atsTest.systemAtsStatus === "OK"
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs"
                     : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:bg-[#f0f0ee]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 ✓ System ATS (OK)
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 type="button"
                 onClick={() =>
                   setAtsTest((prev) => ({
@@ -735,15 +737,15 @@ export function FrmTsm001Form({
                     repairForm: prev.repairForm || "SAT/FRM/TS/065_REV:00_161020",
                   }))
                 }
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                   "flex-1 rounded-xl border py-2.5 text-xs font-bold transition-all",
                   atsTest.systemAtsStatus === "NOK"
                     ? "border-red-500 bg-red-50 text-red-600 shadow-xs"
                     : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:bg-[#f0f0ee]"
-                )}
+                )].filter(Boolean).join(" ")}
               >
                 ✕ System ATS (NOK)
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -756,32 +758,32 @@ export function FrmTsm001Form({
                   AKAN DIHANDLE <span className="text-red-500">*</span>
                 </p>
                 <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => setAtsTest((prev) => ({ ...prev, handler: "BES" }))}
-                    className={cn(
+                    className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                       "flex-1 rounded-lg py-2 text-xs font-semibold transition-all",
                       atsTest.handler === "BES"
                         ? "bg-[#ff8a2a] text-white shadow"
                         : "text-[#707784] hover:text-[#111111]"
-                    )}
+                    )].filter(Boolean).join(" ")}
                   >
                     BES
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     type="button"
                     onClick={() =>
                       setAtsTest((prev) => ({ ...prev, handler: "EKSTERNAL" }))
                     }
-                    className={cn(
+                    className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                       "flex-1 rounded-lg py-2 text-xs font-semibold transition-all",
                       atsTest.handler === "EKSTERNAL"
                         ? "bg-[#ff8a2a] text-white shadow"
                         : "text-[#707784] hover:text-[#111111]"
-                    )}
+                    )].filter(Boolean).join(" ")}
                   >
                     Eksternal
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -807,10 +809,10 @@ export function FrmTsm001Form({
                   <div className="mt-2 flex flex-wrap gap-2">
                     {atsTest.photos.map((photo) => (
                       <div key={photo.fileId} className="relative group">
-                        <button
+                        <Button variant="ghost"
                           type="button"
                           onClick={() => setPreviewPhoto({ url: photo.url })}
-                          className="group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111]"
+                          className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit group block overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111]"
                         >
                           <Image
                             src={photo.url}
@@ -819,15 +821,15 @@ export function FrmTsm001Form({
                             height={80}
                             className="size-20 object-cover"
                           />
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="ghost"
                           type="button"
                           onClick={() => deletePhoto(photo.fileId)}
-                          className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow"
+                          className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow"
                           title="Hapus foto"
                         >
                           <Trash2 className="size-3" />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                     <CameraCaptureButton
@@ -880,9 +882,9 @@ export function FrmTsm001Form({
           {/* Parameter Baterai & Durasi */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-xs font-semibold text-[#111111]">
                 Voltage Battery on Charge
-              </label>
+              </Label>
               <Input
                 placeholder="Contoh: 27.2 Volt"
                 value={atsTest.voltageBatteryCharge}
@@ -894,9 +896,9 @@ export function FrmTsm001Form({
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-xs font-semibold text-[#111111]">
                 Voltage Battery on Load Start
-              </label>
+              </Label>
               <Input
                 placeholder="Contoh: 24.5 Volt"
                 value={atsTest.voltageBatteryLoadStart}
@@ -911,9 +913,9 @@ export function FrmTsm001Form({
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-[#111111]">
+              <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-xs font-semibold text-[#111111]">
                 Durasi Waktu Perpindahan Beban
-              </label>
+              </Label>
               <Input
                 placeholder="Contoh: 15 Detik / 1 Menit"
                 value={atsTest.transferDurationMinutes}
@@ -940,15 +942,15 @@ export function FrmTsm001Form({
 
       {/* CARD 4: Catatan dan Keterangan */}
       <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)] sm:p-5">
-        <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+        <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
           Catatan dan Keterangan Pelaksanaan
-        </label>
-        <textarea
+        </Label>
+        <Textarea
           rows={3}
           placeholder="Tuliskan catatan kondisi pengoperasian genset dan hasil pengetesan ATS..."
           value={catatanKeterangan}
           onChange={(e) => setCatatanKeterangan(e.target.value)}
-          className="w-full rounded-xl border border-[#e6e2de] bg-[#fbfbfa] p-3 text-xs leading-5 focus-visible:border-[#ff8a2a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/20"
+          className="field-sizing-fixed min-h-0 w-full rounded-xl border border-[#e6e2de] bg-[#fbfbfa] p-3 text-xs leading-5 focus-visible:border-[#ff8a2a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/20"
         />
       </section>
 
@@ -1024,13 +1026,13 @@ export function FrmTsm001Form({
               <span className="text-xs font-bold text-[#111111]">
                 Foto Bukti Temuan ATS
               </span>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setPreviewPhoto(undefined)}
-                className="grid size-7 place-items-center rounded-full bg-[#f5f5f3] text-[#111111]"
+                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit grid size-7 place-items-center rounded-full bg-[#f5f5f3] text-[#111111]"
               >
                 <X className="size-4" />
-              </button>
+              </Button>
             </div>
             <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-xl">
               <Image

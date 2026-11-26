@@ -76,6 +76,8 @@ import {
   type HydrantCategory,
   HYDRANT_CATEGORIES,
 } from "@/lib/checklists/frm-tsm-006"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export { type HydrantCategory, HYDRANT_CATEGORIES }
 
@@ -433,9 +435,9 @@ export function FrmTsm006Form({
         {/* BARIS 1: Inputan Jenis Hydrant dan Periode / Tahun */}
         <div className="mt-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               Jenis Hydrant <span className="text-[#ff8a2a]">*</span>
-            </label>
+            </Label>
             <Input
               placeholder="mis. IHB - OHB"
               value={jenisHydrant}
@@ -445,9 +447,9 @@ export function FrmTsm006Form({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+            <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
               Periode / Tahun
-            </label>
+            </Label>
             <div className="flex h-10 items-center justify-between rounded-lg border border-[#e6e2de] bg-[#fbfbfa] px-3 text-sm font-semibold text-[#111111]">
               <span>{periodKey || calendarInfo.year}</span>
               <span className="text-[11px] font-medium text-[#707784]">Tahun Berjalan</span>
@@ -457,9 +459,9 @@ export function FrmTsm006Form({
 
         {/* BARIS 2: Dropdown Jenis Perawatan */}
         <div className="mt-3.5">
-          <label className="mb-1.5 block text-xs font-bold text-[#111111]">
+          <Label className="inline-block leading-normal gap-0 select-text mb-1.5 block text-xs font-bold text-[#111111]">
             Jenis Perawatan <span className="text-[#ff8a2a]">*</span>
-          </label>
+          </Label>
           <Select
             value={jenisPerawatan}
             disabled={!!plannedType}
@@ -519,20 +521,20 @@ export function FrmTsm006Form({
               {calendarInfo.weeks.map((w) => {
                 const isSelected = selectedWeek === w.id
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={w.id}
                     type="button"
                     aria-pressed={isSelected}
                     disabled={scheduledWeek ? !isSelected : w.isPast}
                     onClick={() => setSelectedWeek(w.id)}
-                    className={cn(
+                    className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                       "flex flex-col items-start rounded-xl border p-2.5 text-left transition-all",
                       w.isPast
                         ? "border-dashed border-[#e6e2de] bg-[#f5f4f2] text-[#999] opacity-75 cursor-not-allowed"
                         : isSelected
                         ? "border-[#ff8a2a] bg-white text-[#111111] shadow-sm ring-2 ring-[#ff8a2a]/20"
                         : "border-[#e6e2de] bg-white text-[#555] hover:border-[#ff8a2a]/50 hover:bg-[#fffcf9]"
-                    )}
+                    )].filter(Boolean).join(" ")}
                   >
                     <div className="flex w-full items-center justify-between">
                       <span className={cn("text-xs font-bold", isSelected && "text-[#ff8a2a]")}>
@@ -551,7 +553,7 @@ export function FrmTsm006Form({
                     <span className="mt-1 text-[11px] font-medium leading-tight text-[#666]">
                       {w.startDay} - {w.endDay} {calendarInfo.monthShort}
                     </span>
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -577,16 +579,16 @@ export function FrmTsm006Form({
               ].map((sem) => {
                 const isSelected = selectedSemester === sem.id
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={sem.id}
                     type="button"
                     onClick={() => setSelectedSemester(sem.id)}
-                    className={cn(
+                    className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                       "flex items-center justify-between rounded-xl border p-3 text-left transition-all",
                       isSelected
                         ? "border-[#ff8a2a] bg-white text-[#111111] shadow-sm ring-2 ring-[#ff8a2a]/20"
                         : "border-[#e6e2de] bg-white text-[#555] hover:border-[#ff8a2a]/50 hover:bg-[#fffcf9]"
-                    )}
+                    )].filter(Boolean).join(" ")}
                   >
                     <div>
                       <span className={cn("text-xs font-bold block", isSelected && "text-[#ff8a2a]")}>
@@ -601,7 +603,7 @@ export function FrmTsm006Form({
                         <Check className="size-3 stroke-[3]" />
                       </span>
                     )}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -678,10 +680,10 @@ export function FrmTsm006Form({
             className="rounded-2xl border border-[#e6e2de] bg-white shadow-[0_4px_16px_rgba(17,17,17,0.04)] overflow-hidden"
           >
             {/* Header Kategori */}
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => toggleCategory(cat.id)}
-              className="flex w-full items-center justify-between border-b border-[#f0eee9] p-4 text-left hover:bg-[#fafaf9] transition-colors sm:p-5"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex w-full items-center justify-between border-b border-[#f0eee9] p-4 text-left hover:bg-[#fafaf9] transition-colors sm:p-5"
             >
               <div className="flex items-center gap-3">
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#fff0e3] text-[#ff8a2a]">
@@ -716,7 +718,7 @@ export function FrmTsm006Form({
                   <ChevronUp className="size-5 text-[#707784]" />
                 )}
               </div>
-            </button>
+            </Button>
 
             {/* List Item dalam Kategori (Kartu Putih seperti Form 016) */}
             {!isCollapsed && (
@@ -750,7 +752,7 @@ export function FrmTsm006Form({
 
                         {/* Opsi Kondisi (Baik / Rusak) */}
                         <div className="flex items-center gap-1.5">
-                          <button
+                          <Button variant="ghost"
                             type="button"
                             onClick={() => {
                               updateItem(item.id, {
@@ -761,17 +763,17 @@ export function FrmTsm006Form({
                                 repairForm: undefined,
                               })
                             }}
-                            className={cn(
+                            className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                               "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
                               isGood
                                 ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs"
                                 : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                            )}
+                            )].filter(Boolean).join(" ")}
                           >
                             Baik (V)
-                          </button>
+                          </Button>
 
-                          <button
+                          <Button variant="ghost"
                             type="button"
                             onClick={() => {
                               updateItem(item.id, {
@@ -780,24 +782,24 @@ export function FrmTsm006Form({
                                 repairForm: state?.repairForm || "SAT/FRM/TS/065_REV:00_161020",
                               })
                             }}
-                            className={cn(
+                            className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                               "flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-all sm:flex-none",
                               isDamaged
                                 ? "border-red-500 bg-red-50 text-red-700 shadow-xs font-bold"
                                 : "border-[#e8e8e6] bg-[#f5f5f3] text-[#707784] hover:border-[#d0d0d0] hover:text-[#111111]"
-                            )}
+                            )].filter(Boolean).join(" ")}
                           >
                             Rusak (X)
-                          </button>
+                          </Button>
                         </div>
                       </div>
 
                       {/* Khusus Item 5.I & 5.J (Input Nilai Tegangan Baterai 1 & 2) */}
                       {item.hasVoltageInput && (
                         <div className="mt-2.5 rounded-lg border border-[#f0eee9] bg-white p-2.5">
-                          <label className="mb-1 block text-[11px] font-bold text-[#111111]">
+                          <Label className="inline-block leading-normal gap-0 select-text mb-1 block text-[11px] font-bold text-[#111111]">
                             Hasil Ukur Tegangan (Volt)
-                          </label>
+                          </Label>
                           <div className="flex items-center gap-2">
                             <Input
                               placeholder="mis. 13.2"
@@ -822,30 +824,30 @@ export function FrmTsm006Form({
                               AKAN DIHANDLE <span className="text-red-500">*</span>
                             </p>
                             <div className="flex rounded-xl bg-[#f5f5f3] p-1">
-                              <button
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={() => updateItem(item.id, { handler: "BES" })}
-                                className={cn(
+                                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                   "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
                                   state?.handler === "BES"
                                     ? "bg-[#ff8a2a] text-white shadow"
                                     : "text-[#707784] hover:text-[#111111]"
-                                )}
+                                )].filter(Boolean).join(" ")}
                               >
                                 BES
-                              </button>
-                              <button
+                              </Button>
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={() => updateItem(item.id, { handler: "EKSTERNAL" })}
-                                className={cn(
+                                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", cn(
                                   "flex-1 rounded-lg py-2.5 text-[13px] font-semibold transition-all",
                                   state?.handler === "EKSTERNAL"
                                     ? "bg-[#ff8a2a] text-white shadow"
                                     : "text-[#707784] hover:text-[#111111]"
-                                )}
+                                )].filter(Boolean).join(" ")}
                               >
                                 Eksternal
-                              </button>
+                              </Button>
                             </div>
                           </div>
 
@@ -880,14 +882,14 @@ export function FrmTsm006Form({
                                         className="size-20 object-cover"
                                       />
                                     </div>
-                                    <button
+                                    <Button variant="ghost"
                                       type="button"
                                       onClick={() => handleRemovePhoto(item.id, pIdx)}
-                                      className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow"
+                                      className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-rose-600 text-white shadow"
                                       title="Hapus foto"
                                     >
                                       <Trash2 className="size-3" />
-                                    </button>
+                                    </Button>
                                   </div>
                                 ))}
                                 <CameraCaptureButton
@@ -958,15 +960,15 @@ export function FrmTsm006Form({
 
       {/* CARD: Catatan dan Keterangan Pelaksanaan */}
       <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)] sm:p-5">
-        <label className="mb-2 block text-xs font-bold text-[#111111]">
+        <Label className="inline-block leading-normal gap-0 select-text mb-2 block text-xs font-bold text-[#111111]">
           Catatan & Keterangan Pelaksanaan
-        </label>
-        <textarea
+        </Label>
+        <Textarea
           rows={3}
           placeholder="Tuliskan catatan teknis atau rangkuman hasil pengujian sistem hydrant..."
           value={generalNotes}
           onChange={(e) => setGeneralNotes(e.target.value)}
-          className="w-full rounded-xl border border-[#e6e2de] bg-[#fbfbfa] p-3 text-xs leading-relaxed text-[#111111] placeholder:text-[#999] focus-visible:border-[#ff8a2a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/20"
+          className="field-sizing-fixed min-h-0 w-full rounded-xl border border-[#e6e2de] bg-[#fbfbfa] p-3 text-xs leading-relaxed text-[#111111] placeholder:text-[#999] focus-visible:border-[#ff8a2a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/20"
         />
       </section>
 

@@ -18,6 +18,8 @@ import type {
   FrmTsm004Measurements,
 } from "@/lib/checklists/payload-004"
 import { FRM_TSM_004_PANELS } from "@/lib/checklists/frm-tsm-004"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 type FrmTsm004FormProps = {
   reportCode: string
@@ -138,10 +140,10 @@ export function FrmTsm004Form({
                 key={panel.id}
                 className="border-b border-gray-100 last:border-0"
               >
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => setExpandedPanel(isExpanded ? null : panel.id)}
-                  className="flex w-full items-center justify-between bg-white px-5 py-4 hover:bg-gray-50 focus:outline-none"
+                  className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex w-full items-center justify-between bg-white px-5 py-4 hover:bg-gray-50 focus:outline-none"
                 >
                   <div className="flex items-center gap-3 text-left">
                     <span className="font-medium text-gray-900">
@@ -156,14 +158,14 @@ export function FrmTsm004Form({
                       isExpanded ? "rotate-180" : ""
                     }`}
                   />
-                </button>
+                </Button>
                 {isExpanded && (
                   <div className="px-5 pt-2 pb-5">
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-gray-500">
+                        <Label className="inline-block leading-normal gap-0 select-text text-xs font-semibold text-gray-500">
                           R-N (Volt)
-                        </label>
+                        </Label>
                         <Input
                           type="number"
                           placeholder="Contoh: 220"
@@ -174,9 +176,9 @@ export function FrmTsm004Form({
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-gray-500">
+                        <Label className="inline-block leading-normal gap-0 select-text text-xs font-semibold text-gray-500">
                           S-N (Volt)
-                        </label>
+                        </Label>
                         <Input
                           type="number"
                           placeholder="Contoh: 220"
@@ -187,9 +189,9 @@ export function FrmTsm004Form({
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-gray-500">
+                        <Label className="inline-block leading-normal gap-0 select-text text-xs font-semibold text-gray-500">
                           T-N (Volt)
-                        </label>
+                        </Label>
                         <Input
                           type="number"
                           placeholder="Contoh: 220"
@@ -200,9 +202,9 @@ export function FrmTsm004Form({
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-gray-500">
+                        <Label className="inline-block leading-normal gap-0 select-text text-xs font-semibold text-gray-500">
                           R-S (Volt)
-                        </label>
+                        </Label>
                         <Input
                           type="number"
                           placeholder="Contoh: 380"
@@ -213,9 +215,9 @@ export function FrmTsm004Form({
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-gray-500">
+                        <Label className="inline-block leading-normal gap-0 select-text text-xs font-semibold text-gray-500">
                           S-T (Volt)
-                        </label>
+                        </Label>
                         <Input
                           type="number"
                           placeholder="Contoh: 380"
@@ -226,9 +228,9 @@ export function FrmTsm004Form({
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-gray-500">
+                        <Label className="inline-block leading-normal gap-0 select-text text-xs font-semibold text-gray-500">
                           T-R (Volt)
-                        </label>
+                        </Label>
                         <Input
                           type="number"
                           placeholder="Contoh: 380"
@@ -249,13 +251,13 @@ export function FrmTsm004Form({
 
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <h3 className="mb-3 font-semibold text-gray-900">Keterangan</h3>
-        <textarea
+        <Textarea
           placeholder="Tuliskan catatan tambahan (opsional)..."
           value={keterangan}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
             setKeterangan(e.target.value)
           }
-          className="min-h-[100px] w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+          className="field-sizing-fixed min-h-0 min-h-[100px] w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
         />
         {/* <p className="mt-3 text-xs leading-relaxed text-gray-500">
           Catatan: Selisih hasil ukur tegangan antara LVMDP - MDP - SDP adalah

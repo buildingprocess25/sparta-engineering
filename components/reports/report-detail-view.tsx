@@ -66,8 +66,25 @@ import {
 import type { ChecklistRevisionHistory } from "@/lib/reports/checklist-revision-history"
 import { CompletionEvidencePanel } from "@/components/es-dashboard/completion-evidence-panel"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { SpartaAlertDialog } from "@/components/shared/sparta-alert-dialog"
+import {
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RevisionHistory } from "@/components/reports/checklist-revision-history"
 
 export interface ReportDetailViewProps {
@@ -677,9 +694,9 @@ export function ReportDetailView({
       <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
         {report.revisions.length > 0 && activeTab !== "riwayat" && (
           <div className="mb-4">
-            <button type="button" onClick={() => setActiveTab("riwayat")} className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-900">
+            <Button variant="outline" type="button" onClick={() => setActiveTab("riwayat")} className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-900">
               {needsRevision ? "Perlu Revisi" : "Laporan pernah direvisi"} · Lihat riwayat
-            </button>
+            </Button>
           </div>
         )}
         {/* PDF notification banner */}
@@ -689,13 +706,13 @@ export function ReportDetailView({
               <CheckCircle2 className="size-4 text-emerald-600" />
               <span>{pdfSuccessMessage}</span>
             </div>
-            <button
+            <Button variant="ghost" size="icon-xs" aria-label="Tutup notifikasi berhasil"
               type="button"
               onClick={() => setPdfSuccessMessage(null)}
               className="text-emerald-700 hover:text-emerald-900"
             >
               <X className="size-3.5" />
-            </button>
+            </Button>
           </div>
         )}
         {pdfErrorMessage && (
@@ -704,13 +721,13 @@ export function ReportDetailView({
               <AlertTriangle className="size-4 text-rose-600" />
               <span>{pdfErrorMessage}</span>
             </div>
-            <button
+            <Button variant="ghost" size="icon-xs" aria-label="Tutup notifikasi gagal"
               type="button"
               onClick={() => setPdfErrorMessage(null)}
               className="text-rose-700 hover:text-rose-900"
             >
               <X className="size-3.5" />
-            </button>
+            </Button>
           </div>
         )}
 
@@ -787,7 +804,7 @@ export function ReportDetailView({
                 <div className="flex flex-wrap items-center gap-2">
                   {isWaitingPju && (
                     <>
-                      <button
+                      <Button variant="default"
                         type="button"
                         disabled={isExecutionPending}
                         onClick={() => handleExecuteAction("PROCESS_PJU")}
@@ -795,9 +812,9 @@ export function ReportDetailView({
                       >
                         <CheckCircle2 className="size-3.5" />
                         <span>{pjuRecorded ? "Catat Ulang PJU Online" : "Catat Proses PJU Online"}</span>
-                      </button>
+                      </Button>
                       {pjuRecorded && (
-                        <button
+                        <Button variant="default"
                           type="button"
                           disabled={isExecutionPending}
                           onClick={() => handleExecuteAction("START_WORK")}
@@ -805,12 +822,12 @@ export function ReportDetailView({
                         >
                           <Wrench className="size-3.5" />
                           <span>Mulai Pekerjaan</span>
-                        </button>
+                        </Button>
                       )}
                     </>
                   )}
                   {isWaitingPb && (
-                    <button
+                    <Button variant="default"
                       type="button"
                       disabled={isExecutionPending}
                       onClick={() => handleExecuteAction("PROCESS_PB")}
@@ -818,11 +835,11 @@ export function ReportDetailView({
                     >
                       <CheckCircle2 className="size-3.5" />
                       <span>Konfirmasi PB Diproses</span>
-                    </button>
+                    </Button>
                   )}
                   {isWaitingParts && (
                     <>
-                      <button
+                      <Button variant="outline"
                         type="button"
                         disabled={isExecutionPending}
                         onClick={() => handleExecuteAction("PICKUP_STOCK")}
@@ -830,8 +847,8 @@ export function ReportDetailView({
                       >
                         <CheckCircle2 className="size-3.5" />
                         <span>{stockPickedUp ? "Catat Ulang Pengambilan Stock" : "Catat Pengambilan Stock"}</span>
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="default"
                         type="button"
                         disabled={isExecutionPending}
                         onClick={() => handleExecuteAction("START_WORK")}
@@ -839,7 +856,7 @@ export function ReportDetailView({
                       >
                         <Wrench className="size-3.5" />
                         <span>Mulai Pekerjaan</span>
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -975,7 +992,7 @@ export function ReportDetailView({
 
             {/* Requester can read the final PDF but cannot regenerate it. */}
             {!(userRole === "REQUESTER" && isCompleted) && (
-            <button
+            <Button variant="outline"
               type="button"
               onClick={handleSyncPdf}
               disabled={isGeneratingPdf}
@@ -987,7 +1004,7 @@ export function ReportDetailView({
                 <RefreshCw className="size-3.5 text-slate-500" />
               )}
               <span>Siapkan Laporan Lengkap PDF</span>
-            </button>
+            </Button>
             )}
 
             {/* Intervensi Action (ES pembuat sebelum Selesai) */}
@@ -1211,11 +1228,11 @@ export function ReportDetailView({
 
         {/* 4. Tabs Navigation Bar */}
         <div className="mt-6 flex border-b border-slate-200 bg-white rounded-t-xl px-2 pt-1 shadow-2xs">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setActiveTab("checklist")}
             className={cn(
-              "flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
+              "h-auto flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
               activeTab === "checklist"
                 ? "border-[#ff8a2a] text-[#ff8a2a]"
                 : "border-transparent text-slate-500 hover:text-slate-900"
@@ -1226,13 +1243,13 @@ export function ReportDetailView({
             <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
               {rawItems.length}
             </span>
-          </button>
+          </Button>
 
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setActiveTab("pekerjaan")}
             className={cn(
-              "flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
+              "h-auto flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
               activeTab === "pekerjaan"
                 ? "border-[#ff8a2a] text-[#ff8a2a]"
                 : "border-transparent text-slate-500 hover:text-slate-900"
@@ -1243,13 +1260,13 @@ export function ReportDetailView({
             <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
               {workItems.length}
             </span>
-          </button>
+          </Button>
 
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setActiveTab("dokumentasi")}
             className={cn(
-              "flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
+              "h-auto flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
               activeTab === "dokumentasi"
                 ? "border-[#ff8a2a] text-[#ff8a2a]"
                 : "border-transparent text-slate-500 hover:text-slate-900"
@@ -1260,13 +1277,13 @@ export function ReportDetailView({
             <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
               {totalCombinedPhotosCount}
             </span>
-          </button>
+          </Button>
 
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setActiveTab("riwayat")}
             className={cn(
-              "flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
+              "h-auto flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
               activeTab === "riwayat"
                 ? "border-[#ff8a2a] text-[#ff8a2a]"
                 : "border-transparent text-slate-500 hover:text-slate-900"
@@ -1274,14 +1291,14 @@ export function ReportDetailView({
           >
             <History className="size-4" />
             <span>Riwayat Aktivitas</span>
-          </button>
+          </Button>
 
           {isReviewer && !(userRole === "REQUESTER" && isCompleted) && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setActiveTab("aksi")}
               className={cn(
-                "flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
+                "h-auto flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors",
                 activeTab === "aksi"
                   ? "border-[#ff8a2a] text-[#ff8a2a]"
                   : "border-transparent text-slate-500 hover:text-slate-900"
@@ -1289,7 +1306,7 @@ export function ReportDetailView({
             >
               <ShieldAlert className="size-4" />
               <span>Aksi Review</span>
-            </button>
+            </Button>
           )}
         </div>
 
@@ -1299,7 +1316,7 @@ export function ReportDetailView({
             {/* Sub-Filters Pill & Search */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
-                <button
+                <Button variant="ghost" size="sm"
                   type="button"
                   onClick={() => setChecklistFilter("semua")}
                   className={cn(
@@ -1310,8 +1327,8 @@ export function ReportDetailView({
                   )}
                 >
                   Semua ({rawItems.length})
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost" size="sm"
                   type="button"
                   onClick={() => setChecklistFilter("bermasalah")}
                   className={cn(
@@ -1322,8 +1339,8 @@ export function ReportDetailView({
                   )}
                 >
                   Bermasalah ({itemsWithIssues.length})
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost" size="sm"
                   type="button"
                   onClick={() => setChecklistFilter("ada_foto")}
                   className={cn(
@@ -1334,12 +1351,12 @@ export function ReportDetailView({
                   )}
                 >
                   Ada foto ({itemsWithPhotos.length})
-                </button>
+                </Button>
               </div>
 
               <div className="relative w-full sm:w-64">
                 <Search className="pointer-events-none absolute left-3 top-2.5 size-3.5 text-slate-400" />
-                <input
+                <Input
                   type="text"
                   placeholder="Cari item checklist..."
                   value={searchItem}
@@ -1377,17 +1394,17 @@ export function ReportDetailView({
 
                 {/* Group Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        <th className="py-2.5 px-4 w-16">ID</th>
-                        <th className="py-2.5 px-4">Item</th>
-                        <th className="py-2.5 px-4 w-32">Kondisi</th>
-                        <th className="py-2.5 px-4 w-28">Estimasi</th>
-                        <th className="py-2.5 px-4 w-28">Realisasi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
+                  <Table className="w-full text-left text-xs">
+                    <TableHeader>
+                      <TableRow className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <TableHead className="whitespace-normal py-2.5 px-4 w-16">ID</TableHead>
+                        <TableHead className="whitespace-normal py-2.5 px-4">Item</TableHead>
+                        <TableHead className="whitespace-normal py-2.5 px-4 w-32">Kondisi</TableHead>
+                        <TableHead className="whitespace-normal py-2.5 px-4 w-28">Estimasi</TableHead>
+                        <TableHead className="whitespace-normal py-2.5 px-4 w-28">Realisasi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-slate-100">
                       {group.items.map((item) => {
                         const condDisplay = getChecklistConditionDisplay(item.condition)
                         const badgeStyles: Record<typeof condDisplay.tone, string> = {
@@ -1401,15 +1418,15 @@ export function ReportDetailView({
                         const estimate = getItemEstimate(item)
 
                         return (
-                          <tr
+                          <TableRow
                             key={item.id}
                             id={`item-row-${item.id}`}
                             className="hover:bg-slate-50/80 transition-colors"
                           >
-                            <td className="py-3 px-4 font-mono font-bold text-slate-500">
+                            <TableCell className="whitespace-normal py-3 px-4 font-mono font-bold text-slate-500">
                               {item.id}
-                            </td>
-                            <td className="py-3 px-4">
+                            </TableCell>
+                            <TableCell className="whitespace-normal py-3 px-4">
                               <p className="font-bold text-slate-900">{item.label}</p>
                               {item.notes && (
                                 <p className="text-[11px] text-slate-500 mt-0.5">
@@ -1419,7 +1436,7 @@ export function ReportDetailView({
                               {Array.isArray(item.photos) && item.photos.length > 0 && (
                                 <div className="mt-2 flex items-center gap-2">
                                   {item.photos.map((p, idx) => (
-                                    <button
+                                    <Button variant="ghost" size="icon-lg"
                                       key={p.fileId || idx}
                                       type="button"
                                       onClick={() =>
@@ -1428,7 +1445,7 @@ export function ReportDetailView({
                                           title: `${item.label} (Foto ${idx + 1})`,
                                         })
                                       }
-                                      className="group relative size-10 overflow-hidden rounded-md border border-slate-200 hover:border-[#ff8a2a]"
+                                      className="group relative size-10 overflow-hidden p-0 rounded-md border border-slate-200 hover:border-[#ff8a2a]"
                                     >
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
@@ -1439,12 +1456,12 @@ export function ReportDetailView({
                                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center">
                                         <Eye className="size-3 text-white" />
                                       </div>
-                                    </button>
+                                    </Button>
                                   ))}
                                 </div>
                               )}
-                            </td>
-                            <td className="py-3 px-4 whitespace-nowrap">
+                            </TableCell>
+                            <TableCell className="whitespace-normal py-3 px-4 whitespace-nowrap">
                               <span
                                 className={cn(
                                   "inline-flex items-center gap-1 rounded-md px-2 py-1 font-bold text-xs border",
@@ -1456,18 +1473,18 @@ export function ReportDetailView({
                                   <ChevronRight className="size-3 opacity-60" />
                                 ) : null}
                               </span>
-                            </td>
-                            <td className="py-3 px-4 whitespace-nowrap text-slate-500 font-medium">
+                            </TableCell>
+                            <TableCell className="whitespace-normal py-3 px-4 whitespace-nowrap text-slate-500 font-medium">
                               {estimate === null ? "—" : formatRupiah(estimate)}
-                            </td>
-                            <td className="py-3 px-4 whitespace-nowrap text-slate-500 font-medium">
+                            </TableCell>
+                            <TableCell className="whitespace-normal py-3 px-4 whitespace-nowrap text-slate-500 font-medium">
                               —
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         )
                       })}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             ))}
@@ -1542,38 +1559,38 @@ export function ReportDetailView({
                             </h4>
                             {materials.length > 0 ? (
                               <div className="overflow-x-auto">
-                                <table className="w-full min-w-[540px] text-left">
-                                  <thead className="border-b border-slate-200 text-slate-600">
-                                    <tr>
-                                      <th scope="col" className="p-2">Material / Pekerjaan</th>
-                                      <th scope="col" className="p-2 text-right">Jumlah</th>
-                                      <th scope="col" className="p-2">Satuan</th>
-                                      <th scope="col" className="p-2 text-right">Harga Satuan</th>
-                                      <th scope="col" className="p-2 text-right">Subtotal</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-200">
+                                <Table className="w-full min-w-[540px] text-left">
+                                  <TableHeader className="border-b border-slate-200 text-slate-600">
+                                    <TableRow>
+                                      <TableHead scope="col" className="whitespace-normal p-2">Material / Pekerjaan</TableHead>
+                                      <TableHead scope="col" className="whitespace-normal p-2 text-right">Jumlah</TableHead>
+                                      <TableHead scope="col" className="whitespace-normal p-2">Satuan</TableHead>
+                                      <TableHead scope="col" className="whitespace-normal p-2 text-right">Harga Satuan</TableHead>
+                                      <TableHead scope="col" className="whitespace-normal p-2 text-right">Subtotal</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody className="divide-y divide-slate-200">
                                     {materials.map((material, index) => {
                                       const quantity = readMaterialNumber(material.jumlah)
                                       const unitPrice = readMaterialNumber(material.hargaUnit)
                                       const subtotal = getMaterialSubtotal(material)
 
                                       return (
-                                        <tr key={material.id || index}>
-                                          <td className="p-2">{material.namaBarang || "—"}</td>
-                                          <td className="p-2 text-right">{quantity ?? "—"}</td>
-                                          <td className="p-2">{material.satuan || "—"}</td>
-                                          <td className="whitespace-nowrap p-2 text-right">
+                                        <TableRow key={material.id || index}>
+                                          <TableCell className="whitespace-normal p-2">{material.namaBarang || "—"}</TableCell>
+                                          <TableCell className="whitespace-normal p-2 text-right">{quantity ?? "—"}</TableCell>
+                                          <TableCell className="whitespace-normal p-2">{material.satuan || "—"}</TableCell>
+                                          <TableCell className="whitespace-normal whitespace-nowrap p-2 text-right">
                                             {unitPrice === null ? "—" : formatRupiah(unitPrice)}
-                                          </td>
-                                          <td className="whitespace-nowrap p-2 text-right">
+                                          </TableCell>
+                                          <TableCell className="whitespace-normal whitespace-nowrap p-2 text-right">
                                             {subtotal === null ? "—" : formatRupiah(subtotal)}
-                                          </td>
-                                        </tr>
+                                          </TableCell>
+                                        </TableRow>
                                       )
                                     })}
-                                  </tbody>
-                                </table>
+                                  </TableBody>
+                                </Table>
                               </div>
                             ) : (
                               <p className="text-slate-600">Belum ada rincian material tersimpan.</p>
@@ -1609,32 +1626,32 @@ export function ReportDetailView({
                             </dl>
                             {parts.length > 0 && (
                               <div className="overflow-x-auto">
-                                <table className="w-full min-w-[420px] text-left">
-                                  <thead className="border-b border-slate-200 text-slate-600">
-                                    <tr>
-                                      <th className="p-2">Spare Part</th>
-                                      <th className="p-2">No. Part / Seri</th>
-                                      <th className="p-2">Asal Part</th>
-                                      <th className="p-2 text-right">Jumlah</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-200">
+                                <Table className="w-full min-w-[420px] text-left">
+                                  <TableHeader className="border-b border-slate-200 text-slate-600">
+                                    <TableRow>
+                                      <TableHead className="whitespace-normal p-2">Spare Part</TableHead>
+                                      <TableHead className="whitespace-normal p-2">No. Part / Seri</TableHead>
+                                      <TableHead className="whitespace-normal p-2">Asal Part</TableHead>
+                                      <TableHead className="whitespace-normal p-2 text-right">Jumlah</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody className="divide-y divide-slate-200">
                                     {parts.map((part, partIndex) => (
-                                      <tr key={part.id || partIndex}>
-                                        <td className="p-2">{part.namaPart || "—"}</td>
-                                        <td className="p-2">{part.nomorPart || "—"}</td>
-                                        <td className="p-2">
+                                      <TableRow key={part.id || partIndex}>
+                                        <TableCell className="whitespace-normal p-2">{part.namaPart || "—"}</TableCell>
+                                        <TableCell className="whitespace-normal p-2">{part.nomorPart || "—"}</TableCell>
+                                        <TableCell className="whitespace-normal p-2">
                                           {part.asalPart === "STOCK" ? "Stock Gudang" : part.asalPart === "PB" ? "PB (Pengadaan Baru)" : "—"}
-                                        </td>
-                                        <td className="p-2 text-right">{part.jumlahPart ?? "—"}</td>
-                                      </tr>
+                                        </TableCell>
+                                        <TableCell className="whitespace-normal p-2 text-right">{part.jumlahPart ?? "—"}</TableCell>
+                                      </TableRow>
                                     ))}
-                                  </tbody>
-                                </table>
+                                  </TableBody>
+                                </Table>
                               </div>
                             )}
                             <div className="pt-2 border-t border-slate-200">
-                              <button
+                              <Button variant="ghost" size="sm"
                                 type="button"
                                 onClick={() => {
                                   setActiveTab("checklist")
@@ -1651,7 +1668,7 @@ export function ReportDetailView({
                               >
                                 <ExternalLink className="size-3.5" />
                                 <span>Buka Temuan Checklist Terkait ({item.label})</span>
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         )}
@@ -1930,7 +1947,7 @@ export function ReportDetailView({
 
               {canReview && (
                 <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <button
+                  <Button variant="default"
                     type="button"
                     disabled={isReviewPending}
                     onClick={() => openReviewDecision("approve")}
@@ -1944,8 +1961,8 @@ export function ReportDetailView({
                           ? "Setujui & Teruskan ke Requester (WHM/DWHM)"
                           : "Setujui Final"
                         : hasForm014 ? "Setujui Estimasi Form 014" : "Setujui Form 065"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="outline"
                     type="button"
                     disabled={isReviewPending}
                     onClick={() => openReviewDecision("reject_revision")}
@@ -1953,8 +1970,8 @@ export function ReportDetailView({
                   >
                     <RefreshCw className="mr-1.5 size-4" />
                     Minta Revisi
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="destructive"
                     type="button"
                     disabled={isReviewPending}
                     onClick={() => openReviewDecision("reject")}
@@ -1962,7 +1979,7 @@ export function ReportDetailView({
                   >
                     <X className="mr-1.5 size-4" />
                     Tolak Laporan
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -1973,8 +1990,24 @@ export function ReportDetailView({
               )}
 
               {canReview && reviewDecision && (
-                <div className="mt-4 rounded-lg border border-slate-200 p-4">
-                  <p className="text-sm font-semibold">
+                <SpartaAlertDialog
+                  open={true}
+                  busy={isReviewPending}
+                  tone={reviewDecision === "reject"
+                    ? "error"
+                    : reviewDecision === "reject_revision"
+                      ? "warning"
+                      : "confirm"}
+                  onOpenChange={(open) => {
+                    if (!open && !isReviewPending) {
+                      setReviewDecision(null)
+                    }
+                  }}
+                >
+                  <AlertDialogDescription className="sr-only">
+                    Periksa keputusan dan catatan sebelum melanjutkan.
+                  </AlertDialogDescription>
+                  <AlertDialogTitle className="text-center text-base font-bold">
                     {reviewDecision === "approve"
                       ? userRole === "COORD"
                         ? "Teruskan laporan ini ke Manager?"
@@ -1988,8 +2021,8 @@ export function ReportDetailView({
                       : reviewDecision === "reject_revision"
                         ? "Kembalikan laporan untuk revisi?"
                         : "Tolak laporan ini?"}
-                  </p>
-                  <label className="mt-3 block text-xs font-medium">
+                  </AlertDialogTitle>
+                  <Label className="mt-3 block whitespace-normal text-xs font-medium leading-relaxed">
                     {reviewDecision === "approve"
                       ? "Catatan persetujuan (opsional)"
                       : "Catatan keputusan (wajib)"}
@@ -2005,29 +2038,37 @@ export function ReportDetailView({
                       }
                       rows={3}
                     />
-                  </label>
-                  <div className="mt-3 flex gap-2">
-                    <button
+                  </Label>
+                  {reviewFeedback?.isError && (
+                    <Alert variant="destructive">
+                      <AlertDescription>
+                        {reviewFeedback.message}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <AlertDialogFooter>
+                    <Button variant="outline"
                       type="button"
                       disabled={isReviewPending}
                       onClick={() => setReviewDecision(null)}
                       className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold disabled:opacity-50"
                     >
                       Batal
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="default"
                       type="button"
                       disabled={isReviewPending}
                       onClick={confirmReviewDecision}
                       className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
                     >
                       {isReviewPending ? "Memproses..." : "Konfirmasi"}
-                    </button>
-                  </div>
-                </div>
+                    </Button>
+                  </AlertDialogFooter>
+                </SpartaAlertDialog>
               )}
 
-              {reviewFeedback && (
+              {reviewFeedback && !(canReview && reviewDecision) && (
                 <p
                   role={reviewFeedback.isError ? "alert" : "status"}
                   className={cn("mt-3 text-xs font-semibold", reviewFeedback.isError ? "text-rose-700" : "text-emerald-700")}

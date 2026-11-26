@@ -2,6 +2,10 @@
 
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { 
   Plus, 
   Trash2, 
@@ -665,24 +669,24 @@ export function FollowUpFormsEditor({
                       </span>
                     </div>
                     {itemData.materials.length > 1 && (
-                      <button
+                      <Button variant="ghost" size="icon-sm"
                         type="button"
                         onClick={() => removeMaterialRow(activeUnit.key, m.id)}
                         className="rounded-lg p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                         title="Hapus baris ini"
                       >
                         <Trash2 className="size-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
 
                   {/* Baris 1: Nama Barang / Material / Pekerjaan & Satuan */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                      <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Nama Barang / Material / Pekerjaan <span className="text-red-500">*</span>
-                      </label>
-                      <input
+                      </Label>
+                      <Input aria-label="Nama barang atau material"
                         type="text"
                         placeholder="mis. Semen Portland 50kg, Cat Tembok, Pipa PVC"
                         value={m.namaBarang}
@@ -693,10 +697,10 @@ export function FollowUpFormsEditor({
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                      <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Satuan
-                      </label>
-                      <input
+                      </Label>
+                      <Input aria-label="Satuan material"
                         type="text"
                         placeholder="Pcs, Zak, Meter"
                         value={m.satuan}
@@ -711,10 +715,10 @@ export function FollowUpFormsEditor({
                   {/* Baris 2: Jumlah (Qty) & Harga Satuan (Rp) */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                      <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Jumlah (Qty)
-                      </label>
-                      <input
+                      </Label>
+                      <Input aria-label="Jumlah material"
                         type="number"
                         min="1"
                         value={m.jumlah}
@@ -725,14 +729,14 @@ export function FollowUpFormsEditor({
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                      <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Harga Satuan (Rp)
-                      </label>
+                      </Label>
                       <div className="relative">
                         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
                           Rp
                         </span>
-                        <input
+                        <Input aria-label="Harga satuan material"
                           type="number"
                           min="0"
                           placeholder="0"
@@ -757,14 +761,14 @@ export function FollowUpFormsEditor({
             </div>
 
             {/* Add Material Button */}
-            <button
+            <Button variant="outline"
               type="button"
               onClick={() => addMaterialRow(activeUnit.key)}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#ff8a2a] bg-[#fff8f3] text-xs font-bold text-[#ff8a2a] transition-colors hover:bg-[#fff0e3]"
             >
               <Plus className="size-4" />
               Tambah Rincian Material Lainnya
-            </button>
+            </Button>
 
             {/* Subtotal Card for this unit */}
             <div className="rounded-xl border border-[#ffd7bc] bg-[#fffaf5] p-3.5 flex items-center justify-between">
@@ -812,11 +816,11 @@ export function FollowUpFormsEditor({
 
             {/* Segmented Control for Jenis Pekerjaan */}
             <div className="rounded-2xl border border-[#dedede] bg-white p-4 shadow-xs">
-              <label className="text-xs font-bold text-zinc-700 mb-2 block">
+              <Label className="text-xs font-bold text-zinc-700 mb-2 block">
                 Jenis Pekerjaan
-              </label>
+              </Label>
               <div className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1">
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => updateField065(activeUnit.key, "jenis", "PERBAIKAN")}
                   className={`h-10 rounded-lg text-xs font-bold transition-all ${
@@ -826,8 +830,8 @@ export function FollowUpFormsEditor({
                   }`}
                 >
                   Perbaikan
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   type="button"
                   onClick={() => updateField065(activeUnit.key, "jenis", "PENGGANTIAN_SPARE_PART")}
                   className={`h-10 rounded-lg text-xs font-bold transition-all ${
@@ -837,7 +841,7 @@ export function FollowUpFormsEditor({
                   }`}
                 >
                   Penggantian Spare Part
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -850,10 +854,10 @@ export function FollowUpFormsEditor({
               {/* Baris 1: Nama Unit / Equipment & Merk / Brand */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                  <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                     Nama Unit / Equipment
-                  </label>
-                  <input
+                  </Label>
+                  <Input aria-label="Nama unit equipment"
                     type="text"
                     value={itemData.namaUnit}
                     onChange={(e) => updateField065(activeUnit.key, "namaUnit", e.target.value)}
@@ -861,10 +865,10 @@ export function FollowUpFormsEditor({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                  <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                     Merk / Brand
-                  </label>
-                  <input
+                  </Label>
+                  <Input aria-label="Merk equipment"
                     type="text"
                     placeholder="mis. Daikin, Mitsubishi"
                     value={itemData.merk}
@@ -877,10 +881,10 @@ export function FollowUpFormsEditor({
               {/* Baris 2: No. Unit / Asset & No. Tiket Problem (Opsional) */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                  <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                     No. Unit / Asset
-                  </label>
-                  <input
+                  </Label>
+                  <Input aria-label="Nomor unit atau aset"
                     type="text"
                     placeholder="mis. AC-01, P-02"
                     value={itemData.nomorUnit}
@@ -889,10 +893,10 @@ export function FollowUpFormsEditor({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                  <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                     No. Tiket Problem (Opsional)
-                  </label>
-                  <input
+                  </Label>
+                  <Input aria-label="Nomor tiket problem"
                     type="text"
                     placeholder="mis. TKT-2026-0901"
                     value={itemData.nomorTiketProblem}
@@ -910,10 +914,10 @@ export function FollowUpFormsEditor({
               </h3>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                   Analisa Kerusakan <span className="text-red-500">*</span>
-                </label>
-                <textarea
+                </Label>
+                <Textarea aria-label="Analisa kerusakan"
                   rows={2}
                   value={itemData.analisa}
                   onChange={(e) => updateField065(activeUnit.key, "analisa", e.target.value)}
@@ -923,10 +927,10 @@ export function FollowUpFormsEditor({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                   Tindakan Perbaikan
-                </label>
-                <textarea
+                </Label>
+                <Textarea aria-label="Tindakan perbaikan"
                   rows={2}
                   value={itemData.tindakan}
                   onChange={(e) => updateField065(activeUnit.key, "tindakan", e.target.value)}
@@ -960,24 +964,24 @@ export function FollowUpFormsEditor({
                       </span>
                     </div>
                     {itemData.parts.length > 1 && (
-                      <button
+                      <Button variant="ghost" size="icon-sm"
                         type="button"
                         onClick={() => removeSparePartRow(activeUnit.key, p.id)}
                         className="rounded-lg p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                         title="Hapus part ini"
                       >
                         <Trash2 className="size-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
 
                   {/* Baris 1: Nama Part & Nomor Part / Seri */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                      <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Nama Part <span className="text-red-500">*</span>
-                      </label>
-                      <input
+                      </Label>
+                      <Input aria-label="Nama spare part"
                         type="text"
                         placeholder="mis. Filter Dryer, Kapasitor 45uF, Bearing"
                         value={p.namaPart}
@@ -988,10 +992,10 @@ export function FollowUpFormsEditor({
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                      <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Nomor Part / Seri
-                      </label>
-                      <input
+                      </Label>
+                      <Input aria-label="Nomor part atau seri"
                         type="text"
                         placeholder="Part number / seri (jika ada)"
                         value={p.nomorPart}
@@ -1006,9 +1010,9 @@ export function FollowUpFormsEditor({
                   {/* Baris 2: Asal Part & Jumlah Part */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                      <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Asal Part
-                      </label>
+                      </Label>
                       <Select
                         value={p.asalPart}
                         onValueChange={(val) =>
@@ -1037,10 +1041,10 @@ export function FollowUpFormsEditor({
                       </Select>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-zinc-700 mb-1 block">
+                      <Label className="text-xs font-semibold text-zinc-700 mb-1 block">
                         Jumlah Part
-                      </label>
-                      <input
+                      </Label>
+                      <Input aria-label="Jumlah spare part"
                         type="number"
                         min="1"
                         value={p.jumlahPart}
@@ -1059,14 +1063,14 @@ export function FollowUpFormsEditor({
                 </div>
               ))}
 
-              <button
+              <Button variant="outline"
                 type="button"
                 onClick={() => addSparePartRow(activeUnit.key)}
                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#ff8a2a] bg-[#fff8f3] text-xs font-bold text-[#ff8a2a] transition-colors hover:bg-[#fff0e3]"
               >
                 <Plus className="size-4" />
                 Tambah Baris Spare Part
-              </button>
+              </Button>
               </div>
             ) : (
               <div className="rounded-xl border border-[#e8e8e6] bg-[#fafaf9] p-4 text-xs text-[#555555]">
@@ -1089,22 +1093,22 @@ export function FollowUpFormsEditor({
         <div className="flex items-center justify-between gap-3">
           {/* Left Navigation Control */}
           {currentStep > 0 ? (
-            <button
+            <Button variant="outline"
               type="button"
               onClick={handlePrev}
               className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-[#dedede] bg-white px-4 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
             >
               <ChevronLeft className="size-4" />
               Sebelumnya
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button variant="outline"
               type="button"
               onClick={() => router.push("/dashboard")}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dedede] bg-white px-3.5 text-xs font-bold text-zinc-500 hover:bg-zinc-50 transition-colors"
             >
               Nanti Saja
-            </button>
+            </Button>
           )}
 
           {/* Center Info Indicator */}
@@ -1119,16 +1123,16 @@ export function FollowUpFormsEditor({
 
           {/* Right Navigation / Submit Control */}
           {!isLastStep ? (
-            <button
+            <Button variant="default"
               type="button"
               onClick={handleNext}
               className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#ff8a2a] px-5 text-xs font-bold text-white shadow-sm hover:bg-[#f07b1a] transition-all active:scale-95"
             >
               Selanjutnya
               <ChevronRight className="size-4" />
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button variant="default"
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
@@ -1145,7 +1149,7 @@ export function FollowUpFormsEditor({
                   <Check className="size-4" />
                 </>
               )}
-            </button>
+            </Button>
           )}
         </div>
       </div>
