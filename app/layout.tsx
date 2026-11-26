@@ -1,4 +1,5 @@
 import "./globals.css"
+import { Toaster } from "@/components/ui/sonner"
 
 export default function RootLayout({
   children,
@@ -13,6 +14,7 @@ export default function RootLayout({
     >
       <body>
         {children}
+        <Toaster position="top-center" richColors closeButton theme="light" />
       </body>
     </html>
   )

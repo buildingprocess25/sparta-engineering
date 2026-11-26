@@ -3,6 +3,15 @@
 import { DashboardNotifications } from "@/components/dashboard-notifications"
 
 import * as React from "react"
+import { toast } from "sonner"
+import { SpartaAlertDialog } from "@/components/shared/sparta-alert-dialog"
+import {
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
@@ -100,6 +109,8 @@ export function WorkPermitsView({
   const selectedSafety = (selectedPermit?.safetyPayload || {}) as WorkPermitSafetyPayload
   const [actionLoading, setActionLoading] = React.useState(false)
   const [managerNoteInput, setManagerNoteInput] = React.useState("")
+  const [pendingDecision, setPendingDecision] = React.useState<"approve" | "reject" | null>(null)
+  const decisionLock = React.useRef(false)
 
   const [previousPermits, setPreviousPermits] = React.useState(initialPermits)
   if (previousPermits !== initialPermits) {
@@ -168,6 +179,7 @@ export function WorkPermitsView({
   const handleApprove = async () => {
     if (!selectedPermit) return
     setActionLoading(true)
+    const toastId = toast.loading("Memproses persetujuan izin kerja...")
     try {
       const res = await approveWorkPermitAction(selectedPermit.id, managerNoteInput)
       if (res.ok) {
@@ -186,10 +198,16 @@ export function WorkPermitsView({
         )
         setSelectedPermit(null)
         setManagerNoteInput("")
+        toast.success("Persetujuan Manager berhasil direkam.", { id: toastId })
         router.refresh()
       } else {
-        alert(res.error || "Gagal menyetujui izin kerja.")
+        toast.error(res.error || "Gagal menyetujui izin kerja.", { id: toastId })
       }
+    } catch {
+      toast.error(
+        "Keputusan belum dapat dikonfirmasi. Muat ulang halaman untuk memeriksa status.",
+        { id: toastId }
+      )
     } finally {
       setActionLoading(false)
     }
@@ -198,10 +216,11 @@ export function WorkPermitsView({
   const handleReject = async () => {
     if (!selectedPermit) return
     if (!managerNoteInput.trim()) {
-      alert("Harap masukkan alasan penolakan / catatan revisi untuk teknisi.")
+      toast.warning("Harap masukkan alasan penolakan / catatan revisi untuk teknisi.")
       return
     }
     setActionLoading(true)
+    const toastId = toast.loading("Memproses penolakan izin kerja...")
     try {
       const res = await rejectWorkPermitAction(selectedPermit.id, managerNoteInput)
       if (res.ok) {
@@ -219,12 +238,53 @@ export function WorkPermitsView({
         )
         setSelectedPermit(null)
         setManagerNoteInput("")
+        toast.success("Penolakan izin kerja berhasil direkam.", { id: toastId })
         router.refresh()
       } else {
-        alert(res.error || "Gagal menolak izin kerja.")
+        toast.error(res.error || "Gagal menolak izin kerja.", { id: toastId })
       }
+    } catch {
+      toast.error(
+        "Keputusan belum dapat dikonfirmasi. Muat ulang halaman untuk memeriksa status.",
+        { id: toastId }
+      )
     } finally {
       setActionLoading(false)
+    }
+  }
+
+  const requestDecision = (decision: "approve" | "reject") => {
+    if (!selectedPermit || actionLoading || decisionLock.current) return
+
+    if (decision === "reject" && !managerNoteInput.trim()) {
+      toast.warning("Harap masukkan alasan penolakan / catatan revisi untuk teknisi.")
+      return
+    }
+
+    setPendingDecision(decision)
+  }
+
+  const confirmDecision = async () => {
+    if (
+      !selectedPermit ||
+      selectedPermit.status !== "PENDING_MANAGER" ||
+      !pendingDecision ||
+      actionLoading ||
+      decisionLock.current
+    ) return
+
+    decisionLock.current = true
+    const decision = pendingDecision
+    setPendingDecision(null)
+
+    try {
+      if (decision === "approve") {
+        await handleApprove()
+      } else {
+        await handleReject()
+      }
+    } finally {
+      decisionLock.current = false
     }
   }
 
@@ -542,6 +602,42 @@ export function WorkPermitsView({
         </div>
       </div>
 
+            <SpartaAlertDialog
+        open={pendingDecision !== null && selectedPermit !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDecision(null)
+        }}
+        tone={pendingDecision === "reject" ? "error" : "confirm"}
+      >
+        <AlertDialogTitle className="text-center font-bold">
+          {pendingDecision === "reject"
+            ? "Tolak izin kerja?"
+            : "Setujui izin kerja?"}
+        </AlertDialogTitle>
+
+        <AlertDialogDescription className="text-center">
+          {pendingDecision === "reject"
+            ? "Keputusan penolakan akan direkam bersama catatan yang telah diisi."
+            : "Pastikan data pekerjaan dan persyaratan keselamatan telah diperiksa. Keputusan akan mengikuti tahapan persetujuan yang berlaku."}
+        </AlertDialogDescription>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Batal</AlertDialogCancel>
+
+          <AlertDialogAction
+            type="button"
+            disabled={actionLoading}
+            variant={pendingDecision === "reject" ? "destructive" : "default"}
+            onClick={confirmDecision}
+            className={pendingDecision === "approve"
+              ? "bg-[#ff8a2a] text-slate-950 hover:bg-[#e0751d]"
+              : undefined}
+          >
+            {pendingDecision === "reject" ? "Tolak" : "Setujui"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </SpartaAlertDialog>
+
       {/* Review & Approval Modal */}
       {selectedPermit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs">
@@ -811,7 +907,7 @@ export function WorkPermitsView({
                     <button
                       type="button"
                       disabled={actionLoading}
-                      onClick={handleReject}
+                      onClick={() => requestDecision("reject")}
                       className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
                     >
                       <XCircle className="size-4" />
@@ -821,7 +917,7 @@ export function WorkPermitsView({
                     <button
                       type="button"
                       disabled={actionLoading}
-                      onClick={handleApprove}
+                      onClick={() => requestDecision("approve")}
                       className="inline-flex items-center gap-1.5 rounded-xl bg-[#ff8a2a] px-5 py-2.5 text-xs font-bold text-slate-950 shadow-xs hover:bg-[#e0751d] disabled:opacity-50"
                     >
                       <CheckCircle2 className="size-4" />

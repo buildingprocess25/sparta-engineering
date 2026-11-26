@@ -218,3 +218,30 @@ type safety without changing the existing business workflow.
 - V14.5: Full shadcn component standardization.
 - V14.6: Regression testing and UAT.
 
+## V14.4A: Global Shadcn Sonner
+
+- Add a single global Sonner Toaster in the root layout.
+- Replace native work permit error and validation alerts with Sonner.
+- Retain SpartaAlertDialog for confirmation dialogs.
+- Preserve existing approval workflow and authorization.
+- No database schema or API contract changes.
+- Production build and browser regression tests remain pending.
+
+## V14.4B: Work Permit Action Feedback
+
+- Add loading, success and error feedback using Sonner.
+- Update the same toast when an approval request completes.
+- Show success only after a successful server response.
+- Preserve approval stages, validation and authorization.
+- Handle uncertain request outcomes without claiming success.
+- Browser regression testing remains pending.
+
+## V14.4C: Work Permit Confirmation Dialog
+
+- Reuse SpartaAlertDialog for approval and rejection confirmation.
+- Validate rejection notes before displaying confirmation.
+- Prevent duplicate decision submissions using a synchronous lock.
+- Preserve existing server actions and approval stages.
+- Cancel confirmation without submitting a decision.
+- Retain Sonner loading, success, warning and error feedback.
+- Browser regression testing remains pending.
