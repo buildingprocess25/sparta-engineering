@@ -7,6 +7,7 @@ import { ArrowUpRight, CheckCircle2, FileText } from "lucide-react"
 import type { RealReportItem } from "@/lib/manager-dashboard-types"
 import { ReportReviewModal } from "./report-review-modal"
 import { cn } from "@/lib/utils"
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 
 interface ManagerPendingReviewCardProps {
   reports: RealReportItem[]
@@ -100,16 +101,16 @@ export function ManagerPendingReviewCard({
                 </p>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    <th className="pb-3 pr-4 font-bold">Laporan</th>
-                    <th className="pb-3 px-4 font-bold">Lokasi & Target</th>
-                    <th className="pb-3 px-3 font-bold text-center">Status</th>
-                    <th className="pb-3 pl-3 font-bold text-right">Umur</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+              <Table className="w-full text-left border-collapse text-xs">
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <TableHead className="h-auto whitespace-normal pb-3 pr-4 font-bold">Laporan</TableHead>
+                    <TableHead className="h-auto whitespace-normal pb-3 px-4 font-bold">Lokasi & Target</TableHead>
+                    <TableHead className="h-auto whitespace-normal pb-3 px-3 font-bold text-center">Status</TableHead>
+                    <TableHead className="h-auto whitespace-normal pb-3 pl-3 font-bold text-right">Umur</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
                   {pendingReports.map((report) => {
                     const ageDays = calculateAgeInDays(report.createdAt, now)
                     const isCoord = report.status === "PENDING_COORD"
@@ -117,13 +118,13 @@ export function ManagerPendingReviewCard({
                     const isCompleted = report.status === "COMPLETED"
 
                     return (
-                      <tr
+                      <TableRow
                         key={report.id}
                         onClick={() => handleOpenReview(report)}
                         className="group cursor-pointer transition-colors hover:bg-slate-50/80"
                       >
                         {/* Laporan Col */}
-                        <td className="py-3.5 pr-4 align-top">
+                        <TableCell className="whitespace-normal py-3.5 pr-4 align-top">
                           <div className="flex items-center gap-1 font-bold text-sky-600 group-hover:text-sky-700">
                             <span>{report.reportCode || `ENG-${report.id.slice(0, 8).toUpperCase()}`}</span>
                             <ArrowUpRight className="size-3 text-sky-500 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -131,20 +132,20 @@ export function ManagerPendingReviewCard({
                           <p className="text-[11px] text-slate-400 mt-0.5">
                             {formatDateIndo(report.createdAt)}
                           </p>
-                        </td>
+                        </TableCell>
 
                         {/* Lokasi & Target Col */}
-                        <td className="py-3.5 px-4 align-top">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top">
                           <p className="font-bold text-slate-800 line-clamp-1">
                             {report.area.name} {report.room ? `: ${report.room.name}` : report.equipment ? `: ${report.equipment.name}` : ""}
                           </p>
                           <p className="text-[11px] text-slate-500 mt-0.5">
                             Teknisi: {report.author.name} ({report.author.role || "ES"})
                           </p>
-                        </td>
+                        </TableCell>
 
                         {/* Status Col */}
-                        <td className="py-3.5 px-3 align-top text-center">
+                        <TableCell className="whitespace-normal py-3.5 px-3 align-top text-center">
                           {isCoord && (
                             <span className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-semibold text-purple-700 border border-purple-200/80">
                               Review Coord
@@ -165,19 +166,19 @@ export function ManagerPendingReviewCard({
                               {report.status}
                             </span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* Umur Col */}
-                        <td className="py-3.5 pl-3 align-top text-right">
+                        <TableCell className="whitespace-normal py-3.5 pl-3 align-top text-right">
                           <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700 border border-sky-200/70">
                             {ageDays} hari
                           </span>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
         </div>

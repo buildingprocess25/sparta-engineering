@@ -126,14 +126,14 @@ function EvidencePhotoGroup({
           <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,8rem),1fr))] gap-2">
             {photos.map((photo, idx) => (
               <div key={photo.fileId} className="min-w-0 overflow-hidden rounded-lg border bg-background">
-                <button
+                <Button variant="ghost"
                   type="button"
                   aria-label={`Perbesar ${label} ${idx + 1}`}
                   onClick={() => setPreview({ url: photo.url, title: `${label} ${idx + 1}` })}
-                  className="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
+                  className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
                 >
                   <Image unoptimized src={photo.url} alt={`${label} ${idx + 1}`} fill sizes="(max-width: 640px) 160px, 220px" className="object-cover" />
-                </button>
+                </Button>
                 <div className="flex items-center justify-between gap-1 p-1.5">
                   <Button type="button" size="sm" variant="ghost" className="min-w-0 flex-1 text-xs" onClick={() => setPreview({ url: photo.url, title: `${label} ${idx + 1}` })}>Lihat foto</Button>
                   <Button type="button" size="icon" variant="ghost" disabled={disabled || uploading} onClick={() => onRemove(photo.fileId)} aria-label={`Hapus ${label} ${idx + 1}`} className="text-destructive"><Trash2 /></Button>

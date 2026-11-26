@@ -3,6 +3,7 @@
 import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 import {
   AlertCircle,
   Camera,
@@ -462,38 +463,15 @@ export function FrmTsm008Form({
       ) : null}
 
       {/* Lightbox Modal */}
-      {previewPhoto ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs"
-          onClick={() => setPreviewPhoto(undefined)}
-        >
-          <div
-            className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-[#1f2937] p-2 text-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-3 border-b border-gray-700">
-              <span className="text-sm font-medium">
-                {previewPhoto.itemLabel}
-              </span>
-              <Button variant="ghost"
-                type="button"
-                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit rounded-lg p-1 text-gray-400 hover:bg-gray-800 hover:text-white"
-                onClick={() => setPreviewPhoto(undefined)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black mt-2">
-              <Image
-                src={previewPhoto.url}
-                alt={previewPhoto.itemLabel}
-                fill
-                className="object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ReportPhotoPreview
+        photo={previewPhoto
+          ? {
+              url: previewPhoto.url,
+              title: previewPhoto.itemLabel || "Preview foto",
+            }
+          : null}
+        onClose={() => setPreviewPhoto(undefined)}
+      />
 
       {/* TOP CARD: Identitas Unit Sewa */}
       <section className="rounded-2xl border border-[#e6e2de] bg-white p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)] sm:p-5">

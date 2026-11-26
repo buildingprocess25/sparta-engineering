@@ -1,6 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, BookOpen } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default function Home() {
   return (
@@ -60,10 +61,10 @@ export default function Home() {
               Login
               <ArrowRight className="size-4" />
             </Link>
-            <button className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 text-sm font-semibold text-zinc-100 transition hover:bg-white/10">
+            <Button variant="ghost" className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 text-sm font-semibold text-zinc-100 transition hover:bg-white/10">
               <BookOpen className="size-4" />
               User Manual
-            </button>
+            </Button>
           </div>
         </section>
 

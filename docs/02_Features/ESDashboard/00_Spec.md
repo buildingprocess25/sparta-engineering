@@ -319,3 +319,29 @@ type safety without changing the existing business workflow.
 - Preserve existing report routing and approval stages.
 - Table and custom modal migration remain separate tasks.
 - Browser regression testing remains pending.
+
+## V14.5E.4: Supporting UI Component Standardization
+
+- Standardize supporting authentication and dashboard controls.
+- Standardize navigation and report detail controls.
+- Convert remaining checklist and report tables.
+- Convert 42 native controls to shared shadcn components.
+- Retain native camera shutter and evidence file input.
+- Preserve form submission and logout behavior.
+- Preserve existing handlers, filters, exports and permissions.
+- No changes to business workflow, database or API.
+- Visual and browser regression testing remains pending.
+
+## V14.5E.5: Shared Photo Preview and Review Dialog
+
+- Reuse ReportPhotoPreview across 14 checklist components.
+- Preserve preview photo URLs, labels and close state.
+- Remove redundant custom photo preview markup.
+- Convert manager report review container to shadcn Dialog.
+- Nest existing decision dialogs within the review dialog.
+- Preserve approval, revision and rejection handlers.
+- Prevent parent dismissal during pending decisions.
+- Retain specialized fullscreen camera and mobile sidebar.
+- Retain 13 intentional native UI control exceptions.
+- No changes to database, API or business workflow.
+- Browser regression testing remains pending.

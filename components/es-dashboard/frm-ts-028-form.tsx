@@ -4,6 +4,7 @@ import { readPhotoUploadResponse } from "@/lib/photos/photo-upload-client"
 import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 import {
   Activity,
   AlertCircle,
@@ -26,7 +27,6 @@ import {
   Send,
   Trash2,
   Wrench,
-  X,
   Zap,
 } from "lucide-react"
 
@@ -67,6 +67,7 @@ import { buildChecklistPhotoWatermarkLines } from "@/lib/checklists/photo-waterm
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 
 export type FrmTs028FormProps = {
   reportCode: string
@@ -1016,21 +1017,21 @@ export function FrmTs028Form({
               <span className="text-[10px] font-normal text-slate-500">Grup 1</span>
             )}
           </div>
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100/70 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">
-              <tr>
-                <th className="py-2 px-2.5 text-center w-14">No Cell</th>
-                <th className="py-2 px-3">B.J (Keasaman)</th>
-                <th className="py-2 px-3">Teg. Static (V)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-mono">
+          <Table className="w-full text-left text-xs">
+            <TableHeader className="bg-slate-100/70 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">
+              <TableRow>
+                <TableHead className="h-auto whitespace-normal py-2 px-2.5 text-center w-14">No Cell</TableHead>
+                <TableHead className="h-auto whitespace-normal py-2 px-3">B.J (Keasaman)</TableHead>
+                <TableHead className="h-auto whitespace-normal py-2 px-3">Teg. Static (V)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100 font-mono">
               {cellData.slice(0, Math.min(12, cellCount)).map((cell) => (
-                <tr key={cell.cellNo} className="hover:bg-slate-50/70">
-                  <td className="py-1.5 px-2.5 text-center font-bold text-slate-700 bg-slate-50/50">
+                <TableRow key={cell.cellNo} className="hover:bg-slate-50/70">
+                  <TableCell className="whitespace-normal py-1.5 px-2.5 text-center font-bold text-slate-700 bg-slate-50/50">
                     {String(cell.cellNo).padStart(2, "0")}
-                  </td>
-                  <td className="py-1.5 px-2.5">
+                  </TableCell>
+                  <TableCell className="whitespace-normal py-1.5 px-2.5">
                     <Input
                       type="text"
                       value={cell.bj}
@@ -1038,8 +1039,8 @@ export function FrmTs028Form({
                       placeholder="1.28"
                       className="h-8 text-xs font-mono font-medium rounded-lg"
                     />
-                  </td>
-                  <td className="py-1.5 px-2.5">
+                  </TableCell>
+                  <TableCell className="whitespace-normal py-1.5 px-2.5">
                     <Input
                       type="text"
                       value={cell.voltage}
@@ -1047,11 +1048,11 @@ export function FrmTs028Form({
                       placeholder="2.10"
                       className="h-8 text-xs font-mono font-medium rounded-lg"
                     />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Tabel Sel 13 - 24 (Bawahnya Sel 12, tidak 2 kolom sejajar) */}
@@ -1061,21 +1062,21 @@ export function FrmTs028Form({
               <span>Sel Baterai 13 – 24</span>
               <span className="text-[10px] font-normal text-slate-500">Grup 2</span>
             </div>
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/70 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">
-                <tr>
-                  <th className="py-2 px-2.5 text-center w-14">No Cell</th>
-                  <th className="py-2 px-3">B.J (Keasaman)</th>
-                  <th className="py-2 px-3">Teg. Static (V)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
+            <Table className="w-full text-left text-xs">
+              <TableHeader className="bg-slate-100/70 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">
+                <TableRow>
+                  <TableHead className="h-auto whitespace-normal py-2 px-2.5 text-center w-14">No Cell</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-2 px-3">B.J (Keasaman)</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-2 px-3">Teg. Static (V)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100 font-mono">
                 {cellData.slice(12, 24).map((cell) => (
-                  <tr key={cell.cellNo} className="hover:bg-slate-50/70">
-                    <td className="py-1.5 px-2.5 text-center font-bold text-slate-700 bg-slate-50/50">
+                  <TableRow key={cell.cellNo} className="hover:bg-slate-50/70">
+                    <TableCell className="whitespace-normal py-1.5 px-2.5 text-center font-bold text-slate-700 bg-slate-50/50">
                       {String(cell.cellNo).padStart(2, "0")}
-                    </td>
-                    <td className="py-1.5 px-2.5">
+                    </TableCell>
+                    <TableCell className="whitespace-normal py-1.5 px-2.5">
                       <Input
                         type="text"
                         value={cell.bj}
@@ -1083,8 +1084,8 @@ export function FrmTs028Form({
                         placeholder="1.28"
                         className="h-8 text-xs font-mono font-medium rounded-lg"
                       />
-                    </td>
-                    <td className="py-1.5 px-2.5">
+                    </TableCell>
+                    <TableCell className="whitespace-normal py-1.5 px-2.5">
                       <Input
                         type="text"
                         value={cell.voltage}
@@ -1092,11 +1093,11 @@ export function FrmTs028Form({
                         placeholder="2.10"
                         className="h-8 text-xs font-mono font-medium rounded-lg"
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
 
@@ -1200,37 +1201,15 @@ export function FrmTs028Form({
       </div>
 
       {/* Lightbox Photo Preview */}
-      {previewPhoto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setPreviewPhoto(null)}
-        >
-          <div
-            className="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-2xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-[#eeeeec] p-4">
-              <p className="text-sm font-bold text-[#111111]">{previewPhoto.itemLabel}</p>
-              <Button variant="ghost"
-                type="button"
-                onClick={() => setPreviewPhoto(null)}
-                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit grid size-8 place-items-center rounded-lg text-[#707784] hover:bg-[#f5f5f3]"
-              >
-                <X className="size-5" />
-              </Button>
-            </div>
-            <div className="p-2">
-              <Image
-                src={previewPhoto.url}
-                alt={previewPhoto.itemLabel}
-                width={600}
-                height={600}
-                className="max-h-[75vh] w-auto rounded-xl object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <ReportPhotoPreview
+        photo={previewPhoto
+          ? {
+              url: previewPhoto.url,
+              title: previewPhoto.itemLabel || "Preview foto",
+            }
+          : null}
+        onClose={() => setPreviewPhoto(null)}
+      />
     </div>
   )
 }

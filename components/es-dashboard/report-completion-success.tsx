@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Clock,
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export interface ReportCompletionSuccessProps {
   reportCode: string
@@ -177,14 +178,14 @@ export function ReportCompletionSuccess({
           {/* Action Button */}
           <div className="mt-6">
             {/* Primary Action Button: Go back to Dashboard / To-Do List */}
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => router.push("/dashboard")}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#ff8a2a] px-6 text-sm font-bold text-white shadow-[0_4px_14px_rgba(255,138,42,0.35)] transition-all hover:bg-[#f07b1a] active:scale-[0.99]"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#ff8a2a] px-6 text-sm font-bold text-white shadow-[0_4px_14px_rgba(255,138,42,0.35)] transition-all hover:bg-[#f07b1a] active:scale-[0.99]"
             >
               <Home className="size-4 shrink-0" />
               <span>{isRoutine ? "Kembali ke To-Do List" : "Kembali ke Dashboard"}</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>

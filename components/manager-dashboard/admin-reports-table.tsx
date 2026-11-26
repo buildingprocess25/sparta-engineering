@@ -25,6 +25,9 @@ import { ReportReviewModal } from "./report-review-modal"
 import { cn } from "@/lib/utils"
 
 import { SpartaFilterSelect } from "@/components/ui/sparta-filter-select"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 
 interface AdminReportsTableProps {
   initialReports: RealReportItem[]
@@ -185,14 +188,14 @@ export function AdminReportsTable({
         {/* Left: Sidebar toggle + Page Title */}
         <div className="flex items-center gap-3">
           {onToggleSidebar && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={onToggleSidebar}
-              className="flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
               title="Toggle sidebar"
             >
               <PanelLeft className="size-4.5" />
-            </button>
+            </Button>
           )}
           <h1 className="text-base font-bold text-slate-900 tracking-tight">
             Laporan Maintenance
@@ -201,14 +204,14 @@ export function AdminReportsTable({
 
         {/* Right: Ekspor XLSX + Bell + User Avatar */}
         <div className="flex items-center gap-3">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={handleExportXLSX}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0b1728] hover:bg-[#1e293b] px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-all active:scale-[0.98] border border-slate-800 cursor-pointer"
+            className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit inline-flex items-center gap-1.5 rounded-lg bg-[#0b1728] hover:bg-[#1e293b] px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-all active:scale-[0.98] border border-slate-800 cursor-pointer"
           >
             <Download className="size-3.5 text-[#ff8a2a]" />
             <span>Ekspor XLSX</span>
-          </button>
+          </Button>
 
           <DashboardNotifications />
 
@@ -232,19 +235,19 @@ export function AdminReportsTable({
           {QUICK_FILTERS.map((tab) => {
             const isActive = quickFilter === tab.key
             return (
-              <button
+              <Button variant="ghost"
                 key={tab.key}
                 type="button"
                 onClick={() => setQuickFilter(tab.key)}
-                className={cn(
+                className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", (cn(
                   "h-8.5 inline-flex items-center justify-center rounded-lg px-3.5 text-xs font-medium whitespace-nowrap transition-all duration-150 cursor-pointer select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff8a2a]/40",
                   isActive
                     ? "bg-[#ff8a2a] hover:bg-[#e0751d] text-slate-950 shadow-2xs font-bold"
                     : "bg-white text-slate-700 border border-slate-200/90 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-2xs"
-                )}
+                ))].filter(Boolean).join(" ")}
               >
                 {tab.label}
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -253,7 +256,7 @@ export function AdminReportsTable({
         <div className="flex items-center gap-2.5">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
-            <input
+            <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -262,19 +265,19 @@ export function AdminReportsTable({
             />
           </div>
 
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={cn(
+            className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", (cn(
               "h-9 inline-flex items-center gap-1.5 rounded-lg border px-3.5 text-xs font-medium transition-all shadow-2xs cursor-pointer active:scale-[0.98]",
               isFilterOpen
                 ? "border-[#ff8a2a] bg-[#ff8a2a]/10 text-slate-950 font-bold"
                 : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300"
-            )}
+            ))].filter(Boolean).join(" ")}
           >
             <Filter className="size-3.5" />
             <span>Filter</span>
-          </button>
+          </Button>
         </div>
 
         {/* Collapsible Filter Panel */}
@@ -315,17 +318,17 @@ export function AdminReportsTable({
             </div>
 
             {(selectedArea !== "ALL" || selectedCategory !== "ALL" || searchQuery) && (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => {
                   setSelectedArea("ALL")
                   setSelectedCategory("ALL")
                   setSearchQuery("")
                 }}
-                className="text-[11px] font-semibold text-rose-600 hover:underline ml-auto"
+                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit text-[11px] font-semibold text-rose-600 hover:underline ml-auto"
               >
                 Reset Filter
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -333,23 +336,23 @@ export function AdminReportsTable({
         {/* Main Table Container matching sparta-maintenance */}
         <div className="rounded-2xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-100 bg-white text-[11px] font-bold text-slate-700">
-                <tr>
-                  <th className="py-3.5 px-4 font-bold">Laporan</th>
-                  <th className="py-3.5 px-4 font-bold">Update</th>
-                  <th className="py-3.5 px-4 font-bold">Target & Objek</th>
-                  <th className="py-3.5 px-4 font-bold">Cabang</th>
-                  <th className="py-3.5 px-4 font-bold">Teknisi ES</th>
-                  <th className="py-3.5 px-4 font-bold">Biaya</th>
-                  <th className="py-3.5 px-4 font-bold">Status</th>
-                  <th className="py-3.5 px-4 font-bold text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+            <Table className="w-full text-left text-xs">
+              <TableHeader className="border-b border-slate-100 bg-white text-[11px] font-bold text-slate-700">
+                <TableRow>
+                  <TableHead className="h-auto whitespace-normal py-3.5 px-4 font-bold">Laporan</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-3.5 px-4 font-bold">Update</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-3.5 px-4 font-bold">Target & Objek</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-3.5 px-4 font-bold">Cabang</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-3.5 px-4 font-bold">Teknisi ES</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-3.5 px-4 font-bold">Biaya</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-3.5 px-4 font-bold">Status</TableHead>
+                  <TableHead className="h-auto whitespace-normal py-3.5 px-4 font-bold text-center">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100">
                 {filteredReports.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={8} className="whitespace-normal py-12 text-center text-slate-400">
                       <FileCheck2 className="mx-auto size-8 text-slate-300" />
                       <p className="mt-2 text-xs font-bold text-slate-700">
                         Tidak ada laporan sesuai filter
@@ -357,8 +360,8 @@ export function AdminReportsTable({
                       <p className="text-[11px] text-slate-400 mt-0.5">
                         Coba ubah kata kunci pencarian atau ganti filter status di atas.
                       </p>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredReports.map((report) => {
                     const isCoord = report.status === "PENDING_COORD"
@@ -377,13 +380,13 @@ export function AdminReportsTable({
                     const reportUrl = `/dashboard/reports/${report.reportCode || report.id}`
 
                     return (
-                      <tr
+                      <TableRow
                         key={report.id}
                         className="hover:bg-slate-50/70 transition-colors group cursor-pointer"
                         onClick={() => router.push(reportUrl)}
                       >
                         {/* 1. Laporan with distinctive code & hover accent */}
-                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top whitespace-nowrap">
                           <Link
                             href={reportUrl}
                             onClick={(e) => e.stopPropagation()}
@@ -392,40 +395,40 @@ export function AdminReportsTable({
                             <span>{report.reportCode || `ENG-${report.id.slice(0, 8).toUpperCase()}`}</span>
                             <ArrowUpRight className="size-3 text-slate-400 group-hover:text-[#ff8a2a] transition-colors" />
                           </Link>
-                        </td>
+                        </TableCell>
 
                         {/* 2. Update (formatted date & time) */}
-                        <td className="py-3.5 px-4 align-top whitespace-nowrap text-slate-600 font-medium">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top whitespace-nowrap text-slate-600 font-medium">
                           {formatIndoDateTime(report.updatedAt || report.createdAt)}
-                        </td>
+                        </TableCell>
 
                         {/* 3. Target & Objek (equivalent to Toko) */}
-                        <td className="py-3.5 px-4 align-top">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top">
                           <p className="font-bold text-slate-800 line-clamp-1">
                             {targetName}
                           </p>
                           <p className="text-[11px] text-slate-400 mt-0.5 uppercase">
                             {targetSub}
                           </p>
-                        </td>
+                        </TableCell>
 
                         {/* 4. Cabang */}
-                        <td className="py-3.5 px-4 align-top whitespace-nowrap font-bold text-slate-700">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top whitespace-nowrap font-bold text-slate-700">
                           {branchName}
-                        </td>
+                        </TableCell>
 
                         {/* 5. Teknisi ES (equivalent to BMS) */}
-                        <td className="py-3.5 px-4 align-top">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top">
                           <p className="font-bold text-slate-800">
                             {report.author.name}
                           </p>
                           <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
                             {report.author.NIK}
                           </p>
-                        </td>
+                        </TableCell>
 
                         {/* 6. Biaya (Estimasi & Realisasi stacked) */}
-                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top whitespace-nowrap">
                           <div className="flex flex-col gap-1 text-[11px]">
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-slate-400">Estimasi</span>
@@ -436,10 +439,10 @@ export function AdminReportsTable({
                               <span className="font-semibold text-slate-700">Rp -</span>
                             </div>
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* 7. Status Pill */}
-                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top whitespace-nowrap">
                           {isDraft && (
                             <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200">
                               Draft
@@ -470,10 +473,10 @@ export function AdminReportsTable({
                               {CHECKLIST_STATUS_LABELS[report.status] ?? report.status}
                             </span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* 8. Aksi */}
-                        <td className="py-3.5 px-4 align-top text-center whitespace-nowrap">
+                        <TableCell className="whitespace-normal py-3.5 px-4 align-top text-center whitespace-nowrap">
                           <Link
                             href={reportUrl}
                             onClick={(e) => e.stopPropagation()}
@@ -481,13 +484,13 @@ export function AdminReportsTable({
                           >
                             <span>Detail</span>
                           </Link>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
 
 import type { ManagerDashboardData, PeriodFilter } from "./mock-data"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface ManagerKpiSummaryProps {
   data: ManagerDashboardData
@@ -67,56 +68,56 @@ export function ManagerKpiSummary({
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           {/* Period Selector Dropdown */}
           <div className="relative" ref={periodDropdownRef}>
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setIsPeriodDropdownOpen((prev) => !prev)}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
             >
               <span>{periodLabelMap[selectedPeriod]}</span>
               <ChevronDown className="size-3.5 text-slate-400" />
-            </button>
+            </Button>
 
             {isPeriodDropdownOpen && (
               <div className="absolute right-0 mt-1.5 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg ring-1 ring-black/5 z-50">
                 {(["YTD", "MONTHLY", "QUARTERLY"] as PeriodFilter[]).map((period) => (
-                  <button
+                  <Button variant="ghost"
                     key={period}
                     type="button"
                     onClick={() => {
                       onPeriodChange(period)
                       setIsPeriodDropdownOpen(false)
                     }}
-                    className={cn(
+                    className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", (cn(
                       "flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
                       selectedPeriod === period
                         ? "bg-slate-100 text-slate-900 font-bold"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    )}
+                    ))].filter(Boolean).join(" ")}
                   >
                     <span>{periodLabelMap[period]}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
           </div>
 
           {/* Aktivitas Button */}
-          <button
+          <Button variant="ghost"
             type="button"
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+            className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
           >
             <Activity className="size-3.5 text-slate-500" />
             <span>Aktivitas</span>
-          </button>
+          </Button>
 
           {/* Semua Laporan Button */}
-          <button
+          <Button variant="ghost"
             type="button"
-            className="flex items-center gap-1.5 rounded-xl bg-[#ff8a2a] px-3.5 py-2 text-xs font-bold text-slate-950 shadow-xs hover:bg-[#e0751d] transition-colors"
+            className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex items-center gap-1.5 rounded-xl bg-[#ff8a2a] px-3.5 py-2 text-xs font-bold text-slate-950 shadow-xs hover:bg-[#e0751d] transition-colors"
           >
             <FileText className="size-3.5" />
             <span>Semua Laporan</span>
-          </button>
+          </Button>
         </div>
       </div>
 

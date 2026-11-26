@@ -3,6 +3,7 @@
 import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 import {
   Activity,
   AlertCircle,
@@ -968,38 +969,15 @@ export function FrmTs016Form({
       </div>
 
       {/* Photo Preview Modal */}
-      {previewPhoto ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setPreviewPhoto(undefined)}
-        >
-          <div
-            className="relative max-h-[90vh] max-w-xl overflow-hidden rounded-2xl bg-white p-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-2">
-              <span className="text-xs font-bold text-[#111111]">
-                {previewPhoto.itemLabel}
-              </span>
-              <Button variant="ghost"
-                type="button"
-                onClick={() => setPreviewPhoto(undefined)}
-                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit grid size-7 place-items-center rounded-full bg-[#f5f5f3] text-[#111111]"
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
-            <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-xl">
-              <Image
-                src={previewPhoto.url}
-                alt={previewPhoto.itemLabel}
-                fill
-                className="object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ReportPhotoPreview
+        photo={previewPhoto
+          ? {
+              url: previewPhoto.url,
+              title: previewPhoto.itemLabel || "Preview foto",
+            }
+          : null}
+        onClose={() => setPreviewPhoto(undefined)}
+      />
     </div>
   )
 }

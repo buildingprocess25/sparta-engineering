@@ -5,6 +5,7 @@ import { KeyRound, LogOut } from "lucide-react"
 
 import { logoutAction } from "@/app/login/actions"
 import { useDemoMode } from "@/components/auth/demo-mode-context"
+import { Button } from "@/components/ui/button"
 
 type ProfileMenuProps = {
   initials: string
@@ -32,15 +33,15 @@ export function ProfileMenu({ initials, email }: ProfileMenuProps) {
 
   return (
     <div ref={menuRef} className="relative">
-      <button
+      <Button variant="ghost"
         type="button"
         aria-label="Menu profile"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="grid size-10 place-items-center rounded-full bg-[#111111] text-sm font-semibold text-white shadow-sm transition hover:bg-[#2a2a2a] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/35"
+        className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit grid size-10 place-items-center rounded-full bg-[#111111] text-sm font-semibold text-white shadow-sm transition hover:bg-[#2a2a2a] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/35"
       >
         {initials}
-      </button>
+      </Button>
 
       {open ? (
         <div className="absolute right-0 top-12 z-50 w-60 overflow-hidden rounded-lg border border-[#dedede] bg-white text-[#111111] shadow-xl shadow-black/15">
@@ -51,18 +52,18 @@ export function ProfileMenu({ initials, email }: ProfileMenuProps) {
           ) : null}
 
           {!demoMode && (
-            <button
+            <Button variant="ghost"
               type="button"
               disabled
-              className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm text-[#111111] opacity-60"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex h-12 w-full items-center gap-3 px-4 text-left text-sm text-[#111111] opacity-60"
             >
               <KeyRound className="size-4" />
               Ganti Password
-            </button>
+            </Button>
           )}
 
           <form action={logoutAction} className="border-t border-[#eeeeee]">
-            <button
+            <Button variant="ghost"
               type="submit"
               onClick={() => {
                 try {
@@ -73,11 +74,11 @@ export function ProfileMenu({ initials, email }: ProfileMenuProps) {
                   // ignore
                 }
               }}
-              className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
             >
               <LogOut className="size-4" />
               {demoMode ? "Ganti Pengguna" : "Logout"}
-            </button>
+            </Button>
           </form>
         </div>
       ) : null}

@@ -742,7 +742,7 @@ export function EsFormDetailView({
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#888888]" />
-          <input
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -764,10 +764,10 @@ export function EsFormDetailView({
                 className="overflow-hidden rounded-2xl border border-[#dedede] bg-white shadow-xs"
               >
                 {/* Category Header */}
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => toggleCategory(cat.id)}
-                  className="flex w-full items-center justify-between border-b border-[#f0f0f0] bg-white p-3.5 text-left transition-colors hover:bg-gray-50/80"
+                  className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex w-full items-center justify-between border-b border-[#f0f0f0] bg-white p-3.5 text-left transition-colors hover:bg-gray-50/80"
                 >
                   <div className="flex items-center gap-2.5">
                     <div className="flex size-8 items-center justify-center rounded-lg bg-[#fff0e3] text-[#ff8a2a]">
@@ -788,7 +788,7 @@ export function EsFormDetailView({
                       <ChevronDown className="size-4 text-[#888888]" />
                     )}
                   </div>
-                </button>
+                </Button>
 
                 {/* Items List (Read-Only) */}
                 {isOpen && (
@@ -870,7 +870,7 @@ export function EsFormDetailView({
                                         key={photo.fileId || photo.url}
                                         className="relative group overflow-hidden rounded-xl border border-[#e8e8e6] bg-[#111111] shadow-xs"
                                       >
-                                        <button
+                                        <Button variant="ghost"
                                           type="button"
                                           onClick={() =>
                                             setPreviewPhoto({
@@ -878,7 +878,7 @@ export function EsFormDetailView({
                                               url: photo.url,
                                             })
                                           }
-                                          className="block w-full text-left outline-none"
+                                          className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit block w-full text-left outline-none"
                                         >
                                           <Image
                                             unoptimized
@@ -888,7 +888,7 @@ export function EsFormDetailView({
                                             height={360}
                                             className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.01]"
                                           />
-                                        </button>
+                                        </Button>
                                         <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-xs">
                                           Tap untuk memperbesar
                                         </div>
@@ -969,17 +969,17 @@ export function EsFormDetailView({
                       { label: COMPLETION_EVIDENCE_LABELS.REFUND_TRANSFER, photos: storedEvidence.form014.refundTransferPhotos },
                     ].map((group) =>
                       group.photos.map((photo, idx) => (
-                        <button
+                        <Button variant="ghost"
                           key={`${group.label}-${photo.fileId}`}
                           type="button"
                           onClick={() => setPreviewPhoto({ itemLabel: `${group.label} (${idx + 1})`, url: photo.url })}
-                          className="flex min-w-0 flex-col gap-1 text-left cursor-zoom-in"
+                          className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex min-w-0 flex-col gap-1 text-left cursor-zoom-in"
                         >
                           <span className="relative block aspect-square w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
                             <Image unoptimized src={photo.url} alt={group.label} fill sizes="120px" className="object-cover" />
                           </span>
                           <span className="break-words text-[10px] font-medium text-slate-700">{group.label} ({idx + 1})</span>
-                        </button>
+                        </Button>
                       )),
                     )}
                   </div>
@@ -999,17 +999,17 @@ export function EsFormDetailView({
                       { label: COMPLETION_EVIDENCE_LABELS.USER_SELFIE, photos: storedEvidence.form065.selfieWithUserPhotos },
                     ].map((group) =>
                       group.photos.map((photo, idx) => (
-                        <button
+                        <Button variant="ghost"
                           key={`${group.label}-${photo.fileId}`}
                           type="button"
                           onClick={() => setPreviewPhoto({ itemLabel: `${group.label} (${idx + 1})`, url: photo.url })}
-                          className="flex min-w-0 flex-col gap-1 text-left cursor-zoom-in"
+                          className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex min-w-0 flex-col gap-1 text-left cursor-zoom-in"
                         >
                           <span className="relative block aspect-square w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
                             <Image unoptimized src={photo.url} alt={group.label} fill sizes="120px" className="object-cover" />
                           </span>
                           <span className="break-words text-[10px] font-medium text-slate-700">{group.label} ({idx + 1})</span>
-                        </button>
+                        </Button>
                       )),
                     )}
                   </div>

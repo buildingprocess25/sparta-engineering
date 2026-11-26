@@ -144,17 +144,17 @@ export function ReportAreaPicker({
               const isSelected = areaId === area.id
 
               return (
-                <button
+                <Button variant="ghost"
                   key={area.id}
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => chooseArea(area.id)}
-                  className={cn(
+                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", (cn(
                     "relative min-h-24 rounded-xl border p-3 text-left transition-colors overflow-hidden",
                     isSelected
                       ? "border-[#ff8a2a] bg-[#fff0e3]"
                       : "border-[#dedede] bg-[#fbfbfb] hover:border-gray-300",
-                  )}
+                  ))].filter(Boolean).join(" ")}
                 >
                   <div className="flex items-start justify-between">
                     <Icon className="text-[#111111]" aria-hidden="true" />
@@ -165,7 +165,7 @@ export function ReportAreaPicker({
                   <span className="mt-1 block text-xs text-[#686868]">
                     {area.rooms ? `${area.rooms.length} Ruangan` : area.type}
                   </span>
-                </button>
+                </Button>
               )
             })}
           </div>

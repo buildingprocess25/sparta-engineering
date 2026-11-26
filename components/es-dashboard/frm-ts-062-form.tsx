@@ -3,6 +3,7 @@
 import { restoreChecklistItems } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 import {
   AlertCircle,
   Check,
@@ -972,29 +973,15 @@ export function FrmTs062Form({
       </div>
 
       {/* FULLSCREEN PHOTO PREVIEW MODAL */}
-      {previewPhoto ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-          <Button variant="ghost"
-            type="button"
-            onClick={() => setPreviewPhoto(undefined)}
-            className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
-          >
-            <X className="size-6" />
-          </Button>
-          <div className="max-h-[85vh] max-w-[90vw] overflow-hidden rounded-2xl">
-            <Image
-              src={previewPhoto.url}
-              alt={previewPhoto.itemLabel}
-              width={800}
-              height={800}
-              className="max-h-[85vh] max-w-[90vw] object-contain"
-            />
-            <p className="mt-2 text-center text-xs font-semibold text-white/80">
-              {previewPhoto.itemLabel}
-            </p>
-          </div>
-        </div>
-      ) : null}
+      <ReportPhotoPreview
+        photo={previewPhoto
+          ? {
+              url: previewPhoto.url,
+              title: previewPhoto.itemLabel || "Preview foto",
+            }
+          : null}
+        onClose={() => setPreviewPhoto(undefined)}
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { restoreChecklistItems, restoreChecklistAction } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 import {
   Activity,
   AlertCircle,
@@ -29,7 +30,6 @@ import {
   Trash2,
   Waves,
   Wrench,
-  X,
   Zap,
 } from "lucide-react"
 
@@ -1005,38 +1005,15 @@ export function FrmTsm013Form({
       </div>
 
       {/* Photo Preview Modal */}
-      {previewPhoto && (
-        <div
-          onClick={() => setPreviewPhoto(undefined)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm cursor-pointer"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-3xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl"
-          >
-            <div className="flex items-center justify-between p-4 border-b border-[#f0f0f0]">
-              <div className="text-sm font-bold text-[#0b1728]">{previewPhoto.itemLabel}</div>
-              <Button variant="ghost"
-                type="button"
-                onClick={() => setPreviewPhoto(undefined)}
-                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit p-1 rounded-lg hover:bg-neutral-100 text-[#7a7a7a]"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="p-4 flex items-center justify-center bg-neutral-900 max-h-[75vh]">
-              <Image
-                src={previewPhoto.url}
-                alt={previewPhoto.itemLabel}
-                width={800}
-                height={600}
-                className="max-h-[70vh] w-auto object-contain rounded"
-                unoptimized
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <ReportPhotoPreview
+        photo={previewPhoto
+          ? {
+              url: previewPhoto.url,
+              title: previewPhoto.itemLabel || "Preview foto",
+            }
+          : null}
+        onClose={() => setPreviewPhoto(undefined)}
+      />
     </form>
   )
 }

@@ -127,12 +127,12 @@ export function OutboxView({ emails }: { emails: OutboxMessage[] }) {
               <ul aria-label="Pesan terkirim" className="space-y-1">
                 {emails.map((email) => (
                   <li key={email.id}>
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       aria-current={
                         email.id === selected.id ? "true" : undefined
                       }
-                      className="w-full rounded-lg border border-transparent px-3 py-3 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring aria-current:border-[#eac4a3] aria-current:bg-[#fff3e9]"
+                      className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit w-full rounded-lg border border-transparent px-3 py-3 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring aria-current:border-[#eac4a3] aria-current:bg-[#fff3e9]"
                       onClick={() => {
                         setSelectedId(email.id)
                         setMobileReading(true)
@@ -150,7 +150,7 @@ export function OutboxView({ emails }: { emails: OutboxMessage[] }) {
                       >
                         {sentDate.format(email.sentAt)}
                       </time>
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

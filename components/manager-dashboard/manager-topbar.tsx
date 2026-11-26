@@ -8,6 +8,7 @@ import { ChevronDown, Menu, PanelLeft } from "lucide-react"
 import type { AreaFilter } from "./mock-data"
 import { ProfileMenu } from "@/components/auth/profile-menu"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface ManagerTopbarProps {
   selectedArea: AreaFilter
@@ -59,24 +60,24 @@ export function ManagerTopbar({
       {/* Left: Sidebar Toggle & Breadcrumb */}
       <div className="flex items-center gap-3">
         {/* Desktop Toggle */}
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={onToggleSidebar}
-          className="hidden lg:flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit hidden lg:flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
           aria-label="Toggle sidebar"
         >
           <PanelLeft className="size-4" />
-        </button>
+        </Button>
 
         {/* Mobile Toggle */}
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={onOpenMobileSidebar}
-          className="flex lg:hidden size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex lg:hidden size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
           aria-label="Buka menu"
         >
           <Menu className="size-4" />
-        </button>
+        </Button>
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm">
@@ -88,34 +89,34 @@ export function ManagerTopbar({
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Area Selector Dropdown */}
         <div className="relative" ref={dropdownRef}>
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setIsAreaDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs hover:bg-slate-50 transition-colors"
+            className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs hover:bg-slate-50 transition-colors"
           >
             <span>{areaLabelMap[selectedArea]}</span>
             <ChevronDown className="size-3.5 text-slate-400" />
-          </button>
+          </Button>
 
           {isAreaDropdownOpen && (
             <div className="absolute right-0 mt-1.5 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg ring-1 ring-black/5 z-50">
               {(["ALL", "OFFICE", "WAREHOUSE"] as AreaFilter[]).map((area) => (
-                <button
+                <Button variant="ghost"
                   key={area}
                   type="button"
                   onClick={() => {
                     onAreaChange(area)
                     setIsAreaDropdownOpen(false)
                   }}
-                  className={cn(
+                  className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", (cn(
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
                     selectedArea === area
                       ? "bg-slate-100 text-slate-900 font-bold"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  )}
+                  ))].filter(Boolean).join(" ")}
                 >
                   <span>{areaLabelMap[area]}</span>
-                </button>
+                </Button>
               ))}
             </div>
           )}

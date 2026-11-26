@@ -15,6 +15,7 @@ import {
 import { logoutAction } from "@/app/login/actions"
 import { useDemoMode } from "@/components/auth/demo-mode-context"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface ManagerSidebarProps {
   userEmail?: string
@@ -131,14 +132,14 @@ export function ManagerSidebar({
 
           {/* Close button for mobile */}
           {onCloseMobile && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={onCloseMobile}
-              className="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white lg:hidden"
+              className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white lg:hidden"
               aria-label="Tutup navigasi"
             >
               <X className="size-5" />
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -227,27 +228,27 @@ export function ManagerSidebar({
                 </span>
               </div>
               <form action={logoutAction} onSubmit={clearDemoState} className="shrink-0">
-                <button
+                <Button variant="ghost"
                   type="submit"
                   title={logoutLabel}
                   aria-label={logoutLabel}
-                  className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-1.5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
+                  className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-1.5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
                 >
                   <LogOut className="size-4" />
                   {demoMode && <span className="text-xs">Ganti Pengguna</span>}
-                </button>
+                </Button>
               </form>
             </>
           ) : (
             <form action={logoutAction} onSubmit={clearDemoState} className="mt-2 flex justify-center">
-              <button
+              <Button variant="ghost"
                 type="submit"
                 title={logoutLabel}
                 aria-label={logoutLabel}
-                className="flex size-11 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
+                className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit flex size-11 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
               >
                 <LogOut className="size-4" />
-              </button>
+              </Button>
             </form>
           )}
         </div>

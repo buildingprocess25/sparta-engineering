@@ -3,6 +3,7 @@
 import { toEditableChecklistItem } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 import {
   Check,
   ChevronDown,
@@ -790,26 +791,15 @@ export function SharedChecklistForm({
         ) : null}
       </div>
 
-      {previewPhoto ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-5">
-          <Button variant="ghost" size="icon-lg"
-            type="button"
-            onClick={() => setPreviewPhoto(undefined)}
-            className="absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-white text-[#111111] shadow-lg outline-none transition-transform active:scale-95 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/50"
-            aria-label="Tutup preview foto"
-          >
-            <X aria-hidden="true" />
-          </Button>
-          <Image
-            src={previewPhoto.url}
-            alt={`Preview foto bukti ${previewPhoto.itemLabel}`}
-            width={1280}
-            height={720}
-            className="max-h-[82svh] w-auto max-w-full rounded-xl object-contain shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
-            priority
-          />
-        </div>
-      ) : null}
+      <ReportPhotoPreview
+        photo={previewPhoto
+          ? {
+              url: previewPhoto.url,
+              title: previewPhoto.itemLabel || "Preview foto",
+            }
+          : null}
+        onClose={() => setPreviewPhoto(undefined)}
+      />
     </div>
   )
 }

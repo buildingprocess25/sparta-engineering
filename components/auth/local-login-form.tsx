@@ -5,6 +5,8 @@ import { LockKeyhole, Mail, ShieldCheck } from "lucide-react"
 
 import { loginAction, type LoginFormState } from "@/app/login/actions"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 const initialLoginFormState: LoginFormState = {
   message: "",
@@ -32,15 +34,15 @@ export function LocalLoginForm() {
       className="flex flex-col gap-5"
     >
       <div className="flex flex-col gap-2">
-        <label
+        <Label
           htmlFor="email"
-          className="text-sm font-medium text-zinc-950"
+          className="inline-block leading-normal gap-0 select-text text-sm font-medium text-zinc-950"
         >
           Email
-        </label>
+        </Label>
         <div className="relative">
           <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-500" />
-          <input
+          <Input
             id="email"
             name="email"
             type="email"
@@ -53,15 +55,15 @@ export function LocalLoginForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <label
+        <Label
           htmlFor="password"
-          className="text-sm font-medium text-zinc-950"
+          className="inline-block leading-normal gap-0 select-text text-sm font-medium text-zinc-950"
         >
           Password
-        </label>
+        </Label>
         <div className="relative">
           <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-500" />
-          <input
+          <Input
             id="password"
             name="password"
             type="password"

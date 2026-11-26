@@ -37,6 +37,12 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
 import { SpartaAlertDialog } from "@/components/shared/sparta-alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { needsChecklistFollowUp } from "@/lib/reports/checklist-follow-up"
 
 interface ReportReviewModalProps {
@@ -151,15 +157,26 @@ function ReportReviewSession({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity"
-        onClick={() => { if (!isSubmitting && activeDialog === "NONE") onClose() }}
-      />
-
-      {/* Main Review Workbench Container (BMC/BNM Pattern) */}
-      <div className="relative w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden flex flex-col max-h-[92vh] z-10 animate-in fade-in zoom-in-95 duration-200">
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (
+          !open &&
+          !isSubmitting &&
+          !decisionLock.current &&
+          activeDialog === "NONE"
+        ) {
+          onClose()
+        }
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className="flex max-h-[92dvh] w-full flex-col gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl sm:max-w-4xl"
+      >
+        <DialogDescription className="sr-only">
+          Pemeriksaan hasil checklist, temuan dan riwayat persetujuan laporan.
+        </DialogDescription>
         {/* Feedback */}
         {feedbackToast && activeDialog === "NONE" && (
           <Alert role={feedbackToast.error ? "alert" : "status"}
@@ -212,11 +229,11 @@ function ReportReviewSession({
                 </span>
               </div>
 
-              <h2 className="mt-2 text-base sm:text-lg font-bold text-white leading-tight">
+              <DialogTitle className="mt-2 text-base sm:text-lg font-bold text-white leading-tight">
                 {(payload !== null && typeof payload === "object" && "formName" in payload &&
                   typeof payload.formName === "string" && payload.formName) ||
                   `Laporan Pemeliharaan Area ${report.area.name}`}
-              </h2>
+              </DialogTitle>
             </div>
 
             <Button variant="ghost"
@@ -520,7 +537,6 @@ function ReportReviewSession({
             </div>
           )}
         </div>
-      </div>
 
       {/* Decision Dialogs */}
       <SpartaAlertDialog
@@ -687,6 +703,7 @@ function ReportReviewSession({
             )}
         </div>
       </SpartaAlertDialog>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

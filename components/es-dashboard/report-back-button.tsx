@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 type ReportBackButtonProps = {
   fallbackHref?: string
@@ -37,10 +38,10 @@ export function ReportBackButton({
         </Link>
       ) : (
         <>
-          <button type="button" onClick={goBack} className={controlClass}>
+          <Button variant="ghost" type="button" onClick={goBack} className={["inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit", (controlClass)].filter(Boolean).join(" ")}>
             <ArrowLeft aria-hidden="true" />
             {label}
-          </button>
+          </Button>
           <Link href={fallbackHref} className="sr-only">
             {label}
           </Link>

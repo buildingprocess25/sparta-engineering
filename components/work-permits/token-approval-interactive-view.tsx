@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
 type Decision = "APPROVED" | "REJECTED"
 
@@ -389,9 +390,9 @@ export function TokenApprovalInteractiveView(
           <CardContent>
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="approval-notes" className="font-medium">
+                <Label htmlFor="approval-notes" className="inline-block leading-normal gap-0 select-text font-medium">
                   Catatan untuk pemohon
-                </label>
+                </Label>
                 <Textarea
                   id="approval-notes"
                   rows={4}

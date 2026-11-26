@@ -3,6 +3,7 @@
 import { restoreChecklistItems, readWeeklyChecklistNotes } from "@/lib/checklists/edit-state"
 import * as React from "react"
 import Image from "next/image"
+import { ReportPhotoPreview } from "@/components/reports/report-photo-preview"
 import {
   AlertCircle,
   Calendar,
@@ -19,7 +20,6 @@ import {
   Trash2,
   Truck,
   Wrench,
-  X,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -875,39 +875,15 @@ export function FrmTs043Form({
       </div>
 
       {/* Fullscreen Photo Viewer */}
-      {previewPhoto ? (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-5"
-          onClick={() => setPreviewPhoto(null)}
-        >
-          <Button variant="ghost"
-            type="button"
-            onClick={() => setPreviewPhoto(null)}
-            className="inline-block h-auto shrink gap-0 whitespace-normal rounded-none border-0 bg-transparent p-0 font-normal text-inherit shadow-none hover:bg-transparent hover:text-inherit absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-white text-[#111111] shadow-lg outline-none transition-transform active:scale-95 focus-visible:ring-3 focus-visible:ring-[#ff8a2a]/50"
-            aria-label="Tutup preview foto"
-          >
-            <X className="size-5" />
-          </Button>
-          <div
-            className="flex flex-col items-center gap-3 max-w-3xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              src={previewPhoto.url}
-              alt={`Preview foto bukti ${previewPhoto.itemLabel}`}
-              width={1280}
-              height={720}
-              className="max-h-[82svh] w-auto max-w-full rounded-2xl object-contain shadow-[0_24px_80px_rgba(0,0,0,0.5)] border border-white/10"
-              priority
-            />
-            {previewPhoto.itemLabel && (
-              <span className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur-md border border-white/10">
-                {previewPhoto.itemLabel}
-              </span>
-            )}
-          </div>
-        </div>
-      ) : null}
+      <ReportPhotoPreview
+        photo={previewPhoto
+          ? {
+              url: previewPhoto.url,
+              title: previewPhoto.itemLabel || "Preview foto",
+            }
+          : null}
+        onClose={() => setPreviewPhoto(null)}
+      />
     </div>
   )
 }
